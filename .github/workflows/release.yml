@@ -1,0 +1,36 @@
+name: WPF Release Build
+
+on:
+  push:
+    tags:
+      - 'v*' # 当推送以 v 开头的 tag 时触发，例如 v1.0.0
+
+jobs:
+  build_release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x' # 保持与你 csproj 版本同步
+
+    - name: Publish WPF App
+      run: |
+        cd Tools
+        dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true -o ../publish_output
+
+    - name: Zip the Output
+      run: |
+        Compress-Archive -Path publish_output\* -DestinationPath JekyllCli-win-x64.zip
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: JekyllCli-win-x64.zip
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
