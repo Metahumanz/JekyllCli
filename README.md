@@ -24,10 +24,10 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
    - 请确保您的 Windows 电脑上安装了 [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/download)。
    - 需要安装并在命令行配置过 [Git](https://git-scm.com/)（工具底层会调用 Git 帮您同步云端）。
 2. **下载成品**：
-   - 前往咱们代码仓库的 **[Releases 页面]**，下载最新版本的 `JekyllCli-win-x64.zip`。
+   - 前往代码仓库的 **[Releases 页面](https://github.com/Metahumanz/JekyllCli/releases)**，下载最新版本的 `JekyllCli-win-x64.zip`。
 3. **运行工具**：
    - 将压缩包解压放在你的心仪目录。
-   - 双击文件夹内生成的 `JekyllCli.exe`（或 `BlogTools.exe`）启动管理界面即可。
+   - 双击文件夹内生成的 `JekyllCli.exe`启动管理界面即可。
 
 ## 二、初始配置与如何使用
 
