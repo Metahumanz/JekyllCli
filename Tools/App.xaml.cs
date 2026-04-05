@@ -27,28 +27,18 @@ namespace BlogTools
             var settings = StorageService.Load();
             string? blogPath = settings.BlogPath;
 
-            while (string.IsNullOrEmpty(blogPath) || !Directory.Exists(blogPath) || !File.Exists(Path.Combine(blogPath, "_config.yml")))
+            if (string.IsNullOrEmpty(blogPath) || !Directory.Exists(blogPath) || !File.Exists(Path.Combine(blogPath, "_config.yml")))
             {
-                if (!string.IsNullOrEmpty(blogPath))
-                {
-                    MessageBox.Show("所选目录不是有效的 Jekyll 博客根目录（须包含 _config.yml 文件），请重新选择。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
+                var setupWindow = new SetupWindow();
+                setupWindow.ShowDialog();
 
-                OpenFolderDialog dialog = new OpenFolderDialog
+                if (!setupWindow.IsSetupSuccessful)
                 {
-                    Title = "请选择 Jekyll 博客本地根目录"
-                };
-
-                if (dialog.ShowDialog() == true)
-                {
-                    blogPath = dialog.FolderName;
-                }
-                else
-                {
-                    // User cancelled initial setup
                     Shutdown();
                     return;
                 }
+                
+                blogPath = setupWindow.SelectedBlogPath;
             }
 
             // Save valid path

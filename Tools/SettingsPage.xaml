@@ -134,9 +134,10 @@
                     </Grid>
                 </Border>
 
-                <!-- ═══ 第四组：站长信息 ═══ -->
                 <TextBlock Text="站长信息" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <ui:InfoBar Title="💡 B站链接小贴士" Message="想要添加 Bilibili？只需手动在 _config.yml 的 social.links 中添加你的 B站 主页链接，主题就会自动显示 B站 图标！不需要配置 Twitter。" 
+                            IsOpen="True" Severity="Informational" Margin="0,0,0,12"/>
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,24">
@@ -185,9 +186,13 @@
 
         <!-- 底部操作栏 -->
         <Border Grid.Row="3" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Padding="0,12,0,0" Margin="0,8,0,0">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                <ui:Button Content="保存到本地" Click="SaveSettings_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,12,0" Padding="16,8"/>
-                <ui:Button Content="保存并发布" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Padding="16,8"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <ui:Button Content="保存到本地" Click="SaveSettings_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,12,0" Padding="16,8"/>
+                    <ui:Button Content="保存并发布" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Padding="16,8"/>
+                </StackPanel>
+                <TextBlock VerticalAlignment="Center" Margin="16,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"
+                           Text="🚀 推荐：配置 GitHub Actions 后，一键发布即可自动构建部署博客。"/>
             </StackPanel>
         </Border>
     </Grid>
