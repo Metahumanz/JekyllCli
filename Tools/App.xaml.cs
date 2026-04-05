@@ -4,7 +4,7 @@ using System.IO;
 using BlogTools.Models;
 using BlogTools.Services;
 using Microsoft.Win32;
-using Velopack;
+
 
 namespace BlogTools
 {
@@ -25,11 +25,6 @@ namespace BlogTools
         {
             base.OnStartup(e);
 
-            try
-            {
-                VelopackApp.Build().Run();
-            }
-            catch { /* Ignore errors during Velopack initialization in dev environment */ }
 
             var settings = StorageService.Load();
             string? blogPath = settings.BlogPath;

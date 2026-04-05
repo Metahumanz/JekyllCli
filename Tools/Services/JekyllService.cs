@@ -46,6 +46,52 @@ namespace BlogTools.Services
             File.WriteAllText(configPath, yaml);
         }
 
+        public T? LoadData<T>(string relativePath) where T : class
+        {
+            var fullPath = Path.Combine(_blogPath, relativePath);
+            if (!File.Exists(fullPath)) return null;
+            return _deserializer.Deserialize<T>(File.ReadAllText(fullPath));
+        }
+
+        public void SaveData<T>(string relativePath, T data)
+        {
+            var fullPath = Path.Combine(_blogPath, relativePath);
+            var dir = Path.GetDirectoryName(fullPath);
+            if (dir != null && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            File.WriteAllText(fullPath, _serializer.Serialize(data));
+        }
+
+        public (Dictionary<string, object> FrontMatter, string Content)? ParseMarkdownWithFrontMatter(string relativePath)
+        {
+            var filePath = Path.Combine(_blogPath, relativePath);
+            if (!File.Exists(filePath)) return null;
+
+            var content = File.ReadAllText(filePath);
+            if (content.StartsWith("---"))
+            {
+                var endOfFm = content.IndexOf("---", 3);
+                if (endOfFm > 0)
+                {
+                    var yaml = content.Substring(3, endOfFm - 3);
+                    var body = content.Substring(endOfFm + 3).TrimStart();
+                    var fm = _deserializer.Deserialize<Dictionary<string, object>>(yaml) ?? new Dictionary<string, object>();
+                    return (fm, body);
+                }
+            }
+            return (new Dictionary<string, object>(), content);
+        }
+
+        public void SaveMarkdownWithFrontMatter(string relativePath, Dictionary<string, object> frontMatter, string content)
+        {
+            var filePath = Path.Combine(_blogPath, relativePath);
+            var dir = Path.GetDirectoryName(filePath);
+            if (dir != null && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+            var yaml = _serializer.Serialize(frontMatter);
+            var fileContent = $"---\n{yaml}---\n\n{content}";
+            File.WriteAllText(filePath, fileContent);
+        }
+
         public void SavePost(BlogPost post)
         {
             var fileName = post.FileName;

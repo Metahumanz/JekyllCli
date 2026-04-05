@@ -180,28 +180,97 @@
                     </Grid>
                 </Border>
 
+                <!-- ═══ 导航与选项卡 ═══ -->
+                <TextBlock Text="网站导航与选项卡" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,24">
+                    <StackPanel>
+                        <Expander Header="关于我 (About)" Margin="0,0,0,10">
+                            <StackPanel Margin="10">
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                        <TextBlock Text="标题" />
+                                        <ui:TextBox x:Name="AboutTitleBox" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                                        <TextBlock Text="图标" />
+                                        <ui:TextBox x:Name="AboutIconBox" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="排序" />
+                                        <ui:TextBox x:Name="AboutOrderBox" />
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="自我介绍内容（支持 Markdown）" Margin="0,10,0,5" />
+                                <ui:TextBox x:Name="AboutContentBox" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="100" />
+                            </StackPanel>
+                        </Expander>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Archives -->
+                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                <TextBlock Text="归档 (Archives) 标题" FontSize="12" Margin="0,0,0,4"/>
+                                <ui:TextBox x:Name="ArchivesTitleBox" Margin="0,0,0,5" />
+                                <TextBlock Text="排序" FontSize="12" Margin="0,0,0,4"/>
+                                <ui:TextBox x:Name="ArchivesOrderBox" />
+                            </StackPanel>
+                            <!-- Categories -->
+                            <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                                <TextBlock Text="分类 (Categories) 标题" FontSize="12" Margin="0,0,0,4"/>
+                                <ui:TextBox x:Name="CategoriesTitleBox" Margin="0,0,0,5"/>
+                                <TextBlock Text="排序" FontSize="12" Margin="0,0,0,4"/>
+                                <ui:TextBox x:Name="CategoriesOrderBox" />
+                            </StackPanel>
+                            <!-- Tags -->
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="标签 (Tags) 标题" FontSize="12" Margin="0,0,0,4"/>
+                                <ui:TextBox x:Name="TagsTitleBox" Margin="0,0,0,5" />
+                                <TextBlock Text="排序" FontSize="12" Margin="0,0,0,4"/>
+                                <ui:TextBox x:Name="TagsOrderBox" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ═══ 静态资源管理 ═══ -->
+                <TextBlock Text="网站图标上传" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <StackPanel Margin="0,0,0,24">
+                    <ui:CardControl Icon="{ui:SymbolIcon Symbol=Image24}">
+                        <ui:CardControl.Header>
+                            <StackPanel>
+                                <TextBlock Text="导入 Favicons 网站图标集" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="选择你的 avatar / favicon 文件，它们将自动上传至 assets/img/favicons" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            </StackPanel>
+                        </ui:CardControl.Header>
+                        <ui:Button Content="选择文件上传" Click="UploadFavicons_Click" />
+                    </ui:CardControl>
+                </StackPanel>
+
                 <!-- ═══ 更新中心 ═══ -->
-                <TextBlock Text="更新中心 (Velopack)" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                <TextBlock Text="获取更新" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Margin="0,0,0,24">
                     <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowDownload24}">
                         <ui:CardControl.Header>
                             <StackPanel>
-                                <TextBlock Text="当前版本与检查更新" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="检查新版本" FontWeight="SemiBold" FontSize="14" />
                                 <TextBlock x:Name="VersionBlock" Text="版本获取中..." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
-                        <ui:Button Content="检查更新" Click="CheckUpdate_Click" />
-                    </ui:CardControl>
-
-                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Settings24}">
-                        <ui:CardControl.Header>
-                            <StackPanel>
-                                <TextBlock Text="允许后台静默安装" FontWeight="SemiBold" FontSize="14" />
-                                <TextBlock Text="开启后，将在后台下载并在下次启动时自动应用更新。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
-                            </StackPanel>
-                        </ui:CardControl.Header>
-                        <ui:ToggleSwitch x:Name="SilentUpdateToggle" Checked="SilentUpdate_Checked" Unchecked="SilentUpdate_Unchecked" />
+                        <ui:Button Content="前往 GitHub Releases" Click="CheckUpdate_Click" />
                     </ui:CardControl>
                 </StackPanel>
 

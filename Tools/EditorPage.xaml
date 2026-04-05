@@ -133,8 +133,13 @@
                 <wv2:WebView2 x:Name="EditorWebView" />
             </Border>
 
-            <!-- 中间：同步滚动按钮 -->
+            <!-- 中间：同步滚动按钮与图片工具 -->
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0">
+                <ui:Button x:Name="InsertImageBtn" Click="InsertImage_Click"
+                           ToolTip="上传并插入本地图片 (Alt+I)" Padding="6" Margin="0,0,0,16" Appearance="Primary">
+                    <ui:SymbolIcon Symbol="Image24" FontSize="16"/>
+                </ui:Button>
+
                 <ui:Button x:Name="SyncToPreviewBtn" Click="SyncEditorToPreview_Click"
                            ToolTip="将预览同步到编辑位置" Padding="6" Margin="0,0,0,8">
                     <ui:SymbolIcon Symbol="ArrowRight24" FontSize="16"/>

@@ -15,46 +15,48 @@
 
         <ui:TitleBar Grid.Row="0" Title="JekyllCli 初始化" />
 
-        <StackPanel Grid.Row="1" Margin="40">
-            <TextBlock Text="欢迎使用 JekyllCli" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,20"/>
-            <TextBlock Text="只需两步即可完成初始化。" Margin="0,0,0,10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-            
-            <TextBlock Text="1. 选择博客目录" FontWeight="SemiBold" Margin="0,10,0,5"/>
-            <Grid Margin="0,0,0,10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <ui:TextBox x:Name="BlogPathBox" IsReadOnly="True" Margin="0,0,10,0" PlaceholderText="请选择包含 _config.yml 的目录..."/>
-                <ui:Button Grid.Column="1" Content="浏览..." Click="Browse_Click" Appearance="Secondary"/>
-            </Grid>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="40">
+                <TextBlock Text="欢迎使用 JekyllCli" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,20"/>
+                <TextBlock Text="只需两步即可完成初始化。" Margin="0,0,0,10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                
+                <TextBlock Text="1. 选择博客目录" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ui:TextBox x:Name="BlogPathBox" IsReadOnly="True" Margin="0,0,10,0" PlaceholderText="请选择包含 _config.yml 的目录..."/>
+                    <ui:Button Grid.Column="1" Content="浏览..." Click="Browse_Click" Appearance="Secondary"/>
+                </Grid>
 
-            <!-- 零基础开始区块 -->
-            <Expander x:Name="CreateBlogExpander" Header="没有本地博客？从模板开始..." Margin="0,0,0,20" IsExpanded="False">
-                <StackPanel Margin="10">
-                    <TextBlock Text="你可以使用内置模板创建，或从 GitHub 拉取官方 Chirpy 模板。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="12"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="8" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <ui:Button x:Name="UseBundleBtn" Grid.Column="0" Content="使用内置模板" Click="UseBundle_Click" HorizontalAlignment="Stretch" Padding="0,8"/>
-                        <ui:Button x:Name="CloneRemoteBtn" Grid.Column="2" Content="从 GitHub 拉取" Click="CloneRemote_Click" HorizontalAlignment="Stretch" Padding="0,8"/>
-                    </Grid>
-                    <ProgressBar x:Name="InitProgressBar" IsIndeterminate="True" Visibility="Collapsed" Margin="0,10,0,0" />
-                    <TextBlock x:Name="InitStatusText" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,5,0,0" Visibility="Collapsed" FontSize="12" />
-                </StackPanel>
-            </Expander>
+                <!-- 零基础开始区块 -->
+                <Expander x:Name="CreateBlogExpander" Header="没有本地博客？从模板开始..." Margin="0,0,0,20" IsExpanded="False">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="你可以使用内置模板创建，或从 GitHub 拉取官方 Chirpy 模板。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10" FontSize="12"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ui:Button x:Name="UseBundleBtn" Grid.Column="0" Content="使用内置模板" Click="UseBundle_Click" HorizontalAlignment="Stretch" Padding="0,8"/>
+                            <ui:Button x:Name="CloneRemoteBtn" Grid.Column="2" Content="从 GitHub 拉取" Click="CloneRemote_Click" HorizontalAlignment="Stretch" Padding="0,8"/>
+                        </Grid>
+                        <ProgressBar x:Name="InitProgressBar" IsIndeterminate="True" Visibility="Collapsed" Margin="0,10,0,0" />
+                        <TextBlock x:Name="InitStatusText" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,5,0,0" Visibility="Collapsed" FontSize="12" />
+                    </StackPanel>
+                </Expander>
 
-            <TextBlock Text="2. 选择默认语言" FontWeight="SemiBold" Margin="0,10,0,5"/>
-            <ComboBox x:Name="LanguageBox" SelectedIndex="0" HorizontalAlignment="Stretch" Margin="0,0,0,20">
-                <ComboBoxItem Content="中文 (zh-CN)" Tag="zh-CN"/>
-                <ComboBoxItem Content="English (en)" Tag="en"/>
-            </ComboBox>
-            
-            <ui:InfoBar x:Name="ErrorBar" IsOpen="False" Severity="Error" Title="错误" />
-        </StackPanel>
+                <TextBlock Text="2. 选择默认语言" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                <ComboBox x:Name="LanguageBox" SelectedIndex="0" HorizontalAlignment="Stretch" Margin="0,0,0,20">
+                    <ComboBoxItem Content="中文 (zh-CN)" Tag="zh-CN"/>
+                    <ComboBoxItem Content="English (en)" Tag="en"/>
+                </ComboBox>
+                
+                <ui:InfoBar x:Name="ErrorBar" IsOpen="False" Severity="Error" Title="错误" />
+            </StackPanel>
+        </ScrollViewer>
 
         <Border Grid.Row="2" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Padding="20">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

@@ -7,6 +7,7 @@ using BlogTools.Models;
 using Markdig;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
+using Microsoft.Win32;
 
 namespace BlogTools
 {
@@ -429,7 +430,84 @@ namespace BlogTools
             StatusInfo.IsOpen = true;
         }
 
-        // ─── Sync scrolling ──────────────────────────────────────
+        // ─── Sync scrolling & Tools ─────────────────────────────────
+        
+        private async void InsertImage_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(TitleBox.Text))
+            {
+                System.Windows.MessageBox.Show("请先填写文章标题，以便确定图片存放目录！", "提示", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            var dialog = new OpenFileDialog
+            {
+                Title = "插入本地图片",
+                Filter = "图像文件|*.png;*.jpg;*.jpeg;*.gif;*.webp;*.svg|所有文件|*.*"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    // 1. Determine safe directory name based on article title or filename
+                    var safeDirName = System.Text.RegularExpressions.Regex.Replace(TitleBox.Text, @"[\\/:*?""<>|]+", "-").Trim('-', ' ');
+                    safeDirName = System.Text.RegularExpressions.Regex.Replace(safeDirName, @"\s+", "-").ToLowerInvariant();
+                    if (string.IsNullOrWhiteSpace(safeDirName)) safeDirName = "untitled";
+
+                    var relativeDir = $"assets/img/inpost/{safeDirName}";
+                    var absPathDir = System.IO.Path.Combine(App.JekyllContext.BlogPath, relativeDir.Replace("/", "\\"));
+                    
+                    if (!System.IO.Directory.Exists(absPathDir))
+                    {
+                        System.IO.Directory.CreateDirectory(absPathDir);
+                    }
+
+                    // 2. Copy file
+                    var fileName = System.IO.Path.GetFileName(dialog.FileName);
+                    var destFile = System.IO.Path.Combine(absPathDir, fileName);
+                    
+                    // Add suffix if file exists to prevent overwrite
+                    int counter = 1;
+                    while (System.IO.File.Exists(destFile))
+                    {
+                        var nameOnly = System.IO.Path.GetFileNameWithoutExtension(fileName);
+                        var ext = System.IO.Path.GetExtension(fileName);
+                        destFile = System.IO.Path.Combine(absPathDir, $"{nameOnly}-{counter}{ext}");
+                        fileName = System.IO.Path.GetFileName(destFile);
+                        counter++;
+                    }
+                    
+                    System.IO.File.Copy(dialog.FileName, destFile);
+
+                    // 3. Inject MD into Editor at cursor
+                    var mdSyntax = $"![{System.IO.Path.GetFileNameWithoutExtension(fileName)}](/{relativeDir}/{fileName})";
+                    
+                    var script = $@"
+                        (function() {{
+                            var el = document.getElementById('editor');
+                            if (el) {{
+                                var start = el.selectionStart;
+                                var end = el.selectionEnd;
+                                var val = el.value;
+                                var textToInsert = {System.Text.Json.JsonSerializer.Serialize(mdSyntax)};
+                                el.value = val.substring(0, start) + textToInsert + val.substring(end);
+                                el.selectionStart = el.selectionEnd = start + textToInsert.length;
+                                // Emit input event to trigger preview update
+                                var event = new Event('input', {{ bubbles: true }});
+                                el.dispatchEvent(event);
+                            }}
+                        }})();
+                    ";
+                    
+                    await EditorWebView.ExecuteScriptAsync(script);
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"处理图片时出错:\n{ex.Message}", "出错", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                }
+            }
+        }
 
         private async void SyncEditorToPreview_Click(object sender, RoutedEventArgs e)
         {
