@@ -63,6 +63,31 @@ namespace BlogTools.Services
             return await RunGitCommandAsync("pull");
         }
 
+        /// <summary>
+        /// Clone a repository into the target path.
+        /// </summary>
+        public static async Task<string> CloneAsync(string url, string targetPath)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"clone \"{url}\" \"{targetPath}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process == null) return string.Empty;
+
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            return output + "\n" + error;
+        }
+
         private async Task<string> RunGitCommandAsync(string arguments)
         {
             var psi = new ProcessStartInfo

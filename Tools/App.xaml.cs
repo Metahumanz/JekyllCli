@@ -4,6 +4,7 @@ using System.IO;
 using BlogTools.Models;
 using BlogTools.Services;
 using Microsoft.Win32;
+using Velopack;
 
 namespace BlogTools
 {
@@ -24,21 +25,29 @@ namespace BlogTools
         {
             base.OnStartup(e);
 
+            try
+            {
+                VelopackApp.Build().Run();
+            }
+            catch { /* Ignore errors during Velopack initialization in dev environment */ }
+
             var settings = StorageService.Load();
             string? blogPath = settings.BlogPath;
 
             if (string.IsNullOrEmpty(blogPath) || !Directory.Exists(blogPath) || !File.Exists(Path.Combine(blogPath, "_config.yml")))
             {
+                Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 var setupWindow = new SetupWindow();
                 setupWindow.ShowDialog();
 
                 if (!setupWindow.IsSetupSuccessful)
                 {
-                    Shutdown();
+                    Application.Current.Shutdown();
                     return;
                 }
                 
                 blogPath = setupWindow.SelectedBlogPath;
+                Application.Current.ShutdownMode = ShutdownMode.OnLastWindowClose;
             }
 
             // Save valid path

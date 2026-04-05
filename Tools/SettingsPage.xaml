@@ -136,8 +136,7 @@
 
                 <TextBlock Text="站长信息" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <ui:InfoBar Title="💡 B站链接小贴士" Message="想要添加 Bilibili？只需手动在 _config.yml 的 social.links 中添加你的 B站 主页链接，主题就会自动显示 B站 图标！不需要配置 Twitter。" 
-                            IsOpen="True" Severity="Informational" Margin="0,0,0,12"/>
+                <!-- removed InfoBar -->
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,24">
@@ -163,14 +162,14 @@
                             <ui:TextBox x:Name="EmailBox" PlaceholderText="name@example.com"/>
                         </StackPanel>
 
-                        <!-- Row 1: GitHub / Twitter -->
+                        <!-- Row 1: GitHub / Bilibili -->
                         <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
                             <TextBlock Text="GitHub 用户名" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <ui:TextBox x:Name="GithubBox" PlaceholderText="octocat"/>
                         </StackPanel>
                         <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
-                            <TextBlock Text="Twitter 用户名" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                            <ui:TextBox x:Name="TwitterBox" PlaceholderText="@handle"/>
+                            <TextBlock Text="Bilibili 主页链接" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ui:TextBox x:Name="BilibiliBox" PlaceholderText="https://space.bilibili.com/..."/>
                         </StackPanel>
 
                         <!-- Row 2: Avatar (full width) -->
@@ -180,6 +179,31 @@
                         </StackPanel>
                     </Grid>
                 </Border>
+
+                <!-- ═══ 更新中心 ═══ -->
+                <TextBlock Text="更新中心 (Velopack)" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <StackPanel Margin="0,0,0,24">
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowDownload24}">
+                        <ui:CardControl.Header>
+                            <StackPanel>
+                                <TextBlock Text="当前版本与检查更新" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock x:Name="VersionBlock" Text="版本获取中..." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            </StackPanel>
+                        </ui:CardControl.Header>
+                        <ui:Button Content="检查更新" Click="CheckUpdate_Click" />
+                    </ui:CardControl>
+
+                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Settings24}">
+                        <ui:CardControl.Header>
+                            <StackPanel>
+                                <TextBlock Text="允许后台静默安装" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="开启后，将在后台下载并在下次启动时自动应用更新。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            </StackPanel>
+                        </ui:CardControl.Header>
+                        <ui:ToggleSwitch x:Name="SilentUpdateToggle" Checked="SilentUpdate_Checked" Unchecked="SilentUpdate_Unchecked" />
+                    </ui:CardControl>
+                </StackPanel>
 
             </StackPanel>
         </ScrollViewer>

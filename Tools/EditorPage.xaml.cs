@@ -199,6 +199,17 @@ namespace BlogTools
                 MetadataExpander.IsExpanded = settings.IsMetadataExpanded;
             }
 
+            var allPosts = App.JekyllContext.GetAllPosts();
+            var primaryCats = new HashSet<string>();
+            var secondaryCats = new HashSet<string>();
+            foreach (var p in allPosts)
+            {
+                if (p.Categories.Count > 0) primaryCats.Add(p.Categories[0]);
+                if (p.Categories.Count > 1) secondaryCats.Add(p.Categories[1]);
+            }
+            PrimaryCategoryBox.ItemsSource = primaryCats.OrderBy(c => c).ToList();
+            SecondaryCategoryBox.ItemsSource = secondaryCats.OrderBy(c => c).ToList();
+
             if (App.CurrentEditPost != null)
             {
                 var post = App.CurrentEditPost;
@@ -215,7 +226,9 @@ namespace BlogTools
                     ModifyMinuteBox.SelectedItem = post.LastModifiedAt.Value.Minute.ToString("D2");
                 }
 
-                CategoriesBox.Text = string.Join(", ", post.Categories);
+                if (post.Categories.Count > 0) PrimaryCategoryBox.Text = post.Categories[0];
+                if (post.Categories.Count > 1) SecondaryCategoryBox.Text = post.Categories[1];
+                
                 TagsBox.Text = string.Join(", ", post.Tags);
 
                 AuthorBox.Text = post.Author;
@@ -296,7 +309,8 @@ namespace BlogTools
             ModifyDatePicker.SelectedDate = null;
             ModifyHourBox.SelectedIndex = -1;
             ModifyMinuteBox.SelectedIndex = -1;
-            CategoriesBox.Clear();
+            PrimaryCategoryBox.Text = "";
+            SecondaryCategoryBox.Text = "";
             TagsBox.Clear();
             AuthorBox.Clear();
             MathSwitch.IsChecked = false;
@@ -368,7 +382,12 @@ namespace BlogTools
 
         private BlogPost GeneratePostObject()
         {
-            var cats = CategoriesBox.Text.Split(new[] { ',', '\uFF0C', ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+            var cats = new List<string>();
+            var prim = PrimaryCategoryBox.Text?.Trim();
+            var sec = SecondaryCategoryBox.Text?.Trim();
+            if (!string.IsNullOrWhiteSpace(prim)) cats.Add(prim);
+            if (!string.IsNullOrWhiteSpace(sec)) cats.Add(sec);
+            
             var tags = TagsBox.Text.Split(new[] { ',', '\uFF0C', ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
 
             var publishDate = PublishDatePicker.SelectedDate ?? DateTime.Now;

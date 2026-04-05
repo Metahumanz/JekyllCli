@@ -68,7 +68,10 @@
                 </Grid>
 
                 <TextBlock Text="文章分类" VerticalAlignment="Center" Grid.Row="0" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <ui:TextBox x:Name="CategoriesBox" PlaceholderText="例如: 技术, 前端" Grid.Row="0" Grid.Column="4" Margin="0,0,0,12"/>
+                <StackPanel Grid.Row="0" Grid.Column="4" Orientation="Horizontal" Margin="0,0,0,12">
+                    <ComboBox x:Name="PrimaryCategoryBox" IsEditable="True" Width="100" Margin="0,0,8,0" ToolTip="一级分类" Text="" />
+                    <ComboBox x:Name="SecondaryCategoryBox" IsEditable="True" Width="100" ToolTip="二级分类" Text="" />
+                </StackPanel>
 
                 <!-- Row 1 -->
                 <TextBlock Text="最后修改" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>

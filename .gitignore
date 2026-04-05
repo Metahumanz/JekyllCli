@@ -22,6 +22,7 @@ Blog/.jekyll-cache/
 Blog/.jekyll-metadata
 Blog/vendor/
 Blog/Gemfile.lock
+/temp_publish_minimal
 
 ## [OS Specific]
 Thumbs.db

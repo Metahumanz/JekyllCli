@@ -25,14 +25,36 @@ jobs:
         cd Tools
         dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true -o ../publish_output
 
-    - name: Zip the Output
+    - name: Copy Blank Blog Template for Bundle
       run: |
-        Compress-Archive -Path publish_output\* -DestinationPath JekyllCli-win-x64.zip
+        Copy-Item -Path "Blog" -Destination "publish_output/Blog" -Recurse
+
+    - name: Zip Bundle version
+      run: |
+        Compress-Archive -Path publish_output\* -DestinationPath JekyllCli-win-x64-bundle.zip
+
+    - name: Prepare Minimal version
+      run: |
+        Remove-Item -Path "publish_output/Blog" -Recurse -Force
+        Compress-Archive -Path publish_output\* -DestinationPath JekyllCli-win-x64-minimal.zip
+        
+    - name: Install Velopack CLI
+      run: dotnet tool install -g vpk
+
+    - name: Create Velopack Release
+      run: |
+        $tag = "${{ github.ref_name }}".TrimStart('v')
+        # We package the minimal version for Velopack updates to keep update size small
+        vpk download github --repoUrl https://github.com/Metahumanz/JekyllCli || echo "No previous releases found or error downloading."
+        vpk pack -u JekyllCli -v $tag -p publish_output -o releases --mainExe JekyllCli.exe
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: JekyllCli-win-x64.zip
+        files: |
+          JekyllCli-win-x64-bundle.zip
+          JekyllCli-win-x64-minimal.zip
+          releases/*
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

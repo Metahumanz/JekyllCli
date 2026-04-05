@@ -7,6 +7,8 @@ using Wpf.Ui.Appearance;
 using Microsoft.Win32;
 using System.IO;
 using BlogTools.Services;
+using Velopack;
+using System.Threading.Tasks;
 
 namespace BlogTools
 {
@@ -42,6 +44,7 @@ namespace BlogTools
             CurrentPathBlock.Text = App.JekyllContext.BlogPath;
             var settings = StorageService.Load();
             RememberMetadataToggle.IsChecked = settings.RememberMetadataExpanded;
+            SilentUpdateToggle.IsChecked = settings.EnableSilentUpdate;
             _config = App.JekyllContext.LoadConfig();
 
             FontComboBox.Items.Clear();
@@ -50,7 +53,8 @@ namespace BlogTools
                 FontComboBox.Items.Add(new ComboBoxItem { Content = family.Source, FontFamily = family });
             }
 
-            var font = GetStringValue(_config, "blogtools_font");
+            var font = settings.AppFontFamily;
+            if (string.IsNullOrWhiteSpace(font)) font = GetStringValue(_config, "blogtools_font");
             if (string.IsNullOrWhiteSpace(font)) font = "Microsoft YaHei UI";
 
             foreach (ComboBoxItem item in FontComboBox.Items)
@@ -79,9 +83,20 @@ namespace BlogTools
                 GithubBox.Text = GetStringValue(githubDict, "username");
             }
 
-            if (_config.TryGetValue("twitter", out var twitterObj) && twitterObj is Dictionary<object, object> twitterDict)
+            if (socialObj is Dictionary<object, object> sDict && sDict.TryGetValue("links", out var linksObj) && linksObj is List<object> linksList)
             {
-                TwitterBox.Text = GetStringValue(twitterDict, "username");
+                var bilibiliLink = linksList.FirstOrDefault(l => l?.ToString()?.Contains("bilibili.com") == true);
+                if (bilibiliLink != null) BilibiliBox.Text = bilibiliLink.ToString();
+            }
+
+            try
+            {
+                var mgr = new UpdateManager("https://github.com/Metahumanz/JekyllCli");
+                VersionBlock.Text = $"当前版本: {mgr.CurrentVersion}";
+            }
+            catch
+            {
+                VersionBlock.Text = "当前版本: 开发版";
             }
         }
 
@@ -152,6 +167,11 @@ namespace BlogTools
 
             var selectedFont = (FontComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
             _config["blogtools_font"] = string.IsNullOrWhiteSpace(selectedFont) ? "Microsoft YaHei UI" : selectedFont;
+            
+            var settings = StorageService.Load();
+            settings.AppFontFamily = _config["blogtools_font"]?.ToString() ?? string.Empty;
+            StorageService.Save(settings);
+            
             _config["title"] = TitleBox.Text;
             _config["tagline"] = TaglineBox.Text;
             _config["description"] = DescriptionBox.Text;
@@ -161,7 +181,24 @@ namespace BlogTools
             UpdateNestedDict(_config, "social", "name", AuthorNameBox.Text);
             UpdateNestedDict(_config, "social", "email", EmailBox.Text);
             UpdateNestedDict(_config, "github", "username", GithubBox.Text);
-            UpdateNestedDict(_config, "twitter", "username", TwitterBox.Text);
+            
+            if (!string.IsNullOrWhiteSpace(BilibiliBox.Text))
+            {
+                if (!_config.TryGetValue("social", out var socialObj) || !(socialObj is Dictionary<object, object> socialDict))
+                {
+                    socialDict = new Dictionary<object, object>();
+                    _config["social"] = socialDict;
+                }
+
+                if (!socialDict.TryGetValue("links", out var linksObj) || !(linksObj is List<object> linksList))
+                {
+                    linksList = new List<object>();
+                    socialDict["links"] = linksList;
+                }
+                
+                linksList.RemoveAll(l => l?.ToString()?.Contains("bilibili.com") == true);
+                linksList.Add(BilibiliBox.Text);
+            }
 
             App.JekyllContext.SaveConfig(_config);
             
@@ -224,6 +261,60 @@ namespace BlogTools
             if (parentObject == null) return null;
             if (parentObject is T parent) return parent;
             return FindVisualParent<T>(parentObject);
+        }
+
+        private void SilentUpdate_Checked(object sender, RoutedEventArgs e)
+        {
+            var settings = StorageService.Load();
+            settings.EnableSilentUpdate = true;
+            StorageService.Save(settings);
+        }
+
+        private void SilentUpdate_Unchecked(object sender, RoutedEventArgs e)
+        {
+            var settings = StorageService.Load();
+            settings.EnableSilentUpdate = false;
+            StorageService.Save(settings);
+        }
+
+        private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var mgr = new UpdateManager("https://github.com/Metahumanz/JekyllCli");
+                VersionBlock.Text = "正在检查更新...";
+                var newVersion = await mgr.CheckForUpdatesAsync();
+                if (newVersion == null)
+                {
+                    VersionBlock.Text = "已经是最新版本。";
+                    return;
+                }
+                
+                VersionBlock.Text = $"发现新版本 {newVersion.TargetFullRelease.Version}，正在下载...";
+                await mgr.DownloadUpdatesAsync(newVersion, progress => {
+                    Dispatcher.Invoke(() => VersionBlock.Text = $"下载中 {progress}%...");
+                });
+                
+                VersionBlock.Text = "下载完成，即将应用更新...";
+                
+                var settings = StorageService.Load();
+                if (settings.EnableSilentUpdate)
+                {
+                    // Velopack automatically applies pending updates on next start if we call ApplyUpdatesAndRestart without args, 
+                    // or we can just call WaitExitThenApplyUpdates. Wait, ApplyUpdatesAndRestart will restart immediately.
+                    // If silent update is ON, we might just let Velopack update it next time, 
+                    // Or we can just restart. Since VelopackApp.Build().Run() handles it at startup.
+                    VersionBlock.Text = "下载完成，将在下次启动时自动安装覆盖。";
+                }
+                else
+                {
+                    mgr.ApplyUpdatesAndRestart(newVersion);
+                }
+            }
+            catch (Exception ex)
+            {
+                VersionBlock.Text = $"获取更新失败: {ex.Message}";
+            }
         }
     }
 }
