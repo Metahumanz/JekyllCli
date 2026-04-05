@@ -34,12 +34,20 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
 1. **安装环境依赖**：
    - 请确保您的 Windows 电脑上安装了 [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/download)。
    - 需要安装并在命令行配置过 [Git](https://git-scm.com/)（工具底层会调用 Git 帮您同步云端）。
-2. **下载成品**：
-   - 前往代码仓库的 **[Releases 页面](https://github.com/Metahumanz/JekyllCli/releases)**。
-   - **`JekyllCli-win-x64-bundle.zip` (推荐)**：解压即用，文件夹内自带一份初始博客模板。
-   - **`JekyllCli-win-x64-minimal.zip`**：仅工具本身，适合已有博客或想手动拉取仓库的用户。
+2. **下载指南 (README 必看)**：
+   前往仓库的 **[Releases 页面](https://github.com/Metahumanz/JekyllCli/releases)**，根据你的需求选择文件：
+
+   | 推荐人群 | 下载文件名 | 包含内容 | 特点 |
+   | :--- | :--- | :--- | :--- |
+   | **新手/快速试用** | `JekyllCli-win-x64-bundle.zip` | **工具 + 博客模板** | **最推荐**。解压即开即用，自带完整的博客基座。 |
+   | **长期使用/追求稳定** | `JekyllCli-win-Setup.exe` | **安装程序** | 将工具安装到系统，支持桌面快捷方式和全自动静默更新。 |
+   | **已有博客/老鸟** | `JekyllCli-win-x64-minimal.zip` | **仅工具** | 纯净极简。适合已有博客目录，只需一个管理工具的用户。 |
+
+   > 💡 **提示**：页面中的 `.nupkg`、`RELEASES`、`.json` 文件是供程序的“自动更新”系统检索使用的，**请直接忽略**。
+
 3. **运行工具**：
-   - 将压缩包解压后，双击运行 `JekyllCli.exe` 即可。
+   - **压缩包版**：解开压缩包，双击运行 `JekyllCli.exe`。
+   - **安装版 (Setup.exe)**：双击安装后，从桌面快捷方式启动。
 
 ## 二、初始配置与如何使用
 
