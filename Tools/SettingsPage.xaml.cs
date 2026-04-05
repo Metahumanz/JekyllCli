@@ -1,0 +1,229 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using Wpf.Ui.Appearance;
+using Microsoft.Win32;
+using System.IO;
+using BlogTools.Services;
+
+namespace BlogTools
+{
+    public partial class SettingsPage : Page
+    {
+        private Dictionary<string, object>? _config;
+
+        public SettingsPage()
+        {
+            InitializeComponent();
+            Loaded += SettingsPage_Loaded;
+            Unloaded += SettingsPage_Unloaded;
+            App.BlogFilesChanged += OnBlogFilesChanged;
+            
+            ThemeToggle.IsChecked = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
+        }
+
+        private void SettingsPage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            App.BlogFilesChanged -= OnBlogFilesChanged;
+        }
+
+        private void OnBlogFilesChanged()
+        {
+            Dispatcher.InvokeAsync(() => SettingsPage_Loaded(this, new RoutedEventArgs()));
+        }
+
+        private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            var parentSv = FindVisualParent<ScrollViewer>(this);
+            parentSv?.ScrollToTop();
+
+            CurrentPathBlock.Text = App.JekyllContext.BlogPath;
+            var settings = StorageService.Load();
+            RememberMetadataToggle.IsChecked = settings.RememberMetadataExpanded;
+            _config = App.JekyllContext.LoadConfig();
+
+            FontComboBox.Items.Clear();
+            foreach (var family in System.Windows.Media.Fonts.SystemFontFamilies.OrderBy(f => f.Source))
+            {
+                FontComboBox.Items.Add(new ComboBoxItem { Content = family.Source, FontFamily = family });
+            }
+
+            var font = GetStringValue(_config, "blogtools_font");
+            if (string.IsNullOrWhiteSpace(font)) font = "Microsoft YaHei UI";
+
+            foreach (ComboBoxItem item in FontComboBox.Items)
+            {
+                if (item.Content.ToString() == font)
+                {
+                    FontComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+
+            TitleBox.Text = GetStringValue(_config, "title");
+            TaglineBox.Text = GetStringValue(_config, "tagline");
+            DescriptionBox.Text = GetStringValue(_config, "description");
+            AvatarBox.Text = GetStringValue(_config, "avatar");
+            UrlBox.Text = GetStringValue(_config, "url");
+
+            if (_config.TryGetValue("social", out var socialObj) && socialObj is Dictionary<object, object> socialDict)
+            {
+                AuthorNameBox.Text = GetStringValue(socialDict, "name");
+                EmailBox.Text = GetStringValue(socialDict, "email");
+            }
+
+            if (_config.TryGetValue("github", out var githubObj) && githubObj is Dictionary<object, object> githubDict)
+            {
+                GithubBox.Text = GetStringValue(githubDict, "username");
+            }
+
+            if (_config.TryGetValue("twitter", out var twitterObj) && twitterObj is Dictionary<object, object> twitterDict)
+            {
+                TwitterBox.Text = GetStringValue(twitterDict, "username");
+            }
+        }
+
+        private void ChangeBlogPath_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFolderDialog dialog = new OpenFolderDialog
+            {
+                Title = "更换 Jekyll 博客本地根目录"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string newPath = dialog.FolderName;
+                if (!File.Exists(Path.Combine(newPath, "_config.yml")))
+                {
+                    MessageBox.Show("该目录不是有效的 Jekyll 根目录（未找到 _config.yml 文件）。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // 1. Update settings
+                var settings = StorageService.Load();
+                settings.BlogPath = newPath;
+                StorageService.Save(settings);
+
+                // 2. Re-init services
+                App.JekyllContext = new JekyllService(newPath);
+                App.GitContext = new GitService(newPath);
+
+                // 3. Restart file watcher for new path
+                App.StartFileWatcher(newPath);
+
+                // 4. Refresh UI
+                SettingsPage_Loaded(sender, e);
+                
+                StatusInfo.Message = "博客目录已更换并重新加载配置！";
+                StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
+                StatusInfo.IsOpen = true;
+            }
+        }
+
+        private void RememberMetadata_Checked(object sender, RoutedEventArgs e)
+        {
+            var settings = StorageService.Load();
+            settings.RememberMetadataExpanded = true;
+            StorageService.Save(settings);
+        }
+
+        private void RememberMetadata_Unchecked(object sender, RoutedEventArgs e)
+        {
+            var settings = StorageService.Load();
+            settings.RememberMetadataExpanded = false;
+            StorageService.Save(settings);
+        }
+
+        private void ThemeToggle_Checked(object sender, RoutedEventArgs e)
+        {
+            ApplicationThemeManager.Apply(ApplicationTheme.Dark);
+        }
+
+        private void ThemeToggle_Unchecked(object sender, RoutedEventArgs e)
+        {
+            ApplicationThemeManager.Apply(ApplicationTheme.Light);
+        }
+
+        private void SaveConfigToMemory()
+        {
+            _config ??= App.JekyllContext.LoadConfig();
+
+            var selectedFont = (FontComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+            _config["blogtools_font"] = string.IsNullOrWhiteSpace(selectedFont) ? "Microsoft YaHei UI" : selectedFont;
+            _config["title"] = TitleBox.Text;
+            _config["tagline"] = TaglineBox.Text;
+            _config["description"] = DescriptionBox.Text;
+            _config["avatar"] = AvatarBox.Text;
+            _config["url"] = UrlBox.Text;
+
+            UpdateNestedDict(_config, "social", "name", AuthorNameBox.Text);
+            UpdateNestedDict(_config, "social", "email", EmailBox.Text);
+            UpdateNestedDict(_config, "github", "username", GithubBox.Text);
+            UpdateNestedDict(_config, "twitter", "username", TwitterBox.Text);
+
+            App.JekyllContext.SaveConfig(_config);
+            
+            // Apply font dynamically after save!
+            var mainWindow = Application.Current.MainWindow;
+            if (mainWindow != null && _config.TryGetValue("blogtools_font", out var fontObj))
+            {
+                var fontName = fontObj?.ToString();
+                if (!string.IsNullOrWhiteSpace(fontName))
+                {
+                    mainWindow.FontFamily = new System.Windows.Media.FontFamily(fontName);
+                }
+            }
+        }
+
+        private void SaveSettings_Click(object sender, RoutedEventArgs e)
+        {
+            SaveConfigToMemory();
+            StatusInfo.Message = "配置已成功保存！";
+            StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
+            StatusInfo.IsOpen = true;
+        }
+
+        private async void PublishButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveConfigToMemory();
+            StatusInfo.Message = "发布中... 正在推送到远端服务器。";
+            StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Informational;
+            StatusInfo.IsOpen = true;
+            
+            try
+            {
+                var result = await App.GitContext.CommitAndPushAsync("Update blog configuration settings");
+                StatusInfo.Message = "发布成功！推送至 GitHub 并触发构建。";
+                StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
+            }
+            catch (Exception ex)
+            {
+                StatusInfo.Message = $"推送失败: {ex.Message}";
+                StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Error;
+            }
+        }
+
+        private string GetStringValue(Dictionary<string, object> dict, string key) => dict.TryGetValue(key, out var val) ? val?.ToString() ?? string.Empty : string.Empty;
+        private string GetStringValue(Dictionary<object, object> dict, string key) => dict.TryGetValue(key, out var val) ? val?.ToString() ?? string.Empty : string.Empty;
+
+        private void UpdateNestedDict(Dictionary<string, object> root, string outerKey, string innerKey, string value)
+        {
+            if (!root.TryGetValue(outerKey, out var outerObj) || !(outerObj is Dictionary<object, object> outerDict))
+            {
+                outerDict = new Dictionary<object, object>();
+                root[outerKey] = outerDict;
+            }
+            outerDict[innerKey] = value;
+        }
+
+        private static T? FindVisualParent<T>(DependencyObject child) where T : DependencyObject
+        {
+            var parentObject = System.Windows.Media.VisualTreeHelper.GetParent(child);
+            if (parentObject == null) return null;
+            if (parentObject is T parent) return parent;
+            return FindVisualParent<T>(parentObject);
+        }
+    }
+}

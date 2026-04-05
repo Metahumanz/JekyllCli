@@ -1,0 +1,50 @@
+## [Visual Studio]
+.vs/
+.codex/
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.docstates
+
+## [Build Output]
+/bin/
+/obj/
+/tempobj/
+/publish/
+*.iss
+*.exe
+*.dll
+*.pdb
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+/Release_Standalone/
+build_log.txt
+/Release/
+
+## [Logs]
+*.log
+b_log.txt
+build.txt
+build_err.txt
+errors.txt
+
+## [OS Specific]
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+## [JetBrains/Rider]
+.idea/
+
+## [Node/Frontend - if any]
+node_modules/
+dist/
+
+## [Backup files]
+*.bak
+*.tmp

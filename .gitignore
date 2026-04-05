@@ -1,0 +1,49 @@
+## [Visual Studio / .NET]
+.vs/
+.codex/
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.docstates
+Tools/bin/
+Tools/obj/
+Tools/tempobj/
+Tools/Release/
+Tools/Release_Standalone/
+Tools/*.suo
+Tools/build_log.txt
+Tools/settings.json
+
+## [Jekyll]
+Blog/_site/
+Blog/.sass-cache/
+Blog/.jekyll-cache/
+Blog/.jekyll-metadata
+Blog/vendor/
+Blog/Gemfile.lock
+
+## [OS Specific]
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+## [Logs]
+*.log
+b_log.txt
+build.txt
+build_err.txt
+errors.txt
+
+## [JetBrains/Rider]
+.idea/
+
+## [Node/Frontend - if any]
+node_modules/
+dist/
+
+## [Backup files]
+*.bak
+*.tmp

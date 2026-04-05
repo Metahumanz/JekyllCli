@@ -1,0 +1,158 @@
+<Page x:Class="BlogTools.DashboardPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:helpers="clr-namespace:BlogTools.Helpers"
+      Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+      Title="仪表盘">
+    <Page.Triggers>
+        <EventTrigger RoutedEvent="Page.Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <DoubleAnimation Storyboard.TargetName="MainContent" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.8" />
+                    <ThicknessAnimation Storyboard.TargetName="MainContent" Storyboard.TargetProperty="Margin" From="0,40,0,0" To="16" Duration="0:0:0.8">
+                        <ThicknessAnimation.EasingFunction>
+                            <CubicEase EasingMode="EaseOut" />
+                        </ThicknessAnimation.EasingFunction>
+                    </ThicknessAnimation>
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </Page.Triggers>
+    
+    <Grid Margin="16" x:Name="MainContent" Opacity="0" Background="Transparent">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent" helpers:ScrollViewerHelper.BubbleScrollEvents="True">
+            <StackPanel Background="Transparent" Margin="0,0,16,0">
+                
+                <!-- 欢迎头部 -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
+                    <ui:SymbolIcon Symbol="Home24" FontSize="36" VerticalAlignment="Center" Margin="0,0,16,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                    <StackPanel>
+                        <TextBlock x:Name="WelcomeTitleText" Text="欢迎来到博客管理后台" FontSize="28" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="WelcomeSubText" Text="轻松管理您的 Jekyll 站点！" FontSize="16" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 统计卡片区 -->
+                <UniformGrid Columns="3" Margin="0,0,0,24">
+                    <ui:CardAction Padding="20" Margin="0,0,16,0" IsChevronVisible="True" Cursor="Hand" Click="PostCountCard_Click" ToolTip="点击查看全部文章">
+                        <StackPanel>
+                            <ui:SymbolIcon Symbol="Document24" FontSize="28" Margin="0,0,0,12" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                            <TextBlock Text="总文章数" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock x:Name="PostCountText" Text="--" FontSize="32" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </ui:CardAction>
+
+                    <ui:CardAction Padding="20" Margin="0,0,16,0" IsChevronVisible="True" Cursor="Hand" Click="CategoryCountCard_Click" ToolTip="点击浏览分类">
+                        <StackPanel>
+                            <ui:SymbolIcon Symbol="Folder24" FontSize="28" Margin="0,0,0,12" Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
+                            <TextBlock Text="分类总数" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock x:Name="CategoryCountText" Text="--" FontSize="32" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </ui:CardAction>
+
+                    <ui:CardAction Padding="20" Margin="0,0,0,0" IsChevronVisible="True" Cursor="Hand" Click="TagCountCard_Click" ToolTip="点击浏览标签">
+                        <StackPanel>
+                            <ui:SymbolIcon Symbol="Tag24" FontSize="28" Margin="0,0,0,12" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
+                            <TextBlock Text="标签总数" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock x:Name="TagCountText" Text="--" FontSize="32" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </ui:CardAction>
+                </UniformGrid>
+
+                <!-- 分类/标签展开区 -->
+                <Border x:Name="DetailPanel" Visibility="Collapsed" Margin="0,0,0,24"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="8" Padding="20">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,12">
+                            <TextBlock x:Name="DetailPanelTitle" Text="" FontSize="18" FontWeight="SemiBold" DockPanel.Dock="Left"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <ui:Button Content="全部展开" Margin="0,0,8,0" Click="ExpandAllDetail_Click"/>
+                                <ui:Button Content="全部收起" Margin="0,0,8,0" Click="CollapseAllDetail_Click"/>
+                                <ui:Button Icon="{ui:SymbolIcon Symbol=Dismiss24}" Background="Transparent" BorderThickness="0"
+                                           Click="CloseDetailPanel_Click" ToolTip="关闭" Padding="4"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <ItemsControl x:Name="DetailItemsControl">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Expander Header="{Binding Header}" IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,4,0,4" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Padding="8" Background="Transparent" BorderThickness="0">
+                                        <StackPanel Margin="16,4,0,4">
+                                            <!-- Sub-category expanders (Children) -->
+                                            <ItemsControl ItemsSource="{Binding Children}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Expander Header="{Binding Header}" IsExpanded="{Binding IsExpanded, Mode=TwoWay}" Margin="0,4,0,4" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Padding="6" Background="Transparent" BorderThickness="0">
+                                                            <ItemsControl ItemsSource="{Binding Posts}" Margin="24,4,0,4">
+                                                                <ItemsControl.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <TextBlock Text="{Binding}" Margin="0,4" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                    </DataTemplate>
+                                                                </ItemsControl.ItemTemplate>
+                                                            </ItemsControl>
+                                                        </Expander>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <!-- Direct posts (no sub-category) -->
+                                            <ItemsControl ItemsSource="{Binding Posts}" Margin="8,4,0,4">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding}" Margin="0,4" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Expander>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 快捷操作区 -->
+                <TextBlock Text="快捷操作" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                <WrapPanel Orientation="Horizontal" Margin="0,0,0,12" Background="Transparent">
+                    <ui:Button Content="撰写新文章" Appearance="Primary" Click="WriteNewPost_Click" Icon="{ui:SymbolIcon Symbol=Edit24}" Margin="0,0,16,0" Padding="16,8"/>
+                    <ui:Button Content="访问线上站点" Click="ViewLiveSite_Click" Icon="{ui:SymbolIcon Symbol=Globe24}" Margin="0,0,16,0" Padding="16,8"/>
+                    <ui:Button x:Name="SyncButton" Content="从云端同步" Click="SyncButton_Click" Icon="{ui:SymbolIcon Symbol=ArrowSync24}" Padding="16,8"/>
+                </WrapPanel>
+                <ui:InfoBar x:Name="SyncInfoBar" IsOpen="False" Message="" Severity="Informational" Margin="0,0,0,16" />
+
+                <!-- 全部文章时间线 -->
+                <TextBlock Text="全部文章时间线" FontSize="20" FontWeight="SemiBold" Margin="0,8,0,16"/>
+                <ItemsControl x:Name="TimelineList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,0" Padding="12,10" Cursor="Hand"
+                                    Background="Transparent" MouseLeftButtonUp="TimelineItem_Click">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <DockPanel>
+                                    <TextBlock Text="{Binding Date, StringFormat={}{0:yyyy-MM-dd}}" Width="90"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" FontSize="13"
+                                               VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                                    <TextBlock Text="{Binding CategoryDisplay}" Width="140"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"
+                                               VerticalAlignment="Center" DockPanel.Dock="Left" Margin="8,0"/>
+                                    <TextBlock Text="{Binding Title}" FontSize="14" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

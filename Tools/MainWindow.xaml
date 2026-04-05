@@ -1,0 +1,28 @@
+<ui:FluentWindow x:Class="BlogTools.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:local="clr-namespace:BlogTools"
+        Title="BlogTools" Height="760" Width="1200"
+        WindowBackdropType="Mica"
+        ExtendsContentIntoTitleBar="True"
+        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" x:Name="AppTitleBar" Title="BlogTools" />
+        
+        <ui:NavigationView Grid.Row="1" x:Name="RootNavigation" PaneDisplayMode="Left" OpenPaneLength="200" IsBackButtonVisible="Collapsed" TransitionDuration="400">
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem Content="仪表盘" Icon="{ui:SymbolIcon Symbol=Home24}" TargetPageType="{x:Type local:DashboardPage}" />
+                <ui:NavigationViewItem Content="存量管理" Icon="{ui:SymbolIcon Symbol=Library24}" TargetPageType="{x:Type local:ManagePostsPage}" />
+                <ui:NavigationViewItem Content="撰写推文" Icon="{ui:SymbolIcon Symbol=Edit24}" TargetPageType="{x:Type local:EditorPage}" />
+                <ui:NavigationViewItem Content="引擎设置" Icon="{ui:SymbolIcon Symbol=Settings24}" TargetPageType="{x:Type local:SettingsPage}" />
+            </ui:NavigationView.MenuItems>
+        </ui:NavigationView>
+    </Grid>
+</ui:FluentWindow>
