@@ -4,8 +4,6 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
 
 本仓库不仅包含管理工具（`Tools`），还包含了一份完全纯净开箱即用的技术博客模板（`Blog`）。
 
-[English Version Below](#english-documentation) | [中文说明](#jekyllcli-)
-
 ---
 
 ## 📖 目录
@@ -85,7 +83,7 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
 ```powershell
 dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true -o ../publish_output
 ```
-随后只需将生成的 `publish_output` 里面的所有文件打包进 zip 压缩包即可散发。*(小提示：源码内我们也含了一个叫 `publish.ps1` 的 PowerShell 自动化小脚本帮助本地加速这一过程)*。
+随后只需将生成的 `publish_output` 里面的所有文件打包进 zip 压缩包即可散发。
 
 ### 方法二：完全利用 GitHub Actions 云打包 (已配置！)
 无需借助肉身操作，本项目已内置 **GitHub Actions 释放流** (`.github/workflows/release.yml`) 🚀：
@@ -103,11 +101,5 @@ dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:
 
 ## 五、开源协议
 
-1. 本套件的整体架构及 WPF `Tools` 辅助程序由原始作者开发，**采用 GPLv3 协议开源**。（您可以修改它但后续的分发若涉及也须使用同等严苛开源政策）。
-2. 在 `Blog` 文件夹下寄托的老 Chirpy 代码由 [@cotes2020](https://github.com/cotes2020) 等维护，原文件遵从宽松的 **MIT 协议**。
-
-## English Documentation
-
-**JekyllCli** is a modern, specialized Desktop Client for Jekyll (Optimized specifically for the Chirpy Theme), acting as your unified interface to visually control metadata, view analytics, securely write via a beautiful Fluent Markdown Editor, and securely push to git in one place.
-- To execute locally: Inside `Tools` folder, run `dotnet run`. Or grab pre-compiled Windows zip from our Releases Tab!
-- C# 10 .NET WPF. Licensed under **GPLv3**.
+1. 本套件的整体架构及 WPF `Tools` 辅助程序由原始作者开发，**采用 GPLv3 协议开源**。
+2. 在 `Blog` 文件夹下寄托的老 Chirpy 代码由 [@cotes2020](https://github.com/cotes2020) 等维护，原文件遵从的 **MIT 协议**。
