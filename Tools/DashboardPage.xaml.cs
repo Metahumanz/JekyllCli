@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace BlogTools
 {
@@ -48,11 +50,13 @@ namespace BlogTools
             Loaded += DashboardPage_Loaded;
             Unloaded += DashboardPage_Unloaded;
             App.BlogFilesChanged += OnBlogFilesChanged;
+            CompositionTarget.Rendering += OnCompositionTargetRendering;
         }
 
         private void DashboardPage_Unloaded(object sender, RoutedEventArgs e)
         {
             App.BlogFilesChanged -= OnBlogFilesChanged;
+            CompositionTarget.Rendering -= OnCompositionTargetRendering;
         }
 
         private void OnBlogFilesChanged()
@@ -69,8 +73,8 @@ namespace BlogTools
             var config = App.JekyllContext.LoadConfig();
             if (config.TryGetValue("title", out var titleObj) && titleObj is string siteTitle && !string.IsNullOrWhiteSpace(siteTitle))
             {
-                WelcomeTitleText.Text = siteTitle + " 管理后台";
-                WelcomeSubText.Text = "轻松管理您的「" + siteTitle + "」站点！";
+                WelcomeTitleText.Text = siteTitle + Application.Current.FindResource("DashboardWelcomeAdmin").ToString();
+                WelcomeSubText.Text = Application.Current.FindResource("DashboardWelcomePrefix").ToString() + siteTitle + Application.Current.FindResource("DashboardWelcomeSuffix").ToString();
             }
 
             _allPosts = App.JekyllContext.GetAllPosts();
@@ -130,6 +134,58 @@ namespace BlogTools
             await CheckGitSyncStatusAsync();
         }
 
+        private double _targetPageScrollOffset = -1;
+        private double _currentPageScrollOffset = -1;
+        private ScrollViewer? _activePageScrollViewer = null;
+
+        private void OnCompositionTargetRendering(object? sender, EventArgs e)
+        {
+            if (_activePageScrollViewer == null || _targetPageScrollOffset < 0 || _currentPageScrollOffset < 0)
+            {
+                return;
+            }
+
+            double diff = _targetPageScrollOffset - _currentPageScrollOffset;
+            if (Math.Abs(diff) < 0.5)
+            {
+                _currentPageScrollOffset = _targetPageScrollOffset;
+                _activePageScrollViewer.ScrollToVerticalOffset(_currentPageScrollOffset);
+                _targetPageScrollOffset = -1;
+                _activePageScrollViewer = null;
+            }
+            else
+            {
+                _currentPageScrollOffset += diff * 0.18;
+                _activePageScrollViewer.ScrollToVerticalOffset(_currentPageScrollOffset);
+            }
+        }
+
+        private void PageScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Helpers.ScrollViewerHelper.SuppressScrollBubble)
+            {
+                return;
+            }
+
+            var rootSv = FindVisualParent<ScrollViewer>(this);
+            if (rootSv == null)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            _activePageScrollViewer = rootSv;
+
+            if (_targetPageScrollOffset < 0)
+            {
+                _targetPageScrollOffset = rootSv.VerticalOffset;
+                _currentPageScrollOffset = rootSv.VerticalOffset;
+            }
+
+            _targetPageScrollOffset -= e.Delta * 2.0;
+            _targetPageScrollOffset = Math.Max(0, Math.Min(rootSv.ScrollableHeight, _targetPageScrollOffset));
+        }
+
         private string BuildCategoryDisplay(Models.BlogPost post)
         {
             if (post.Categories == null || post.Categories.Count == 0)
@@ -150,13 +206,13 @@ namespace BlogTools
                 var (behind, ahead, _) = await App.GitContext.CheckSyncStatusAsync();
                 if (behind > 0)
                 {
-                    SyncInfoBar.Message = $"⚠ 您的本地已落后云端 {behind} 个版本，请及时同步！";
+                    SyncInfoBar.Message = string.Format(Application.Current.FindResource("DashboardSyncBehind").ToString()!, behind);
                     SyncInfoBar.Severity = Wpf.Ui.Controls.InfoBarSeverity.Warning;
                     SyncInfoBar.IsOpen = true;
                 }
                 else if (ahead > 0)
                 {
-                    SyncInfoBar.Message = $"ℹ 您的本地领先云端 {ahead} 个版本，记得推送。";
+                    SyncInfoBar.Message = string.Format(Application.Current.FindResource("DashboardSyncAhead").ToString()!, ahead);
                     SyncInfoBar.Severity = Wpf.Ui.Controls.InfoBarSeverity.Informational;
                     SyncInfoBar.IsOpen = true;
                 }
@@ -229,7 +285,7 @@ namespace BlogTools
                     groups.Add(primaryGroup);
             }
 
-            DetailPanelTitle.Text = $"分类一览（{_allCategories.Count} 个）";
+            DetailPanelTitle.Text = string.Format(Application.Current.FindResource("DashboardDetailCategory").ToString()!, _allCategories.Count);
             DetailItemsControl.ItemsSource = groups;
             DetailPanel.Visibility = Visibility.Visible;
         }
@@ -256,7 +312,7 @@ namespace BlogTools
                 if (group.Posts.Count > 0) groups.Add(group);
             }
 
-            DetailPanelTitle.Text = $"标签一览（{_allTags.Count} 个）";
+            DetailPanelTitle.Text = string.Format(Application.Current.FindResource("DashboardDetailTag").ToString()!, _allTags.Count);
             DetailItemsControl.ItemsSource = groups;
             DetailPanel.Visibility = Visibility.Visible;
         }
@@ -319,14 +375,14 @@ namespace BlogTools
         private async void SyncButton_Click(object sender, RoutedEventArgs e)
         {
             SyncButton.IsEnabled = false;
-            SyncInfoBar.Message = "正在拉取云端仓库最新改动...";
+            SyncInfoBar.Message = Application.Current.FindResource("DashboardMsgSyncing").ToString()!;
             SyncInfoBar.Severity = Wpf.Ui.Controls.InfoBarSeverity.Informational;
             SyncInfoBar.IsOpen = true;
 
             try
             {
                 await App.GitContext.PullAsync();
-                SyncInfoBar.Message = "✅ 同步完成！本地已是最新版本。";
+                SyncInfoBar.Message = Application.Current.FindResource("DashboardMsgSyncSuccess").ToString()!;
                 SyncInfoBar.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
 
                 // Refresh
@@ -334,7 +390,7 @@ namespace BlogTools
             }
             catch (System.Exception ex)
             {
-                SyncInfoBar.Message = $"同步失败: {ex.Message}";
+                SyncInfoBar.Message = string.Format(Application.Current.FindResource("DashboardMsgSyncError").ToString()!, ex.Message);
                 SyncInfoBar.Severity = Wpf.Ui.Controls.InfoBarSeverity.Error;
             }
             finally
@@ -360,7 +416,12 @@ namespace BlogTools
             }
             else
             {
-                var msg = new Wpf.Ui.Controls.MessageBox { Title = "Error", Content = "No valid URL found in _config.yml", CloseButtonText = "OK" };
+                var msg = new Wpf.Ui.Controls.MessageBox 
+                { 
+                    Title = Application.Current.FindResource("CommonError").ToString()!, 
+                    Content = Application.Current.FindResource("DashboardMsgNoUrl").ToString()!, 
+                    CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()! 
+                };
                 await msg.ShowDialogAsync();
             }
         }

@@ -157,12 +157,13 @@ namespace BlogTools
                 UpdateWebViewContent();
             };
 
+            var placeholder = Application.Current.FindResource("EditorPlaceholder").ToString();
             var editorHtml = $"<!DOCTYPE html><html><head><meta charset='utf-8' /><style>{darkCss} {scrollbarCss} " +
             "html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; box-sizing: border-box; } " +
             "textarea { width: 100%; height: 100%; box-sizing: border-box; padding: 20px; border: none; outline: none; resize: none; " +
             "font-family: Consolas, monospace; font-size: 15px; background-color: transparent; color: inherit; line-height: 1.6; } " +
             "</style></head><body>" +
-            "<textarea id='editor' spellcheck='false' placeholder='在此撰写 Markdown 内容...'></textarea>" +
+            $"<textarea id='editor' spellcheck='false' placeholder='{placeholder}'></textarea>" +
             "<script>" +
             "const el = document.getElementById('editor');" +
             "el.addEventListener('input', () => { window.chrome.webview.postMessage('CONTENT:' + el.value); });" +
@@ -203,7 +204,12 @@ namespace BlogTools
         {
             if (string.IsNullOrWhiteSpace(TitleBox.Text))
             {
-                var msg = new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "请先填写文章标题，以便确定图片存放目录！", CloseButtonText = "确定" };
+                var msg = new Wpf.Ui.Controls.MessageBox 
+                { 
+                    Title = Application.Current.FindResource("CommonPrompt").ToString()!, 
+                    Content = Application.Current.FindResource("EditorMsgTitleRequired").ToString()!, 
+                    CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()! 
+                };
                 await msg.ShowDialogAsync();
                 return;
             }
@@ -291,7 +297,12 @@ namespace BlogTools
             }
             catch (Exception ex)
             {
-                var msg = new Wpf.Ui.Controls.MessageBox { Title = "出错", Content = $"粘贴图片处理失败:\n{ex.Message}", CloseButtonText = "确定" };
+                var msg = new Wpf.Ui.Controls.MessageBox 
+                { 
+                    Title = Application.Current.FindResource("CommonError").ToString()!, 
+                    Content = string.Format(Application.Current.FindResource("EditorMsgErrorPasteImage").ToString()!, ex.Message), 
+                    CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()! 
+                };
                 await msg.ShowDialogAsync();
             }
         }
@@ -303,7 +314,13 @@ namespace BlogTools
             if (CheckIsDirty())
             {
                 e.Cancel = true;
-                var msg = new Wpf.Ui.Controls.MessageBox { Title = "确认离开", Content = "您有未保存的草稿，确定要离开吗？未保存的内容将会丢失。", PrimaryButtonText = "确定离开", CloseButtonText = "取消" };
+                var msg = new Wpf.Ui.Controls.MessageBox 
+                { 
+                    Title = Application.Current.FindResource("EditorMsgConfirmLeave").ToString()!.Split('，')[0], // Extract "确认离开" roughly
+                    Content = Application.Current.FindResource("EditorMsgConfirmLeave").ToString()!, 
+                    PrimaryButtonText = Application.Current.FindResource("CommonConfirmLeave").ToString()!, 
+                    CloseButtonText = Application.Current.FindResource("CommonCancel").ToString()! 
+                };
                 var res = await msg.ShowDialogAsync();
                 if (res == Wpf.Ui.Controls.MessageBoxResult.Primary)
                 {
@@ -321,7 +338,13 @@ namespace BlogTools
             if (CheckIsDirty())
             {
                 e.Cancel = true;
-                var msg = new Wpf.Ui.Controls.MessageBox { Title = "确认退出", Content = "您有未保存的草稿，确定要退出程序吗？未保存的内容将会丢失。", PrimaryButtonText = "确定退出", CloseButtonText = "取消" };
+                var msg = new Wpf.Ui.Controls.MessageBox 
+                { 
+                    Title = Application.Current.FindResource("CommonConfirmExitApp").ToString()!, 
+                    Content = Application.Current.FindResource("EditorMsgConfirmExit").ToString()!, 
+                    PrimaryButtonText = Application.Current.FindResource("CommonConfirmExit").ToString()!, 
+                    CloseButtonText = Application.Current.FindResource("CommonCancel").ToString()! 
+                };
                 var res = await msg.ShowDialogAsync();
                 if (res == Wpf.Ui.Controls.MessageBoxResult.Primary)
                 {
@@ -457,7 +480,10 @@ namespace BlogTools
             {
                 EditorWebView.NavigationCompleted += (s, ev) => 
                 {
-                    EditorWebView.CoreWebView2.PostWebMessageAsString(_currentContent);
+                    if (EditorWebView.CoreWebView2 != null)
+                    {
+                        EditorWebView.CoreWebView2.PostWebMessageAsString(_currentContent);
+                    }
                 };
             }
             
@@ -529,7 +555,7 @@ namespace BlogTools
                 EditorWebView.CoreWebView2.PostWebMessageAsString("");
                 
             UpdateOriginalState();
-            ShowInfo("已重置，准备开始新创作。", InfoBarSeverity.Informational);
+            ShowInfo(Application.Current.FindResource("EditorMsgReset").ToString()!, InfoBarSeverity.Informational);
         }
 
         private void SetPublishNow_Click(object? sender, RoutedEventArgs? e)
@@ -555,7 +581,7 @@ namespace BlogTools
         {
             if (string.IsNullOrWhiteSpace(TitleBox.Text))
             {
-                ShowInfo("文章必须有一个标题！", InfoBarSeverity.Error);
+                ShowInfo(Application.Current.FindResource("EditorMsgTitleEmpty").ToString()!, InfoBarSeverity.Error);
                 return false;
             }
 
@@ -576,10 +602,10 @@ namespace BlogTools
                     {
                         var askModify = new Wpf.Ui.Controls.MessageBox
                         {
-                            Title = "未更新修改时间",
-                            Content = "检测到文章有修改，是否将修改时间更新为当前时间？",
-                            PrimaryButtonText = "更新时间",
-                            CloseButtonText = "不更新"
+                            Title = Application.Current.FindResource("EditorMsgTimeUpdateTitle").ToString()!,
+                            Content = Application.Current.FindResource("EditorMsgTimeUpdateContent").ToString()!,
+                            PrimaryButtonText = Application.Current.FindResource("CommonUpdateTime").ToString()!,
+                            CloseButtonText = Application.Current.FindResource("CommonNoUpdate").ToString()!
                         };
                         var result = await askModify.ShowDialogAsync();
                         if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
@@ -595,7 +621,7 @@ namespace BlogTools
             App.CurrentEditPost = post;
 
             UpdateOriginalState();
-            ShowInfo($"已存放到本地: {post.FileName}", InfoBarSeverity.Success);
+            ShowInfo(string.Format(Application.Current.FindResource("EditorMsgSavedLocal").ToString()!, post.FileName), InfoBarSeverity.Success);
             return true;
         }
 
@@ -605,22 +631,22 @@ namespace BlogTools
             if (!saved || StatusInfo.Severity == InfoBarSeverity.Error)
                 return;
 
-            ShowInfo("正在拉取并推送至远端...", InfoBarSeverity.Informational);
+            ShowInfo(Application.Current.FindResource("EditorMsgPublishing").ToString()!, InfoBarSeverity.Informational);
             try
             {
                 var pullResult = await App.GitContext.PullAsync();
                 if (pullResult.Contains("CONFLICT") || pullResult.Contains("Automatic merge failed"))
                 {
-                    ShowInfo("拉取冲突，请手动解决后重试。", InfoBarSeverity.Error);
+                    ShowInfo(Application.Current.FindResource("EditorMsgConflict").ToString()!, InfoBarSeverity.Error);
                     return;
                 }
 
                 await App.GitContext.CommitAndPushAsync($"Update post: {TitleBox.Text}");
-                ShowInfo("发布成功！", InfoBarSeverity.Success);
+                ShowInfo(Application.Current.FindResource("EditorMsgPublishSuccess").ToString()!, InfoBarSeverity.Success);
             }
             catch (Exception ex)
             {
-                ShowInfo($"推送失败: {ex.Message}", InfoBarSeverity.Error);
+                ShowInfo(string.Format(Application.Current.FindResource("EditorMsgPublishError").ToString()!, ex.Message), InfoBarSeverity.Error);
             }
         }
 
@@ -685,10 +711,11 @@ namespace BlogTools
                 return;
             }
 
+            var filter = $"{Application.Current.FindResource("CommonFilterImages").ToString()!}|*.png;*.jpg;*.jpeg;*.gif;*.webp;*.svg|{Application.Current.FindResource("CommonFilterAllFiles").ToString()!}|*.*";
             var dialog = new OpenFileDialog
             {
-                Title = "插入本地图片",
-                Filter = "图像文件|*.png;*.jpg;*.jpeg;*.gif;*.webp;*.svg|所有文件|*.*"
+                Title = Application.Current.FindResource("EditorMsgImageSelect").ToString()!,
+                Filter = filter
             };
 
             if (dialog.ShowDialog() == true)
@@ -745,7 +772,12 @@ namespace BlogTools
                 }
                 catch (Exception ex)
                 {
-                    var msg = new Wpf.Ui.Controls.MessageBox { Title = "出错", Content = $"处理图片时出错:\n{ex.Message}", CloseButtonText = "确定" };
+                    var msg = new Wpf.Ui.Controls.MessageBox 
+                    { 
+                        Title = Application.Current.FindResource("CommonError").ToString()!, 
+                        Content = string.Format(Application.Current.FindResource("EditorMsgInsertImageError").ToString()!, ex.Message), 
+                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()! 
+                    };
                     await msg.ShowDialogAsync();
                 }
             }

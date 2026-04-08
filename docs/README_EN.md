@@ -119,8 +119,9 @@ This project has built-in **GitHub Actions release workflows** (`.github/workflo
 
 ## V. Version Changelog
 
-- **v1.4.0 (2026-04-09)**: Added a physics-based spring algorithm (exponential decay) for a global ultra-smooth scrolling engine; added an optional auto-completion feature for the last modified time; fixed scrolling bugs in the font dropdown list and added search support; supported single-file publishing for the minimal version.
-- **v1.3.3 (2026-04-09)**: Fixed the issue where GitHub API update detection silently failed on some networks without a system proxy; added a quick jump-to-GitHub-Star entry in the settings interface.
+- **v1.4.1**: Fully implemented UI internationalization with adaptive English/Chinese switching; extended physics-based smooth scrolling to all pages for an ultra-smooth experience; fixed several hardcoded Chinese strings.
+- **v1.4.0**: Added a physics-based spring algorithm (exponential decay) for the settings page smooth scrolling engine; added an optional auto-completion feature for the last modified time; fixed scrolling bugs in the font dropdown list and added search support; supported single-file publishing for the minimal version.
+- **v1.3.3**: Fixed the issue where GitHub API update detection silently failed on some networks without a system proxy; added a quick jump-to-GitHub-Star entry in the settings interface.
 - **v1.3.2**: Optimized the executable anti-collision destruction mechanism using the rename method; fixed the issue where independent icons did not take effect.
 - **v1.3.1**: Introduced new calm and professional icons, and implemented automatic adaptive switching logic for light and dark theme icons.
 - **v1.3.0**: Comprehensively refactored the build chain to achieve true single-file publishing; introduced an in-app self-hot-update mechanism based on "executable file renaming".

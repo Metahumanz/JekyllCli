@@ -1,0 +1,244 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- MainWindow -->
+    <system:String x:Key="AppTitle">JekyllCli</system:String>
+    <system:String x:Key="NavDashboard">Dashboard</system:String>
+    <system:String x:Key="NavManagePosts">Manage Posts</system:String>
+    <system:String x:Key="NavEditor">Write Post</system:String>
+    <system:String x:Key="NavSettings">Settings</system:String>
+
+    <!-- DashboardPage -->
+    <system:String x:Key="DashboardWelcomeTitle">Welcome to Blog Management</system:String>
+    <system:String x:Key="DashboardWelcomeSub">Easily manage your Jekyll site!</system:String>
+    <system:String x:Key="DashboardChirpyUpgradeTitle">🚀 Chirpy v7.3 → v7.5 Upgrade Guide</system:String>
+    <system:String x:Key="DashboardChirpyUpgradeSub">Contains a breaking change requiring manual action, click to expand details</system:String>
+    <system:String x:Key="DashboardFaviconImportant">⚠️ Required Action: Reconfigure Site Icons (Favicon)</system:String>
+    <system:String x:Key="DashboardFaviconDesc">v7.4.0 changed the Favicon loading and management logic. You must regenerate and replace the icon files according to the latest specifications after the upgrade, otherwise the icons will be invalid. Action: Go to Real Favicon Generator to upload your 512×512 avatar → download the generated package → delete site.webmanifest → overwrite the remaining PNG/ICO/SVG files to the assets/img/favicons/ directory.</system:String>
+    <system:String x:Key="DashboardBtnFaviconSettings">Go to Settings to configure Favicon</system:String>
+    <system:String x:Key="DashboardBtnOpenFaviconGenerator">Open Real Favicon Generator ↗</system:String>
+    <system:String x:Key="DashboardFeatureTitle">✨ New Feature Highlights</system:String>
+    <system:String x:Key="DashboardBugFixTitle">🐛 Core Fixes</system:String>
+    <system:String x:Key="StatsPosts">Articles</system:String>
+    <system:String x:Key="StatsCategories">Categories</system:String>
+    <system:String x:Key="StatsTags">Tags</system:String>
+    <system:String x:Key="DashboardWelcomeAdmin"> Admin</system:String>
+    <system:String x:Key="DashboardWelcomePrefix">Manage your "</system:String>
+    <system:String x:Key="DashboardWelcomeSuffix">" site easily!</system:String>
+    <system:String x:Key="DashboardSyncBehind">⚠ Local is {0} versions behind remote. Please sync!</system:String>
+    <system:String x:Key="DashboardSyncAhead">ℹ Local is {0} versions ahead of remote. Remember to push.</system:String>
+    <system:String x:Key="DashboardDetailCategory">Categories ({0})</system:String>
+    <system:String x:Key="DashboardDetailTag">Tags ({0})</system:String>
+    <system:String x:Key="DashboardMsgSyncing">Pulling latest changes from remote...</system:String>
+    <system:String x:Key="DashboardMsgSyncSuccess">✅ Sync complete! Local is up to date.</system:String>
+    <system:String x:Key="DashboardMsgSyncError">Sync failed: {0}</system:String>
+    <system:String x:Key="DashboardMsgNoUrl">No valid URL found in _config.yml</system:String>
+    <system:String x:Key="DashboardBtnExpandAll">Expand All</system:String>
+    <system:String x:Key="DashboardBtnCollapseAll">Collapse All</system:String>
+    <system:String x:Key="DashboardQuickActions">Quick Actions</system:String>
+    <system:String x:Key="DashboardBtnWriteNew">Write New Post</system:String>
+    <system:String x:Key="DashboardBtnViewSite">View Live Site</system:String>
+    <system:String x:Key="DashboardBtnSyncCloud">Sync from Cloud</system:String>
+    <system:String x:Key="DashboardTimelineTitle">Post Timeline</system:String>
+
+    <!-- SetupWindow -->
+    <system:String x:Key="SetupTitle">Welcome to JekyllCli</system:String>
+    <system:String x:Key="SetupSubtitle">Start your modern static blog journey in two steps.</system:String>
+    <system:String x:Key="SetupStep1Title">Step 1: Select Blog Directory</system:String>
+    <system:String x:Key="SetupStep1Desc">If you already have a local Jekyll blog directory, select it directly; if you are writing a blog for the first time, you can choose the built-in template, and we will automatically generate a complete blog framework in your documents directory.</system:String>
+    <system:String x:Key="SetupBtnSelectFolder">Select Existing Blog Directory</system:String>
+    <system:String x:Key="SetupBtnUseTemplate">Create with Built-in Chirpy Template</system:String>
+    <system:String x:Key="SetupStep2Title">Step 2: Preferences</system:String>
+    <system:String x:Key="SetupStep2Desc">Set interface language, blog timezone, and writing language. These will be automatically injected into the _config.yml file.</system:String>
+    <system:String x:Key="SetupLabelUITheme">Interface Theme</system:String>
+    <system:String x:Key="SetupLabelLanguage">Language</system:String>
+    <system:String x:Key="SetupLabelBlogTimezone">Blog Timezone</system:String>
+    <system:String x:Key="SetupBtnComplete">Complete Setup</system:String>
+    <system:String x:Key="SetupBtnCancel">Cancel and Exit</system:String>
+    <system:String x:Key="SetupBtnFromGithub">Clone from GitHub</system:String>
+
+    <!-- EditorPage -->
+    <system:String x:Key="EditorTitleBoxPlaceholder">Post Title</system:String>
+    <system:String x:Key="EditorBtnSaveDraft">Save Draft</system:String>
+    <system:String x:Key="EditorBtnPublish">Publish</system:String>
+    <system:String x:Key="EditorBtnClear">Clear &amp; Reset</system:String>
+    <system:String x:Key="EditorExpanderMetadata">Post Properties &amp; Metadata</system:String>
+    <system:String x:Key="EditorLabelPublishTime">Publish Time</system:String>
+    <system:String x:Key="EditorBtnSetNow">Set to Now</system:String>
+    <system:String x:Key="EditorLabelCategory">Category</system:String>
+    <system:String x:Key="EditorLabelModifyTime">Last Modified</system:String>
+    <system:String x:Key="EditorLabelTags">Tags</system:String>
+    <system:String x:Key="EditorLabelAuthor">Author</system:String>
+    <system:String x:Key="EditorLabelAuthorPlaceholder">Default if empty</system:String>
+    <system:String x:Key="EditorLabelImage">Feature Image</system:String>
+    <system:String x:Key="EditorLabelQuickFeatures">Quick Links</system:String>
+    <system:String x:Key="EditorToggleMath">Math</system:String>
+    <system:String x:Key="EditorToggleToc">TOC</system:String>
+    <system:String x:Key="EditorTogglePin">Pin</system:String>
+    <system:String x:Key="EditorLabelDescription">Description</system:String>
+    <system:String x:Key="EditorDescriptionPlaceholder">A brief summary of the post...</system:String>
+
+    <!-- ManagePostsPage -->
+    <system:String x:Key="ManagePostsTitle">Manage Posts</system:String>
+    <system:String x:Key="ManagePostsSearchPlaceholder">Enter title or filename to search...</system:String>
+    <system:String x:Key="ManagePostsColDate">Date</system:String>
+    <system:String x:Key="ManagePostsColModifiedDate">Modified</system:String>
+    <system:String x:Key="ManagePostsColTitle">Title</system:String>
+    <system:String x:Key="ManagePostsColFileName">File Name</system:String>
+    <system:String x:Key="ManagePostsColActions">Actions</system:String>
+    <system:String x:Key="ManagePostsTipEdit">Edit Post</system:String>
+    <system:String x:Key="ManagePostsTipDelete">Delete Post</system:String>
+
+    <!-- SettingsPage -->
+    <system:String x:Key="SettingsTitle">Settings</system:String>
+    <system:String x:Key="SettingsSub">Manage global configuration, appearance, and publishing options</system:String>
+    
+    <system:String x:Key="SettingsSecWorkspace">Workspace</system:String>
+    <system:String x:Key="SettingsLabelBlogPath">Blog Local Root Directory</system:String>
+    <system:String x:Key="SettingsBtnChangePath">Change Directory</system:String>
+
+    <system:String x:Key="SettingsSecDrafting">Writing Preferences</system:String>
+    <system:String x:Key="SettingsLabelRememberMetadata">Remember Metadata Expansion State</system:String>
+    <system:String x:Key="SettingsDescRememberMetadata">If enabled, the writing page will automatically remember and restore the expanded or collapsed state of the metadata panel.</system:String>
+    <system:String x:Key="SettingsLabelAutoUpdateMod">Auto-update Modification Time</system:String>
+    <system:String x:Key="SettingsDescAutoUpdateMod">Automatically update the last_modified_at of modified posts to the current time for a smoother experience.</system:String>
+
+    <system:String x:Key="SettingsSecAppearance">Appearance</system:String>
+    <system:String x:Key="SettingsLabelDarkMode">Dark Mode</system:String>
+    <system:String x:Key="SettingsDescDarkMode">Switch between dark and light themes</system:String>
+    <system:String x:Key="SettingsLabelLanguage">Language</system:String>
+    <system:String x:Key="SettingsDescLanguage">Switch the interface display language, effective in real-time</system:String>
+    <system:String x:Key="SettingsLabelFont">System Font</system:String>
+    <system:String x:Key="SettingsDescFont">Select the global display font</system:String>
+
+    <system:String x:Key="SettingsSecSiteInfo">Site Information</system:String>
+    <system:String x:Key="SettingsLabelSiteTitle">Site Title</system:String>
+    <system:String x:Key="SettingsLabelTagline">Tagline</system:String>
+    <system:String x:Key="SettingsLabelUrl">URL</system:String>
+    <system:String x:Key="SettingsLabelDescription">Description</system:String>
+
+    <system:String x:Key="SettingsSecAuthor">Author Information</system:String>
+    <system:String x:Key="SettingsLabelAuthorName">Author Name</system:String>
+    <system:String x:Key="SettingsLabelEmail">Contact Email</system:String>
+    <system:String x:Key="SettingsLabelGithub">GitHub Username</system:String>
+    <system:String x:Key="SettingsLabelBilibili">Bilibili Link</system:String>
+    <system:String x:Key="SettingsLabelAvatar">Avatar Path</system:String>
+
+    <system:String x:Key="SettingsSecNav">Site Navigation &amp; Tabs</system:String>
+    <system:String x:Key="SettingsLabelAbout">About</system:String>
+    <system:String x:Key="SettingsLabelSubTitle">Title</system:String>
+    <system:String x:Key="SettingsLabelSubIcon">Icon</system:String>
+    <system:String x:Key="SettingsLabelSubOrder">Order</system:String>
+    <system:String x:Key="SettingsLabelIntro">Self-introduction (Markdown supported)</system:String>
+    <system:String x:Key="SettingsLabelArchives">Archives Title</system:String>
+    <system:String x:Key="SettingsLabelCategories">Categories Title</system:String>
+    <system:String x:Key="SettingsLabelTags">Tags Title</system:String>
+
+    <system:String x:Key="SettingsSecAssets">Site Assets</system:String>
+    <system:String x:Key="SettingsFaviconWarningTitle">Chirpy v7.4.0+ Favicon Logic Changed</system:String>
+    <system:String x:Key="SettingsFaviconWarningMsg">Please go to Real Favicon Generator to upload a 512×512 avatar and regenerate the icon package. Upload the files here. The system will filter out site.webmanifest automatically.</system:String>
+    <system:String x:Key="SettingsLabelFaviconGen">Go to Real Favicon Generator ↗</system:String>
+    <system:String x:Key="SettingsDescFaviconGen">Online tool to generate a full set of Favicon files from an avatar</system:String>
+    <system:String x:Key="SettingsLabelFaviconUpload">Import Favicons Icon Set</system:String>
+    <system:String x:Key="SettingsDescFaviconUpload">Select the downloaded icon files to batch upload to assets/img/favicons</system:String>
+    <system:String x:Key="SettingsBtnUpload">Select Files to Upload</system:String>
+
+    <system:String x:Key="SettingsSecUpdates">Update Center</system:String>
+    <system:String x:Key="SettingsLabelCheckUpdate">Check for Updates</system:String>
+    <system:String x:Key="SettingsBtnCheckUpdate">Check Update</system:String>
+    <system:String x:Key="SettingsLabelSilentUpdate">Silent Update</system:String>
+    <system:String x:Key="SettingsDescSilentUpdate">If enabled, updates will be executed automatically after download without confirmation.</system:String>
+    <system:String x:Key="SettingsLabelStar">Enjoy using? Give a Star 🌟</system:String>
+    <system:String x:Key="SettingsDescStar">Jump to project homepage; your support drives continuous updates</system:String>
+
+    <system:String x:Key="SettingsBtnSave">Save Locally</system:String>
+    <system:String x:Key="SettingsBtnPublish">Save &amp; Publish</system:String>
+    <system:String x:Key="SettingsRecommendActions">🚀 Rec: Configure GitHub Actions for one-click automatic build and deployment.</system:String>
+
+    <!-- Settings Messages -->
+    <system:String x:Key="SettingsMsgPathChanged">Blog directory changed and configuration reloaded!</system:String>
+    <system:String x:Key="SettingsMsgSaveSuccess">Configuration saved successfully!</system:String>
+    <system:String x:Key="SettingsMsgPublishing">Publishing... Pushing to remote server.</system:String>
+    <system:String x:Key="SettingsMsgPublishSuccess">Publish success! Pushed to GitHub and triggered build.</system:String>
+    <system:String x:Key="SettingsMsgPublishError">Push failed: {0}</system:String>
+    <system:String x:Key="SettingsMsgUpdateChecking">Checking for updates...</system:String>
+    <system:String x:Key="SettingsMsgUpdateFailed">Check failed</system:String>
+    <system:String x:Key="SettingsMsgUpdateError">Update check failed: {0}</system:String>
+    <system:String x:Key="SettingsMsgUpdateLatest">Current Version: {0} — Already the latest version ✓</system:String>
+    <system:String x:Key="SettingsMsgUpdateFound">New Version Found</system:String>
+    <system:String x:Key="SettingsMsgAskDownload">New version {0} found, download now?</system:String>
+    <system:String x:Key="SettingsBtnDownloadNow">Download Now</system:String>
+    <system:String x:Key="SettingsBtnLater">Later</system:String>
+    <system:String x:Key="SettingsMsgUpdateDownloading">Downloading update... {0}%</system:String>
+    <system:String x:Key="SettingsMsgDownloadComplete">Download complete!</system:String>
+    <system:String x:Key="SettingsMsgSilentUpdating">Applying update, restarting soon...</system:String>
+    <system:String x:Key="SettingsMsgAskApply">Download complete, apply update now? Application will restart automatically.</system:String>
+    <system:String x:Key="SettingsBtnApplyNow">Apply Now</system:String>
+    <system:String x:Key="SettingsMsgUploadFaviconsSuccess">Successfully imported {0} favicons!</system:String>
+    <system:String x:Key="SettingsMsgUploadFaviconsSkipped">({0} site.webmanifest files filtered automatically)</system:String>
+
+    <system:String x:Key="CommonError">Error</system:String>
+    <system:String x:Key="CommonConfirm">Confirm</system:String>
+    <system:String x:Key="CommonVersionCurrent">Current Version: {0}</system:String>
+    <system:String x:Key="CommonVersionDev">Current Version: Dev</system:String>
+
+    <!-- Editor Messages -->
+    <system:String x:Key="EditorPlaceholder">Write Markdown here...</system:String>
+    <system:String x:Key="EditorMsgTitleRequired">Please provide a title first to determine the image directory!</system:String>
+    <system:String x:Key="EditorMsgErrorPasteImage">Failed to process pasted image:&#10;{0}</system:String>
+    <system:String x:Key="EditorMsgConfirmLeave">You have unsaved changes. Are you sure you want to leave? Unsaved content will be lost.</system:String>
+    <system:String x:Key="EditorMsgConfirmExit">You have unsaved changes. Are you sure you want to exit? Unsaved content will be lost.</system:String>
+    <system:String x:Key="EditorMsgReset">Reset complete. Ready for new content.</system:String>
+    <system:String x:Key="EditorMsgTitleEmpty">Article must have a title!</system:String>
+    <system:String x:Key="EditorMsgTimeUpdateTitle">Modify Time Not Updated</system:String>
+    <system:String x:Key="EditorMsgTimeUpdateContent">Modifications detected. Update the modify time to now?</system:String>
+    <system:String x:Key="EditorMsgSavedLocal">Saved to local: {0}</system:String>
+    <system:String x:Key="EditorMsgPublishing">Pulling and pushing to remote...</system:String>
+    <system:String x:Key="EditorMsgConflict">Pull conflict detected. Please resolve manually.</system:String>
+    <system:String x:Key="EditorMsgPublishSuccess">Publish success!</system:String>
+    <system:String x:Key="EditorMsgPublishError">Push failed: {0}</system:String>
+    <system:String x:Key="EditorMsgInsertImage">Insert Local Image</system:String>
+    <system:String x:Key="EditorMsgInsertImageError">Error processing image:&#10;{0}</system:String>
+
+    <system:String x:Key="CommonPrompt">Prompt</system:String>
+    <system:String x:Key="CommonConfirmLeave">Leave Anyway</system:String>
+    <system:String x:Key="CommonConfirmExit">Exit Anyway</system:String>
+    <system:String x:Key="CommonCancel">Cancel</system:String>
+    <system:String x:Key="CommonUpdateTime">Update Time</system:String>
+    <system:String x:Key="CommonNoUpdate">Don't Update</system:String>
+    <system:String x:Key="CommonConfirmExitApp">Confirm Exit</system:String>
+
+    <!-- ManagePosts Messages -->
+    <system:String x:Key="ManagePostsMsgDeleteTitle">Delete Confirmation</system:String>
+    <system:String x:Key="ManagePostsMsgDeleteConfirm">Are you sure you want to permanently delete the article '{0}'?</system:String>
+
+    <!-- App Messages -->
+    <system:String x:Key="AppMsgUpdatePrompt">New version {0} found (current: {1}). Go to settings to download?</system:String>
+    <system:String x:Key="AppBtnGoToUpdate">Go to Update</system:String>
+
+    <!-- Setup Messages -->
+    <system:String x:Key="SetupTooltipTemplateFound">Built-in template detected: {0}</system:String>
+    <system:String x:Key="SetupTooltipTemplateNotFound">Built-in template (Blog/) not found. Please clone from GitHub or select manually.</system:String>
+    <system:String x:Key="SetupMsgTemplateMissing">Built-in template lost! Please try cloning from GitHub.</system:String>
+    <system:String x:Key="SetupMsgCloneSelectParent">Select parent directory for cloning the blog</system:String>
+    <system:String x:Key="SetupMsgCloneDirExists">Directory {0} already exists. Please choose another location.</system:String>
+    <system:String x:Key="SetupMsgCloning">Cloning Chirpy template from GitHub (may take a while)... Keep your network stable.</system:String>
+    <system:String x:Key="SetupMsgCloneSuccess">Cloned successfully!</system:String>
+    <system:String x:Key="SetupMsgCloneNoConfig">Clone complete but no valid Jekyll config found. Check network or Git installation.</system:String>
+    <system:String x:Key="SetupMsgCloneError">Clone failed: {0}</system:String>
+    <system:String x:Key="SetupMsgInvalidDir">Invalid directory. Must contain _config.yml!</system:String>
+    <system:String x:Key="SetupMsgConfigError">Initial config modification failed: {0}</system:String>
+    <system:String x:Key="SetupMsgInviteSelect">Please select Chirpy blog root directory</system:String>
+    <system:String x:Key="SetupBtnUseBundle">Use Built-in Template</system:String>
+
+    <system:String x:Key="CommonFilterImages">Image Files</system:String>
+    <system:String x:Key="CommonFilterAllFiles">All Files</system:String>
+    <system:String x:Key="SettingsMsgFaviconSelect">Select Favicon Files (Multi-select support)</system:String>
+    <system:String x:Key="EditorMsgImageSelect">Select Illustration</system:String>
+    <system:String x:Key="SettingsMsgCopyError">Failed to copy file {0}:&#10;{1}</system:String>
+    <system:String x:Key="SettingsMsgInvalidRoot">This directory is not a valid Jekyll root (missing _config.yml).</system:String>
+    <system:String x:Key="SetupMsgCloneSelect">Select directory for cloning blog</system:String>
+    <system:String x:Key="SettingsMsgProgressPreparing">Preparing download...</system:String>
+
+</ResourceDictionary>

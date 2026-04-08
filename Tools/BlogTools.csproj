@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <SelfContained>false</SelfContained>
-    <Version>1.4.0</Version>
+    <Version>1.4.1</Version>
 
     <!-- 单文件发布配置 -->
     <PublishSingleFile>true</PublishSingleFile>

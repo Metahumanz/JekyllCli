@@ -4,7 +4,7 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:helpers="clr-namespace:BlogTools.Helpers"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-      Title="设置">
+      Title="{DynamicResource NavSettings}">
     <Page.Triggers>
         <EventTrigger RoutedEvent="Page.Loaded">
             <BeginStoryboard>
@@ -31,39 +31,40 @@
         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
             <ui:SymbolIcon Symbol="Settings24" FontSize="32" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
             <StackPanel>
-                <TextBlock Text="引擎设置" FontSize="24" FontWeight="SemiBold"/>
-                <TextBlock Text="管理全局配置、外观与发布选项" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                <TextBlock Text="{DynamicResource SettingsTitle}" FontSize="24" FontWeight="SemiBold"/>
+                <TextBlock Text="{DynamicResource SettingsSub}" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
             </StackPanel>
         </StackPanel>
 
         <ui:InfoBar Grid.Row="1" x:Name="StatusInfo" IsOpen="False" Message="" Severity="Success" Margin="0,0,0,8" />
 
         <ScrollViewer Grid.Row="2" x:Name="PageScrollViewer" VerticalScrollBarVisibility="Auto" Background="Transparent" Focusable="False" 
-                      PreviewMouseWheel="PageScrollViewer_PreviewMouseWheel">
+                      PreviewMouseWheel="PageScrollViewer_PreviewMouseWheel"
+                      helpers:SmoothScrollHelper.SmoothingEnabled="True">
             <StackPanel Background="Transparent" Margin="0,0,16,0">
 
                 <!-- ═══ 第一组：工作区 ═══ -->
-                <TextBlock Text="工作区" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,8"
+                <TextBlock Text="{DynamicResource SettingsSecWorkspace}" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <ui:CardControl Margin="0,0,0,24" Icon="{ui:SymbolIcon Symbol=FolderOpen24}">
                     <ui:CardControl.Header>
                         <StackPanel>
-                            <TextBlock Text="博客本地根目录" FontWeight="SemiBold" FontSize="14" />
+                            <TextBlock Text="{DynamicResource SettingsLabelBlogPath}" FontWeight="SemiBold" FontSize="14" />
                             <TextBlock x:Name="CurrentPathBlock" Text="C:\..." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                         </StackPanel>
                     </ui:CardControl.Header>
-                    <ui:Button Content="更换目录" Click="ChangeBlogPath_Click" />
+                    <ui:Button Content="{DynamicResource SettingsBtnChangePath}" Click="ChangeBlogPath_Click" />
                 </ui:CardControl>
 
                 <!-- ═══ 撰写偏好 ═══ -->
-                <TextBlock Text="撰写偏好" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                <TextBlock Text="{DynamicResource SettingsSecDrafting}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Margin="0,0,0,24">
                     <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Document24}">
                         <ui:CardControl.Header>
                             <StackPanel>
-                                <TextBlock Text="记忆文章属性展开状态" FontWeight="SemiBold" FontSize="14" />
-                                <TextBlock Text="若开启，撰写页面将自动记忆并恢复元数据面板的展开或折叠状态。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                                <TextBlock Text="{DynamicResource SettingsLabelRememberMetadata}" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="{DynamicResource SettingsDescRememberMetadata}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
                         <ui:ToggleSwitch x:Name="RememberMetadataToggle" Checked="RememberMetadata_Checked" Unchecked="RememberMetadata_Unchecked" />
@@ -72,8 +73,8 @@
                     <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Clock24}">
                         <ui:CardControl.Header>
                             <StackPanel>
-                                <TextBlock Text="自动补齐修改时间" FontWeight="SemiBold" FontSize="14" />
-                                <TextBlock Text="自动将已修改文章的 last_modified_at 更新为当前时间，不再弹窗体验更流畅。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                                <TextBlock Text="{DynamicResource SettingsLabelAutoUpdateMod}" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="{DynamicResource SettingsDescAutoUpdateMod}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
                         <ui:ToggleSwitch x:Name="AutoUpdateModifiedTimeToggle" Checked="AutoUpdateModifiedTime_Checked" Unchecked="AutoUpdateModifiedTime_Unchecked" />
@@ -81,35 +82,50 @@
                 </StackPanel>
 
                 <!-- ═══ 外观 ═══ -->
-                <TextBlock Text="外观" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                <TextBlock Text="{DynamicResource SettingsSecAppearance}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Margin="0,0,0,24">
                     <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=WeatherMoon24}">
                         <ui:CardControl.Header>
                             <StackPanel>
-                                <TextBlock Text="深色模式" FontWeight="SemiBold" FontSize="14" />
-                                <TextBlock Text="在夜间与日间模式间切换" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                                <TextBlock Text="{DynamicResource SettingsLabelDarkMode}" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="{DynamicResource SettingsDescDarkMode}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
                         <ui:ToggleSwitch x:Name="ThemeToggle" Checked="ThemeToggle_Checked" Unchecked="ThemeToggle_Unchecked" />
                     </ui:CardControl>
 
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Globe24}">
+                        <ui:CardControl.Header>
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource SettingsLabelLanguage}" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="{DynamicResource SettingsDescLanguage}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            </StackPanel>
+                        </ui:CardControl.Header>
+                        <ComboBox x:Name="LanguageComboBox" Width="200" SelectionChanged="LanguageComboBox_SelectionChanged">
+                            <ComboBoxItem Content="跟随系统 (Auto)" Tag="Auto"/>
+                            <ComboBoxItem Content="简体中文" Tag="zh-CN"/>
+                            <ComboBoxItem Content="English" Tag="en-US"/>
+                        </ComboBox>
+                    </ui:CardControl>
+
                     <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=TextFont24}">
                         <ui:CardControl.Header>
                             <StackPanel>
-                                <TextBlock Text="系统字体" FontWeight="SemiBold" FontSize="14" />
-                                <TextBlock Text="选择全局显示字体" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                                <TextBlock Text="{DynamicResource SettingsLabelFont}" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="{DynamicResource SettingsDescFont}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
                         <ComboBox x:Name="FontComboBox" Width="200" MaxDropDownHeight="300"
                                   IsEditable="True" IsTextSearchEnabled="True"
                                   SelectionChanged="FontComboBox_SelectionChanged"
+                                  helpers:SmoothScrollHelper.SmoothingEnabled="True"
                                   ScrollViewer.CanContentScroll="False"/>
                     </ui:CardControl>
                 </StackPanel>
 
                 <!-- ═══ 第三组：站点信息 ═══ -->
-                <TextBlock Text="站点信息" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                <TextBlock Text="{DynamicResource SettingsSecSiteInfo}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
@@ -128,29 +144,29 @@
                         </Grid.RowDefinitions>
 
                         <!-- Title -->
-                        <TextBlock Text="网站标题" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0" Margin="0,0,0,12"
+                        <TextBlock Text="{DynamicResource SettingsLabelSiteTitle}" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0" Margin="0,0,0,12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
-                        <ui:TextBox x:Name="TitleBox" Grid.Row="0" Grid.Column="2" Margin="0,0,0,12" PlaceholderText="站点名称"/>
+                        <ui:TextBox x:Name="TitleBox" Grid.Row="0" Grid.Column="2" Margin="0,0,0,12" PlaceholderText="{DynamicResource SettingsLabelSiteTitle}"/>
 
                         <!-- Tagline -->
-                        <TextBlock Text="副标题" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0" Margin="0,0,0,12"
+                        <TextBlock Text="{DynamicResource SettingsLabelTagline}" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0" Margin="0,0,0,12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
-                        <ui:TextBox x:Name="TaglineBox" Grid.Row="1" Grid.Column="2" Margin="0,0,0,12" PlaceholderText="一句话描述"/>
+                        <ui:TextBox x:Name="TaglineBox" Grid.Row="1" Grid.Column="2" Margin="0,0,0,12" PlaceholderText="{DynamicResource SettingsLabelTagline}"/>
 
                         <!-- URL -->
-                        <TextBlock Text="域名网址" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" Margin="0,0,0,12"
+                        <TextBlock Text="{DynamicResource SettingsLabelUrl}" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" Margin="0,0,0,12"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
                         <ui:TextBox x:Name="UrlBox" Grid.Row="2" Grid.Column="2" Margin="0,0,0,12" PlaceholderText="https://example.com"/>
 
                         <!-- Description -->
-                        <TextBlock Text="站点描述" VerticalAlignment="Top" Grid.Row="3" Grid.Column="0" Margin="0,8,0,0"
+                        <TextBlock Text="{DynamicResource SettingsLabelDescription}" VerticalAlignment="Top" Grid.Row="3" Grid.Column="0" Margin="0,8,0,0"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="13"/>
                         <ui:TextBox x:Name="DescriptionBox" Grid.Row="3" Grid.Column="2" AcceptsReturn="True" MinHeight="72" TextWrapping="Wrap"
-                                    PlaceholderText="用于 SEO 的站点简介"/>
+                                    PlaceholderText="{DynamicResource SettingsLabelDescription}"/>
                     </Grid>
                 </Border>
 
-                <TextBlock Text="站长信息" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                <TextBlock Text="{DynamicResource SettingsSecAuthor}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <!-- removed InfoBar -->
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
@@ -170,40 +186,40 @@
 
                         <!-- Row 0: Name / Email -->
                         <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,12">
-                            <TextBlock Text="站长名称" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="{DynamicResource SettingsLabelAuthorName}" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <ui:TextBox x:Name="AuthorNameBox" PlaceholderText="Your Name"/>
                         </StackPanel>
                         <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,12">
-                            <TextBlock Text="联系邮箱" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="{DynamicResource SettingsLabelEmail}" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <ui:TextBox x:Name="EmailBox" PlaceholderText="name@example.com"/>
                         </StackPanel>
 
                         <!-- Row 1: GitHub / Bilibili -->
                         <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
-                            <TextBlock Text="GitHub 用户名" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="{DynamicResource SettingsLabelGithub}" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <ui:TextBox x:Name="GithubBox" PlaceholderText="octocat"/>
                         </StackPanel>
                         <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
-                            <TextBlock Text="Bilibili 主页链接" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="{DynamicResource SettingsLabelBilibili}" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <ui:TextBox x:Name="BilibiliBox" PlaceholderText="https://space.bilibili.com/..."/>
                         </StackPanel>
 
                         <!-- Row 2: Avatar (full width) -->
                         <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3">
-                            <TextBlock Text="头像路径" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="{DynamicResource SettingsLabelAvatar}" FontSize="13" Margin="0,0,0,6" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <ui:TextBox x:Name="AvatarBox" PlaceholderText="/assets/img/avatar.png"/>
                         </StackPanel>
                     </Grid>
                 </Border>
 
                 <!-- ═══ 导航与选项卡 ═══ -->
-                <TextBlock Text="网站导航与选项卡" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                <TextBlock Text="{DynamicResource SettingsSecNav}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                         BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,24">
                     <StackPanel>
-                        <Expander Header="关于我 (About)" Margin="0,0,0,10">
+                        <Expander Header="{DynamicResource SettingsLabelAbout}" Margin="0,0,0,10">
                             <StackPanel Margin="10">
                                 <Grid Margin="0,0,0,10">
                                     <Grid.ColumnDefinitions>
@@ -212,19 +228,19 @@
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                        <TextBlock Text="标题" />
+                                        <TextBlock Text="{DynamicResource SettingsLabelSubTitle}" />
                                         <ui:TextBox x:Name="AboutTitleBox" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Margin="0,0,10,0">
-                                        <TextBlock Text="图标" />
+                                        <TextBlock Text="{DynamicResource SettingsLabelSubIcon}" />
                                         <ui:TextBox x:Name="AboutIconBox" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2">
-                                        <TextBlock Text="排序" />
+                                        <TextBlock Text="{DynamicResource SettingsLabelSubOrder}" />
                                         <ui:TextBox x:Name="AboutOrderBox" />
                                     </StackPanel>
                                 </Grid>
-                                <TextBlock Text="自我介绍内容（支持 Markdown）" Margin="0,10,0,5" />
+                                <TextBlock Text="{DynamicResource SettingsLabelIntro}" Margin="0,10,0,5" />
                                 <ui:TextBox x:Name="AboutContentBox" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="100" />
                             </StackPanel>
                         </Expander>
@@ -237,23 +253,23 @@
                             </Grid.ColumnDefinitions>
                             <!-- Archives -->
                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                <TextBlock Text="归档 (Archives) 标题" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource SettingsLabelArchives}" FontSize="12" Margin="0,0,0,4"/>
                                 <ui:TextBox x:Name="ArchivesTitleBox" Margin="0,0,0,5" />
-                                <TextBlock Text="排序" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource SettingsLabelSubOrder}" FontSize="12" Margin="0,0,0,4"/>
                                 <ui:TextBox x:Name="ArchivesOrderBox" />
                             </StackPanel>
                             <!-- Categories -->
                             <StackPanel Grid.Column="1" Margin="0,0,10,0">
-                                <TextBlock Text="分类 (Categories) 标题" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource SettingsLabelCategories}" FontSize="12" Margin="0,0,0,4"/>
                                 <ui:TextBox x:Name="CategoriesTitleBox" Margin="0,0,0,5"/>
-                                <TextBlock Text="排序" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource SettingsLabelSubOrder}" FontSize="12" Margin="0,0,0,4"/>
                                 <ui:TextBox x:Name="CategoriesOrderBox" />
                             </StackPanel>
                             <!-- Tags -->
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="标签 (Tags) 标题" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource SettingsLabelTags}" FontSize="12" Margin="0,0,0,4"/>
                                 <ui:TextBox x:Name="TagsTitleBox" Margin="0,0,0,5" />
-                                <TextBlock Text="排序" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource SettingsLabelSubOrder}" FontSize="12" Margin="0,0,0,4"/>
                                 <ui:TextBox x:Name="TagsOrderBox" />
                             </StackPanel>
                         </Grid>
@@ -261,51 +277,51 @@
                 </Border>
 
                 <!-- ═══ 静态资源管理 ═══ -->
-                <TextBlock Text="网站图标上传" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                <TextBlock Text="{DynamicResource SettingsSecAssets}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Margin="0,0,0,24">
                     <!-- ⚠️ v7.4.0+ 变更提示 -->
                     <ui:InfoBar IsOpen="True" IsClosable="False" Severity="Warning" Margin="0,0,0,8"
-                                Title="Chirpy v7.4.0+ Favicon 逻辑已变更"
-                                Message="请前往 Real Favicon Generator 上传 512×512 头像重新生成图标包，下载后选择文件上传即可。系统会自动过滤掉 site.webmanifest 文件。"/>
+                                Title="{DynamicResource SettingsFaviconWarningTitle}"
+                                Message="{DynamicResource SettingsFaviconWarningMsg}"/>
 
                     <ui:CardAction Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Globe24}" Click="OpenFaviconGenerator_Click">
                         <StackPanel>
-                            <TextBlock Text="前往 Real Favicon Generator 生成图标 ↗" FontWeight="SemiBold" FontSize="14" />
-                            <TextBlock Text="在线工具，上传头像即可一键生成全套 Favicon 文件" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            <TextBlock Text="{DynamicResource SettingsLabelFaviconGen}" FontWeight="SemiBold" FontSize="14" />
+                            <TextBlock Text="{DynamicResource SettingsDescFaviconGen}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                         </StackPanel>
                     </ui:CardAction>
 
                     <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Image24}">
                         <ui:CardControl.Header>
                             <StackPanel>
-                                <TextBlock Text="导入 Favicons 网站图标集" FontWeight="SemiBold" FontSize="14" />
-                                <TextBlock Text="选择下载的图标文件批量上传至 assets/img/favicons（自动过滤 site.webmanifest）" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                                <TextBlock Text="{DynamicResource SettingsLabelFaviconUpload}" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="{DynamicResource SettingsDescFaviconUpload}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
-                        <ui:Button Content="选择文件上传" Click="UploadFavicons_Click" />
+                        <ui:Button Content="{DynamicResource SettingsBtnUpload}" Click="UploadFavicons_Click" />
                     </ui:CardControl>
                 </StackPanel>
 
                 <!-- ═══ 更新中心 ═══ -->
-                <TextBlock Text="更新中心" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                <TextBlock Text="{DynamicResource SettingsSecUpdates}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Margin="0,0,0,24">
                     <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowDownload24}">
                         <ui:CardControl.Header>
                             <StackPanel>
-                                <TextBlock Text="检查新版本" FontWeight="SemiBold" FontSize="14" />
-                                <TextBlock x:Name="VersionBlock" Text="版本获取中..." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                                <TextBlock Text="{DynamicResource SettingsLabelCheckUpdate}" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock x:Name="VersionBlock" Text="..." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
-                        <ui:Button x:Name="CheckUpdateButton" Content="检查更新" Click="CheckUpdate_Click" />
+                        <ui:Button x:Name="CheckUpdateButton" Content="{DynamicResource SettingsBtnCheckUpdate}" Click="CheckUpdate_Click" />
                     </ui:CardControl>
 
                     <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowSync24}">
                         <ui:CardControl.Header>
                             <StackPanel>
-                                <TextBlock Text="静默更新" FontWeight="SemiBold" FontSize="14" />
-                                <TextBlock Text="开启后，下载完成将自动执行更新并重启，无需手动确认。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                                <TextBlock Text="{DynamicResource SettingsLabelSilentUpdate}" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="{DynamicResource SettingsDescSilentUpdate}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
                         <ui:ToggleSwitch x:Name="SilentUpdateToggle" Checked="SilentUpdate_Checked" Unchecked="SilentUpdate_Unchecked" />
@@ -313,8 +329,8 @@
 
                     <ui:CardAction Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Star24}" Command="{Binding Path=.}" Click="OpenGithubStar_Click">
                         <StackPanel>
-                            <TextBlock Text="觉得好用？给项目点个 Star 🌟" FontWeight="SemiBold" FontSize="14" />
-                            <TextBlock Text="一键跳转项目主页，您的支持是我持续更新的动力" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            <TextBlock Text="{DynamicResource SettingsLabelStar}" FontWeight="SemiBold" FontSize="14" />
+                            <TextBlock Text="{DynamicResource SettingsDescStar}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                         </StackPanel>
                     </ui:CardAction>
 
@@ -324,7 +340,7 @@
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                             BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,4,0,0">
                         <StackPanel>
-                            <TextBlock x:Name="ProgressText" Text="准备下载..." FontSize="12"
+                            <TextBlock x:Name="ProgressText" Text="{DynamicResource SettingsMsgProgressPreparing}" FontSize="12"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" />
                             <ProgressBar x:Name="DownloadProgress" Minimum="0" Maximum="100" Value="0" Height="6" />
                         </StackPanel>
@@ -339,11 +355,11 @@
         <Border Grid.Row="3" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Padding="0,12,0,0" Margin="0,8,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                    <ui:Button Content="保存到本地" Click="SaveSettings_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,12,0" Padding="16,8"/>
-                    <ui:Button Content="保存并发布" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Padding="16,8"/>
+                    <ui:Button Content="{DynamicResource SettingsBtnSave}" Click="SaveSettings_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,12,0" Padding="16,8"/>
+                    <ui:Button Content="{DynamicResource SettingsBtnPublish}" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Padding="16,8"/>
                 </StackPanel>
                 <TextBlock VerticalAlignment="Center" Margin="16,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"
-                           Text="🚀 推荐：配置 GitHub Actions 后，一键发布即可自动构建部署博客。"/>
+                           Text="{DynamicResource SettingsRecommendActions}"/>
             </StackPanel>
         </Border>
     </Grid>

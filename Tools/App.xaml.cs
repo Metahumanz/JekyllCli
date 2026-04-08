@@ -6,6 +6,8 @@ using BlogTools.Services;
 using Microsoft.Win32;
 using System.Threading.Tasks;
 using Wpf.Ui.Appearance;
+using System.Linq;
+using System.Globalization;
 
 
 namespace BlogTools
@@ -35,6 +37,9 @@ namespace BlogTools
 
             var settings = StorageService.Load();
             string? blogPath = settings.BlogPath;
+
+            // Apply Language
+            ApplyLanguage(settings.AppLanguage);
 
             if (string.IsNullOrEmpty(blogPath) || !Directory.Exists(blogPath) || !File.Exists(Path.Combine(blogPath, "_config.yml")))
             {
@@ -99,6 +104,28 @@ namespace BlogTools
             });
         }
 
+        public static void ApplyLanguage(string languageCode)
+        {
+            if (languageCode == "Auto" || string.IsNullOrEmpty(languageCode))
+            {
+                languageCode = CultureInfo.CurrentCulture.Name.StartsWith("zh") ? "zh-CN" : "en-US";
+            }
+
+            var dictPath = $"pack://application:,,,/Resources/Languages/{languageCode}.xaml";
+            var dict = new ResourceDictionary() { Source = new Uri(dictPath) };
+
+            // Find and replace the existing language dictionary
+            var existingDict = Application.Current.Resources.MergedDictionaries.FirstOrDefault(d => 
+                d.Source != null && d.Source.OriginalString.Contains("/Resources/Languages/"));
+            
+            if (existingDict != null)
+            {
+                Application.Current.Resources.MergedDictionaries.Remove(existingDict);
+            }
+            
+            Application.Current.Resources.MergedDictionaries.Add(dict);
+        }
+
         private async Task AutoCheckUpdateAsync(MainWindow mainWindow)
         {
             try
@@ -114,12 +141,13 @@ namespace BlogTools
                 await Dispatcher.InvokeAsync(async () =>
                 {
                     var current = UpdateService.GetCurrentVersion();
+                    var currentStr = $"v{current.Major}.{current.Minor}.{current.Build}";
                     var msg = new Wpf.Ui.Controls.MessageBox
                     {
-                        Title = "发现新版本",
-                        Content = $"发现新版本 {latestVersion}（当前: v{current.Major}.{current.Minor}.{current.Build}），是否前往设置页下载？",
-                        PrimaryButtonText = "前往更新",
-                        CloseButtonText = "稍后再说"
+                        Title = Application.Current.FindResource("SettingsMsgUpdateFound").ToString()!,
+                        Content = string.Format(Application.Current.FindResource("AppMsgUpdatePrompt").ToString()!, latestVersion, currentStr),
+                        PrimaryButtonText = Application.Current.FindResource("AppBtnGoToUpdate").ToString()!,
+                        CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
                     };
                     var result = await msg.ShowDialogAsync();
                     if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)

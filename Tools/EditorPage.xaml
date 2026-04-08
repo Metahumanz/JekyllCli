@@ -3,11 +3,13 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+      xmlns:helpers="clr-namespace:BlogTools.Helpers"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       UseLayoutRounding="True"
       SnapsToDevicePixels="True"
       ScrollViewer.VerticalScrollBarVisibility="Disabled"
-      Title="撰写文章">
+      helpers:SmoothScrollHelper.SmoothingEnabled="True"
+      Title="{DynamicResource NavEditor}">
 
     <Grid x:Name="RootGrid" Margin="16,16,16,16">
         <Grid.RowDefinitions>
@@ -25,16 +27,16 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <ui:TextBox Grid.Column="0" x:Name="TitleBox" PlaceholderText="文章标题 (Title)" FontSize="18" FontWeight="Bold" Margin="0,0,16,0"/>
+            <ui:TextBox Grid.Column="0" x:Name="TitleBox" PlaceholderText="{DynamicResource EditorTitleBoxPlaceholder}" FontSize="18" FontWeight="Bold" Margin="0,0,16,0"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <ui:Button Content="存为草稿" Click="SaveButton_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,8,0" />
-                <ui:Button Content="保存并发布" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Margin="0,0,8,0" />
-                <ui:Button Click="NewPost_Click" Icon="{ui:SymbolIcon Symbol=Delete24}" ToolTip="清空重置" />
+                <ui:Button Content="{DynamicResource EditorBtnSaveDraft}" Click="SaveButton_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,8,0" />
+                <ui:Button Content="{DynamicResource EditorBtnPublish}" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Margin="0,0,8,0" />
+                <ui:Button Click="NewPost_Click" Icon="{ui:SymbolIcon Symbol=Delete24}" ToolTip="{DynamicResource EditorBtnClear}" />
             </StackPanel>
         </Grid>
 
         <!-- 元数据区 -->
-        <Expander x:Name="MetadataExpander" Grid.Row="2" Header="文章属性与元数据配置" IsExpanded="False" Margin="0,0,0,8" HorizontalAlignment="Stretch" Expanded="MetadataExpander_Expanded" Collapsed="MetadataExpander_Collapsed">
+        <Expander x:Name="MetadataExpander" Grid.Row="2" Header="{DynamicResource EditorExpanderMetadata}" IsExpanded="False" Margin="0,0,0,8" HorizontalAlignment="Stretch" Expanded="MetadataExpander_Expanded" Collapsed="MetadataExpander_Collapsed">
             <Grid Margin="12,12,12,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -51,7 +53,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Row 0 -->
-                <TextBlock Text="发布时间" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <TextBlock Text="{DynamicResource EditorLabelPublishTime}" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <Grid Grid.Row="0" Grid.Column="1" Margin="0,0,0,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -63,18 +65,18 @@
                         <ComboBox x:Name="PublishHourBox" Width="75" Margin="0,0,4,0"/>
                         <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <ComboBox x:Name="PublishMinuteBox" Width="75" Margin="0,0,4,0"/>
-                        <ui:Button Icon="{ui:SymbolIcon Symbol=Clock24}" Click="SetPublishNow_Click" ToolTip="设为现在"/>
+                        <ui:Button Icon="{ui:SymbolIcon Symbol=Clock24}" Click="SetPublishNow_Click" ToolTip="{DynamicResource EditorBtnSetNow}"/>
                     </StackPanel>
                 </Grid>
 
-                <TextBlock Text="文章分类" VerticalAlignment="Center" Grid.Row="0" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <TextBlock Text="{DynamicResource EditorLabelCategory}" VerticalAlignment="Center" Grid.Row="0" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Grid.Row="0" Grid.Column="4" Orientation="Horizontal" Margin="0,0,0,12">
                     <ComboBox x:Name="PrimaryCategoryBox" IsEditable="True" Width="100" Margin="0,0,8,0" ToolTip="一级分类" Text="" />
                     <ComboBox x:Name="SecondaryCategoryBox" IsEditable="True" Width="100" ToolTip="二级分类" Text="" />
                 </StackPanel>
 
                 <!-- Row 1 -->
-                <TextBlock Text="最后修改" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <TextBlock Text="{DynamicResource EditorLabelModifyTime}" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <Grid Grid.Row="1" Grid.Column="1" Margin="0,0,0,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -86,11 +88,11 @@
                         <ComboBox x:Name="ModifyHourBox" Width="75" Margin="0,0,4,0"/>
                         <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <ComboBox x:Name="ModifyMinuteBox" Width="75" Margin="0,0,4,0"/>
-                        <ui:Button Icon="{ui:SymbolIcon Symbol=Clock24}" Click="SetModifyNow_Click" ToolTip="设为现在"/>
+                        <ui:Button Icon="{ui:SymbolIcon Symbol=Clock24}" Click="SetModifyNow_Click" ToolTip="{DynamicResource EditorBtnSetNow}"/>
                     </StackPanel>
                 </Grid>
 
-                <TextBlock Text="文章标签" VerticalAlignment="Center" Grid.Row="1" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <TextBlock Text="{DynamicResource EditorLabelTags}" VerticalAlignment="Center" Grid.Row="1" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <Border Grid.Row="1" Grid.Column="4" Margin="0,0,0,12" Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="4,4,4,0" MinHeight="32" Cursor="IBeam" MouseDown="TagsBorder_MouseDown">
                     <WrapPanel VerticalAlignment="Center">
                         <ItemsControl x:Name="TagsItemsControl" Focusable="False">
@@ -110,22 +112,22 @@
                 </Border>
 
                 <!-- Row 2 -->
-                <TextBlock Text="指定作者" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <ui:TextBox x:Name="AuthorBox" PlaceholderText="留空默认" Grid.Row="2" Grid.Column="1" Margin="0,0,0,12"/>
+                <TextBlock Text="{DynamicResource EditorLabelAuthor}" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <ui:TextBox x:Name="AuthorBox" PlaceholderText="{DynamicResource EditorLabelAuthorPlaceholder}" Grid.Row="2" Grid.Column="1" Margin="0,0,0,12"/>
 
-                <TextBlock Text="特性图片" VerticalAlignment="Center" Grid.Row="2" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <TextBlock Text="{DynamicResource EditorLabelImage}" VerticalAlignment="Center" Grid.Row="2" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <ui:TextBox x:Name="ImageBox" PlaceholderText="/path/to/image.jpg" Grid.Row="2" Grid.Column="4" Margin="0,0,0,12"/>
 
                 <!-- Row 3 -->
-                <TextBlock Text="快捷功能" VerticalAlignment="Center" Grid.Row="3" Grid.Column="0" Margin="0,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <TextBlock Text="{DynamicResource EditorLabelQuickFeatures}" VerticalAlignment="Center" Grid.Row="3" Grid.Column="0" Margin="0,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="1" Margin="0,0,0,0" VerticalAlignment="Center">
-                    <ui:ToggleSwitch x:Name="MathSwitch" Content="公式" Margin="0,0,16,0" />
-                    <ui:ToggleSwitch x:Name="TocSwitch" Content="目录" IsChecked="True" Margin="0,0,16,0" />
-                    <ui:ToggleSwitch x:Name="PinSwitch" Content="置顶" />
+                    <ui:ToggleSwitch x:Name="MathSwitch" Content="{DynamicResource EditorToggleMath}" Margin="0,0,16,0" />
+                    <ui:ToggleSwitch x:Name="TocSwitch" Content="{DynamicResource EditorToggleToc}" IsChecked="True" Margin="0,0,16,0" />
+                    <ui:ToggleSwitch x:Name="PinSwitch" Content="{DynamicResource EditorTogglePin}" />
                 </StackPanel>
 
-                <TextBlock Text="文章摘要" VerticalAlignment="Top" Grid.Row="3" Grid.Column="3" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <ui:TextBox x:Name="DescriptionBox" PlaceholderText="简明扼要的一段介绍..." Grid.Row="3" Grid.Column="4" Margin="0,0,0,0" AcceptsReturn="True" MinHeight="40" TextWrapping="Wrap"/>
+                <TextBlock Text="{DynamicResource EditorLabelDescription}" VerticalAlignment="Top" Grid.Row="3" Grid.Column="3" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <ui:TextBox x:Name="DescriptionBox" PlaceholderText="{DynamicResource EditorDescriptionPlaceholder}" Grid.Row="3" Grid.Column="4" Margin="0,0,0,0" AcceptsReturn="True" MinHeight="40" TextWrapping="Wrap"/>
 
             </Grid>
         </Expander>

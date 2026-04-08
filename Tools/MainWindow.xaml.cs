@@ -30,8 +30,21 @@ namespace BlogTools
 
         private void ApplyGlobalFont()
         {
-            var font = App.JekyllContext.LoadConfig().TryGetValue("blogtools_font", out var val) ? val?.ToString() : "Microsoft YaHei UI";
-            if (!string.IsNullOrWhiteSpace(font)) FontFamily = new System.Windows.Media.FontFamily(font);
+            var settings = Services.StorageService.Load();
+            var font = settings.AppFontFamily;
+
+            if (string.IsNullOrWhiteSpace(font) && App.JekyllContext.LoadConfig().TryGetValue("blogtools_font", out var val))
+            {
+                font = val?.ToString();
+            }
+
+            if (!string.IsNullOrWhiteSpace(font))
+            {
+                FontFamily = new System.Windows.Media.FontFamily(font);
+            }
+
+            RootNavigation.FontFamily = SystemFonts.MessageFontFamily;
+            AppTitleBar.FontFamily = SystemFonts.MessageFontFamily;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)

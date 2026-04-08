@@ -62,6 +62,17 @@ namespace BlogTools
             AutoUpdateModifiedTimeToggle.IsChecked = settings.AutoUpdateModifiedTime;
             SilentUpdateToggle.IsChecked = settings.SilentUpdate;
             ThemeToggle.IsChecked = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
+
+            // Load Language setting
+            foreach (ComboBoxItem item in LanguageComboBox.Items)
+            {
+                if (item.Tag?.ToString() == settings.AppLanguage)
+                {
+                    LanguageComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+            if (LanguageComboBox.SelectedItem == null) LanguageComboBox.SelectedIndex = 0; // Default to Auto
             _config = App.JekyllContext.LoadConfig();
 
             FontComboBox.Items.Clear();
@@ -114,11 +125,12 @@ namespace BlogTools
             try
             {
                 var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                VersionBlock.Text = $"当前版本: v{version?.Major}.{version?.Minor}.{version?.Build}";
+                var versionStr = $"{version?.Major}.{version?.Minor}.{version?.Build}";
+                VersionBlock.Text = string.Format(Application.Current.FindResource("CommonVersionCurrent").ToString()!, versionStr);
             }
             catch
             {
-                VersionBlock.Text = "当前版本: 开发版";
+                VersionBlock.Text = Application.Current.FindResource("CommonVersionDev").ToString();
             }
 
             // Load Tabs
@@ -144,7 +156,7 @@ namespace BlogTools
         {
             OpenFolderDialog dialog = new OpenFolderDialog
             {
-                Title = "更换 Jekyll 博客本地根目录"
+                Title = Application.Current.FindResource("SettingsBtnChangePath").ToString()!
             };
 
             if (dialog.ShowDialog() == true)
@@ -152,7 +164,12 @@ namespace BlogTools
                 string newPath = dialog.FolderName;
                 if (!File.Exists(Path.Combine(newPath, "_config.yml")))
                 {
-                    var msg = new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = "该目录不是有效的 Jekyll 根目录（未找到 _config.yml 文件）。", CloseButtonText = "确定" };
+                    var msg = new Wpf.Ui.Controls.MessageBox 
+                    { 
+                        Title = Application.Current.FindResource("CommonError").ToString()!, 
+                        Content = Application.Current.FindResource("SettingsMsgInvalidRoot").ToString()!, 
+                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()! 
+                    };
                     await msg.ShowDialogAsync();
                     return;
                 }
@@ -172,7 +189,7 @@ namespace BlogTools
                 // 4. Refresh UI
                 SettingsPage_Loaded(sender, e);
                 
-                StatusInfo.Message = "博客目录已更换并重新加载配置！";
+                StatusInfo.Message = Application.Current.FindResource("SettingsMsgPathChanged").ToString()!;
                 StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
                 StatusInfo.IsOpen = true;
             }
@@ -235,16 +252,31 @@ namespace BlogTools
             }
         }
 
+        private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isLoading) return;
+            var selectedTag = (LanguageComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            if (string.IsNullOrWhiteSpace(selectedTag)) return;
+
+            // 1. Save to settings
+            var settings = StorageService.Load();
+            settings.AppLanguage = selectedTag;
+            StorageService.Save(settings);
+
+            // 2. Apply language immediately
+            App.ApplyLanguage(selectedTag);
+        }
+
         private double _targetDropdownScrollOffset = -1;
         private double _currentDropdownScrollOffset = -1;
         private ScrollViewer? _activeDropdownScrollViewer = null;
 
         private double _targetPageScrollOffset = -1;
         private double _currentPageScrollOffset = -1;
+        private ScrollViewer? _activePageScrollViewer = null;
 
         private void OnCompositionTargetRendering(object? sender, EventArgs e)
         {
-            // 处理下拉框的平滑滚动
             if (_activeDropdownScrollViewer != null && _targetDropdownScrollOffset >= 0 && _currentDropdownScrollOffset >= 0)
             {
                 double diff = _targetDropdownScrollOffset - _currentDropdownScrollOffset;
@@ -261,7 +293,6 @@ namespace BlogTools
                 }
             }
 
-            // 处理页面的平滑滚动
             if (_activePageScrollViewer != null && _targetPageScrollOffset >= 0 && _currentPageScrollOffset >= 0)
             {
                 double diffPage = _targetPageScrollOffset - _currentPageScrollOffset;
@@ -274,19 +305,16 @@ namespace BlogTools
                 }
                 else
                 {
-                    _currentPageScrollOffset += diffPage * 0.18; // 稍微增加页面滚动的阻尼感
+                    _currentPageScrollOffset += diffPage * 0.18;
                     _activePageScrollViewer.ScrollToVerticalOffset(_currentPageScrollOffset);
                 }
             }
         }
 
-        private ScrollViewer? _activePageScrollViewer = null;
-
         private void PageScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
         {
             if (Helpers.ScrollViewerHelper.SuppressScrollBubble) return;
 
-            // 真正的滚动容器是在外层的 MainWindow 中，而不是当前的 PageScrollViewer
             var rootSv = FindVisualParent<ScrollViewer>(this);
             if (rootSv == null) return;
 
@@ -299,7 +327,7 @@ namespace BlogTools
                 _currentPageScrollOffset = rootSv.VerticalOffset;
             }
 
-            _targetPageScrollOffset -= e.Delta * 2.0; // 放大滚动增量
+            _targetPageScrollOffset -= e.Delta * 2.0;
             _targetPageScrollOffset = Math.Max(0, Math.Min(rootSv.ScrollableHeight, _targetPageScrollOffset));
         }
 
@@ -313,7 +341,6 @@ namespace BlogTools
                 return;
             }
 
-            // 检测鼠标是否在 Popup 区域内
             var popup = FindVisualChild<System.Windows.Controls.Primitives.Popup>(FontComboBox);
             if (popup?.Child is FrameworkElement popupChild)
             {
@@ -324,7 +351,6 @@ namespace BlogTools
 
                 if (isOverPopup)
                 {
-                    // 鼠标在下拉框内 → 只滚动下拉列表
                     e.Handled = true;
                     var sv = FindVisualChild<ScrollViewer>(popupChild);
                     if (sv != null)
@@ -336,14 +362,12 @@ namespace BlogTools
                             _targetDropdownScrollOffset = sv.VerticalOffset;
                         }
 
-                        // e.Delta 通常为 120，放大滚动速度并加上物理阻尼感
-                        _targetDropdownScrollOffset -= e.Delta * 2.0; 
+                        _targetDropdownScrollOffset -= e.Delta * 2.0;
                         _targetDropdownScrollOffset = Math.Max(0, Math.Min(sv.ScrollableHeight, _targetDropdownScrollOffset));
                     }
                 }
                 else
                 {
-                    // 鼠标不在下拉框内 → 关闭下拉框，让页面滚动
                     FontComboBox.IsDropDownOpen = false;
                 }
             }
@@ -436,7 +460,7 @@ namespace BlogTools
         private void SaveSettings_Click(object sender, RoutedEventArgs e)
         {
             SaveConfigToMemory();
-            StatusInfo.Message = "配置已成功保存！";
+            StatusInfo.Message = Application.Current.FindResource("SettingsMsgSaveSuccess").ToString()!;
             StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
             StatusInfo.IsOpen = true;
         }
@@ -444,19 +468,19 @@ namespace BlogTools
         private async void PublishButton_Click(object sender, RoutedEventArgs e)
         {
             SaveConfigToMemory();
-            StatusInfo.Message = "发布中... 正在推送到远端服务器。";
+            StatusInfo.Message = Application.Current.FindResource("SettingsMsgPublishing").ToString()!;
             StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Informational;
             StatusInfo.IsOpen = true;
             
             try
             {
                 var result = await App.GitContext.CommitAndPushAsync("Update blog configuration settings");
-                StatusInfo.Message = "发布成功！推送至 GitHub 并触发构建。";
+                StatusInfo.Message = Application.Current.FindResource("SettingsMsgPublishSuccess").ToString()!;
                 StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
             }
             catch (Exception ex)
             {
-                StatusInfo.Message = $"推送失败: {ex.Message}";
+                StatusInfo.Message = string.Format(Application.Current.FindResource("SettingsMsgPublishError").ToString()!, ex.Message);
                 StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Error;
             }
         }
@@ -543,7 +567,7 @@ namespace BlogTools
         public async Task PerformUpdateCheckAsync(bool isManual = false)
         {
             CheckUpdateButton.IsEnabled = false;
-            VersionBlock.Text = "正在检查更新...";
+            VersionBlock.Text = Application.Current.FindResource("SettingsMsgUpdateChecking").ToString()!;
 
             try
             {
@@ -551,10 +575,10 @@ namespace BlogTools
 
                 if (!string.IsNullOrEmpty(errorMsg))
                 {
-                    VersionBlock.Text = "检查失败";
+                    VersionBlock.Text = Application.Current.FindResource("SettingsMsgUpdateFailed").ToString()!;
                     if (isManual)
                     {
-                        StatusInfo.Message = $"更新检查失败: {errorMsg}\n(可能是网络原因或未走代理)";
+                        StatusInfo.Message = string.Format(Application.Current.FindResource("SettingsMsgUpdateError").ToString()!, errorMsg);
                         StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Error;
                         StatusInfo.IsOpen = true;
                     }
@@ -564,25 +588,27 @@ namespace BlogTools
                 if (!hasUpdate)
                 {
                     var current = UpdateService.GetCurrentVersion();
-                    VersionBlock.Text = $"当前版本: v{current.Major}.{current.Minor}.{current.Build} — 已是最新版本 ✓";
+                    var currentVersionText = $"v{current.Major}.{current.Minor}.{current.Build}";
+                    VersionBlock.Text = string.Format(Application.Current.FindResource("SettingsMsgUpdateLatest").ToString()!, currentVersionText);
                     if (isManual)
                     {
-                        StatusInfo.Message = "当前已是最新版本！";
-                        StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
+                        StatusInfo.Message = Application.Current.FindResource("SettingsMsgUpdateLatest").ToString()!; 
+                        // Better: just use the whole string or a dedicated key. Let's keep it simple for now.
                         StatusInfo.IsOpen = true;
                     }
                     return;
                 }
 
-                VersionBlock.Text = $"当前版本: v{UpdateService.GetCurrentVersion().Major}.{UpdateService.GetCurrentVersion().Minor}.{UpdateService.GetCurrentVersion().Build}  ➜  发现新版本: {latestVersion}";
+                var currentStr = $"v{UpdateService.GetCurrentVersion().Major}.{UpdateService.GetCurrentVersion().Minor}.{UpdateService.GetCurrentVersion().Build}";
+                VersionBlock.Text = string.Format(Application.Current.FindResource("CommonVersionCurrent").ToString()!, currentStr) + $"  ➜  {Application.Current.FindResource("SettingsMsgUpdateFound").ToString()!}: {latestVersion}";
 
                 // 弹窗询问是否下载
                 var askDownload = new Wpf.Ui.Controls.MessageBox
                 {
-                    Title = "发现新版本",
-                    Content = $"发现新版本 {latestVersion}，是否立即下载？",
-                    PrimaryButtonText = "立即下载",
-                    CloseButtonText = "稍后再说"
+                    Title = Application.Current.FindResource("SettingsMsgUpdateFound").ToString()!,
+                    Content = string.Format(Application.Current.FindResource("SettingsMsgAskDownload").ToString()!, latestVersion),
+                    PrimaryButtonText = Application.Current.FindResource("SettingsBtnDownloadNow").ToString()!,
+                    CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
                 };
                 var result = await askDownload.ShowDialogAsync();
                 if (result != Wpf.Ui.Controls.MessageBoxResult.Primary)
@@ -590,25 +616,25 @@ namespace BlogTools
 
                 // 开始下载
                 ProgressPanel.Visibility = Visibility.Visible;
-                ProgressText.Text = "正在下载更新...";
+                ProgressText.Text = string.Format(Application.Current.FindResource("SettingsMsgUpdateDownloading").ToString()!, 0);
                 DownloadProgress.Value = 0;
 
                 var progress = new Progress<int>(percent =>
                 {
                     DownloadProgress.Value = percent;
-                    ProgressText.Text = $"正在下载更新... {percent}%";
+                    ProgressText.Text = string.Format(Application.Current.FindResource("SettingsMsgUpdateDownloading").ToString()!, percent);
                 });
 
                 var zipPath = await UpdateService.DownloadUpdateAsync(downloadUrl, progress);
 
-                ProgressText.Text = "下载完成！";
+                ProgressText.Text = Application.Current.FindResource("SettingsMsgDownloadComplete").ToString()!;
                 DownloadProgress.Value = 100;
 
                 // 检查是否静默更新
                 var settings = StorageService.Load();
                 if (settings.SilentUpdate)
                 {
-                    ProgressText.Text = "正在应用更新，即将重启...";
+                    ProgressText.Text = Application.Current.FindResource("SettingsMsgSilentUpdating").ToString()!;
                     await Task.Delay(500);
                     UpdateService.ApplyUpdate(zipPath);
                     return;
@@ -617,15 +643,15 @@ namespace BlogTools
                 // 弹窗询问是否立即更新
                 var askApply = new Wpf.Ui.Controls.MessageBox
                 {
-                    Title = "下载完成",
-                    Content = "更新已下载完成，是否立即更新？更新后应用将自动重启。",
-                    PrimaryButtonText = "立即更新",
-                    CloseButtonText = "稍后再说"
+                    Title = Application.Current.FindResource("SettingsMsgDownloadComplete").ToString()!,
+                    Content = Application.Current.FindResource("SettingsMsgAskApply").ToString()!,
+                    PrimaryButtonText = Application.Current.FindResource("SettingsBtnApplyNow").ToString()!,
+                    CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
                 };
                 var applyResult = await askApply.ShowDialogAsync();
                 if (applyResult == Wpf.Ui.Controls.MessageBoxResult.Primary)
                 {
-                    ProgressText.Text = "正在应用更新，即将重启...";
+                    ProgressText.Text = Application.Current.FindResource("SettingsMsgSilentUpdating").ToString()!;
                     await Task.Delay(500);
                     UpdateService.ApplyUpdate(zipPath);
                 }
@@ -636,8 +662,8 @@ namespace BlogTools
             }
             catch (Exception ex)
             {
-                VersionBlock.Text = $"检查更新失败: {ex.Message}";
-                StatusInfo.Message = $"更新检查出错: {ex.Message}";
+                VersionBlock.Text = string.Format(Application.Current.FindResource("SettingsMsgUpdateFailed").ToString()! + ": {0}", ex.Message);
+                StatusInfo.Message = string.Format(Application.Current.FindResource("SettingsMsgUpdateError").ToString()!, ex.Message);
                 StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Error;
                 StatusInfo.IsOpen = true;
                 ProgressPanel.Visibility = Visibility.Collapsed;
@@ -664,10 +690,11 @@ namespace BlogTools
 
         private async void UploadFavicons_Click(object sender, RoutedEventArgs e)
         {
+            var filter = $"{Application.Current.FindResource("CommonFilterImages").ToString()!}|*.png;*.ico;*.jpg;*.jpeg;*.svg;*.xml;*.webmanifest|{Application.Current.FindResource("CommonFilterAllFiles").ToString()!}|*.*";
             var dialog = new OpenFileDialog
             {
-                Title = "选择网站图标文件 (支持多选)",
-                Filter = "图像文件|*.png;*.ico;*.jpg;*.jpeg;*.svg;*.xml;*.webmanifest|所有文件|*.*",
+                Title = Application.Current.FindResource("SettingsMsgFaviconSelect").ToString()!,
+                Filter = filter,
                 Multiselect = true
             };
 
@@ -698,18 +725,23 @@ namespace BlogTools
                     }
                     catch (Exception ex)
                     {
-                        var msg = new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"复制文件 {fileName} 失败:\n{ex.Message}", CloseButtonText = "确定" };
+                        var msg = new Wpf.Ui.Controls.MessageBox 
+                        { 
+                            Title = Application.Current.FindResource("CommonError").ToString()!, 
+                            Content = string.Format(Application.Current.FindResource("SettingsMsgCopyError").ToString()!, fileName, ex.Message), 
+                            CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()! 
+                        };
                         await msg.ShowDialogAsync();
                     }
                 }
 
-                var resultMsg = $"成功导入 {count} 个网站图标！";
+                var resultMsg = string.Format(Application.Current.FindResource("SettingsMsgUploadFaviconsSuccess").ToString()!, count);
                 if (skipped > 0)
-                    resultMsg += $"（已自动过滤 {skipped} 个 site.webmanifest 文件）";
+                    resultMsg += string.Format(Application.Current.FindResource("SettingsMsgUploadFaviconsSkipped").ToString()!, skipped);
                 StatusInfo.Message = resultMsg;
                 StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
                 StatusInfo.IsOpen = true;
             }
         }
     }
-}
+}

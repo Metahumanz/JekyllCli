@@ -33,12 +33,12 @@ namespace BlogTools
                     CreateBlogExpander.IsExpanded = false;
                 }
                 UseBundleBtn.IsEnabled = true;
-                UseBundleBtn.ToolTip = $"检测到内置模板：{defaultPath}";
+                UseBundleBtn.ToolTip = string.Format(Application.Current.FindResource("SetupTooltipTemplateFound").ToString()!, defaultPath);
             }
             else
             {
                 UseBundleBtn.IsEnabled = false;
-                UseBundleBtn.ToolTip = "未找到内置模板文件夹 (Blog/)，请从 GitHub 拉取或手动选择。";
+                UseBundleBtn.ToolTip = Application.Current.FindResource("SetupTooltipTemplateNotFound").ToString();
                 CreateBlogExpander.IsExpanded = true;
             }
         }
@@ -47,7 +47,7 @@ namespace BlogTools
         {
             OpenFolderDialog dialog = new OpenFolderDialog
             {
-                Title = "请选择 Chirpy 博客本地根目录"
+                Title = Application.Current.FindResource("SetupMsgInviteSelect").ToString()!
             };
 
             if (dialog.ShowDialog() == true)
@@ -78,7 +78,7 @@ namespace BlogTools
             }
             else
             {
-                ErrorBar.Message = "内置模板已丢失！请尝试从 GitHub 拉取。";
+                ErrorBar.Message = Application.Current.FindResource("SetupMsgTemplateMissing").ToString()!;
                 ErrorBar.IsOpen = true;
             }
         }
@@ -87,7 +87,7 @@ namespace BlogTools
         {
             var dialog = new SaveFileDialog
             {
-                Title = "选择克隆博客的存放目录",
+                Title = Application.Current.FindResource("SetupMsgCloneSelect").ToString()!,
                 FileName = "MyNewBlog", // Just as a target folder name hint
                 Filter = "Folder|*.directory" // Hacky way to let user pick folder or use SaveFileDialog for path
             };
@@ -95,7 +95,7 @@ namespace BlogTools
             // Use OpenFolderDialog since we already use Microsoft.Win32 (though WPF-UI has its own)
             var folderDialog = new OpenFolderDialog
             {
-                Title = "选择存放克隆博客的父目录"
+                Title = Application.Current.FindResource("SetupMsgCloneSelectParent").ToString()!
             };
 
             if (folderDialog.ShowDialog() == true)
@@ -105,12 +105,12 @@ namespace BlogTools
                 
                 if (Directory.Exists(targetPath))
                 {
-                    ErrorBar.Message = $"目录 {targetPath} 已存在，请选择其他位置。";
+                    ErrorBar.Message = string.Format(Application.Current.FindResource("SetupMsgCloneDirExists").ToString()!, targetPath);
                     ErrorBar.IsOpen = true;
                     return;
                 }
 
-                SetLoadingState(true, "正在从 GitHub 拉取 Chirpy 模板 (可能需要较长时间)...建议保持网络畅通");
+                SetLoadingState(true, Application.Current.FindResource("SetupMsgCloning").ToString()!);
                 
                 try
                 {
@@ -121,20 +121,20 @@ namespace BlogTools
                     if (Directory.Exists(targetPath) && File.Exists(Path.Combine(targetPath, "_config.yml")))
                     {
                         BlogPathBox.Text = targetPath;
-                        SetLoadingState(false, "拉取成功！");
+                        SetLoadingState(false, Application.Current.FindResource("SetupMsgCloneSuccess").ToString()!);
                         CreateBlogExpander.IsExpanded = false;
                     }
                     else
                     {
                         SetLoadingState(false, "");
-                        ErrorBar.Message = "拉取完成但未检测到有效的 Jekyll 配置，请检查网络或 Git 是否安装。";
+                        ErrorBar.Message = Application.Current.FindResource("SetupMsgCloneNoConfig").ToString()!;
                         ErrorBar.IsOpen = true;
                     }
                 }
                 catch (Exception ex)
                 {
                     SetLoadingState(false, "");
-                    ErrorBar.Message = $"克隆失败: {ex.Message}";
+                    ErrorBar.Message = string.Format(Application.Current.FindResource("SetupMsgCloneError").ToString()!, ex.Message);
                     ErrorBar.IsOpen = true;
                 }
             }
@@ -156,7 +156,7 @@ namespace BlogTools
             string path = BlogPathBox.Text;
             if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path) || !File.Exists(Path.Combine(path, "_config.yml")))
             {
-                ErrorBar.Message = "所选目录无效，必须包含 _config.yml 文件！";
+                ErrorBar.Message = Application.Current.FindResource("SetupMsgInvalidDir").ToString()!;
                 ErrorBar.IsOpen = true;
                 return;
             }
@@ -179,7 +179,7 @@ namespace BlogTools
             }
             catch (Exception ex)
             {
-                ErrorBar.Message = $"初始修改配置失败: {ex.Message}";
+                ErrorBar.Message = string.Format(Application.Current.FindResource("SetupMsgConfigError").ToString()!, ex.Message);
                 ErrorBar.IsOpen = true;
                 return;
             }
