@@ -33,6 +33,77 @@
                     </StackPanel>
                 </StackPanel>
 
+                <!-- ═══ Chirpy 升级引导公告 ═══ -->
+                <ui:CardExpander Margin="0,0,0,24" IsExpanded="False"
+                                 ContentPadding="20">
+                    <ui:CardExpander.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Megaphone24" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0"
+                                          Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
+                            <StackPanel>
+                                <TextBlock Text="🚀 Chirpy v7.3 → v7.5 升级指南" FontWeight="SemiBold" FontSize="15"/>
+                                <TextBlock Text="包含一项必须手动处理的破坏性变更，点击展开查看详情" FontSize="12"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </ui:CardExpander.Header>
+
+                    <StackPanel>
+                        <!-- ⚠️ Favicon 重大调整 -->
+                        <Border Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+                                CornerRadius="6" Padding="14" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock FontWeight="SemiBold" FontSize="14" Margin="0,0,0,6">
+                                    <Run Text="⚠️ 必须操作：重新配置网站图标 (Favicon)"/>
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,10">
+                                    v7.4.0 更改了 Favicon 的加载与管理逻辑。升级后必须按照最新规范重新生成并替换图标文件，否则图标将失效。
+                                    步骤：前往 Real Favicon Generator 上传你的 512×512 头像 → 下载生成包 → 删掉 site.webmanifest → 将剩余 PNG/ICO/SVG 覆盖到 assets/img/favicons/ 目录。
+                                </TextBlock>
+                                <WrapPanel>
+                                    <ui:Button Content="前往设置页配置 Favicon" Appearance="Primary"
+                                               Icon="{ui:SymbolIcon Symbol=Settings24}"
+                                               Click="GoToSettingsForFavicon_Click" Margin="0,0,8,0" Padding="12,6"/>
+                                    <ui:Button Content="打开 Real Favicon Generator ↗"
+                                               Icon="{ui:SymbolIcon Symbol=Globe24}"
+                                               Click="OpenFaviconGenerator_Click" Padding="12,6"/>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ✨ 新功能亮点 -->
+                        <TextBlock Text="✨ 新功能亮点" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
+                        <StackPanel Margin="8,0,0,16">
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                <Run Text="🎵" FontWeight="SemiBold"/> <Run Text="Spotify 播放器嵌入 (v7.4.0)"/> — 在 Markdown 中直接嵌入 Spotify 音乐或播客卡片。
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                <Run Text="🌐" FontWeight="SemiBold"/> <Run Text="Fediverse 联邦支持 (v7.5.0)"/> — 新增 fediverse:creator meta 标签，支持 Mastodon 等去中心化社交平台的创作者身份验证。
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                <Run Text="🌍" FontWeight="SemiBold"/> <Run Text="更多语言包 (v7.4.0)"/> — 新增丹麦语以及 RTL（阿拉伯语等从右到左书写）语言文件。
+                            </TextBlock>
+                        </StackPanel>
+
+                        <!-- 🐛 Bug 修复 -->
+                        <TextBlock Text="🐛 核心修复" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
+                        <StackPanel Margin="8,0,0,0">
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                • 站内搜索：修复含特殊 JSON 字符的文章导致搜索功能崩溃的问题；恢复带 description 文章的全文搜索能力。
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                • LQIP 图片预加载：修复主页缩略图与文章页封面不一致的问题，恢复模糊渐变动画效果。
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Margin="0,0,0,4" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                • 侧边栏：修复未配置的社交图标的显示异常；修正 GoatCounter 数据提取不准确的问题。
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                • 标题多语言 (v7.5.0)：修复某些页面标题未能调用本地化语言包的问题。
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </ui:CardExpander>
+
                 <!-- 统计卡片区 -->
                 <UniformGrid Columns="3" Margin="0,0,0,24">
                     <ui:CardAction Padding="20" Margin="0,0,16,0" IsChevronVisible="True" Cursor="Hand" Click="PostCountCard_Click" ToolTip="点击查看全部文章">

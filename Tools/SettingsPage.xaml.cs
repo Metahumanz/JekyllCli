@@ -341,6 +341,19 @@ namespace BlogTools
             catch { }
         }
 
+        private void OpenFaviconGenerator_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://realfavicongenerator.net/",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        }
+
         private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
         {
             await PerformUpdateCheckAsync(isManual: true);
@@ -487,22 +500,35 @@ namespace BlogTools
                     System.IO.Directory.CreateDirectory(targetDir);
 
                 int count = 0;
+                int skipped = 0;
                 foreach (var file in dialog.FileNames)
                 {
+                    var fileName = System.IO.Path.GetFileName(file);
+
+                    // Chirpy v7.4.0+ 规范：自动过滤 site.webmanifest
+                    if (fileName.Equals("site.webmanifest", StringComparison.OrdinalIgnoreCase))
+                    {
+                        skipped++;
+                        continue;
+                    }
+
                     try
                     {
-                        var destFile = System.IO.Path.Combine(targetDir, System.IO.Path.GetFileName(file));
+                        var destFile = System.IO.Path.Combine(targetDir, fileName);
                         System.IO.File.Copy(file, destFile, true);
                         count++;
                     }
                     catch (Exception ex)
                     {
-                        var msg = new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"复制文件 {System.IO.Path.GetFileName(file)} 失败:\n{ex.Message}", CloseButtonText = "确定" };
+                        var msg = new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"复制文件 {fileName} 失败:\n{ex.Message}", CloseButtonText = "确定" };
                         await msg.ShowDialogAsync();
                     }
                 }
-                
-                StatusInfo.Message = $"成功导入 {count} 个网站图标！";
+
+                var resultMsg = $"成功导入 {count} 个网站图标！";
+                if (skipped > 0)
+                    resultMsg += $"（已自动过滤 {skipped} 个 site.webmanifest 文件）";
+                StatusInfo.Message = resultMsg;
                 StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
                 StatusInfo.IsOpen = true;
             }

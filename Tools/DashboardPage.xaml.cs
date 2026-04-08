@@ -293,6 +293,27 @@ namespace BlogTools
             _currentDetailView = "";
         }
 
+        // ─── Chirpy upgrade guide actions ───────────────────────
+
+        private void GoToSettingsForFavicon_Click(object sender, RoutedEventArgs e)
+        {
+            var w = Application.Current.MainWindow as MainWindow;
+            w?.RootNavigation.Navigate(typeof(SettingsPage));
+        }
+
+        private void OpenFaviconGenerator_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://realfavicongenerator.net/",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        }
+
         // ─── Quick actions ────────────────────────────────────────
 
         private async void SyncButton_Click(object sender, RoutedEventArgs e)

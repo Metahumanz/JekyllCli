@@ -248,11 +248,23 @@
                 <TextBlock Text="网站图标上传" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Margin="0,0,0,24">
-                    <ui:CardControl Icon="{ui:SymbolIcon Symbol=Image24}">
+                    <!-- ⚠️ v7.4.0+ 变更提示 -->
+                    <ui:InfoBar IsOpen="True" IsClosable="False" Severity="Warning" Margin="0,0,0,8"
+                                Title="Chirpy v7.4.0+ Favicon 逻辑已变更"
+                                Message="请前往 Real Favicon Generator 上传 512×512 头像重新生成图标包，下载后选择文件上传即可。系统会自动过滤掉 site.webmanifest 文件。"/>
+
+                    <ui:CardAction Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Globe24}" Click="OpenFaviconGenerator_Click">
+                        <StackPanel>
+                            <TextBlock Text="前往 Real Favicon Generator 生成图标 ↗" FontWeight="SemiBold" FontSize="14" />
+                            <TextBlock Text="在线工具，上传头像即可一键生成全套 Favicon 文件" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                        </StackPanel>
+                    </ui:CardAction>
+
+                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Image24}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="导入 Favicons 网站图标集" FontWeight="SemiBold" FontSize="14" />
-                                <TextBlock Text="选择你的 avatar / favicon 文件，它们将自动上传至 assets/img/favicons" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                                <TextBlock Text="选择下载的图标文件批量上传至 assets/img/favicons（自动过滤 site.webmanifest）" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
                         <ui:Button Content="选择文件上传" Click="UploadFavicons_Click" />
