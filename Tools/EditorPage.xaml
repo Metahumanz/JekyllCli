@@ -91,7 +91,23 @@
                 </Grid>
 
                 <TextBlock Text="文章标签" VerticalAlignment="Center" Grid.Row="1" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <ui:TextBox x:Name="TagsBox" PlaceholderText="例如: JavaScript, 教程" Grid.Row="1" Grid.Column="4" Margin="0,0,0,12"/>
+                <Border Grid.Row="1" Grid.Column="4" Margin="0,0,0,12" Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="4,4,4,0" MinHeight="32" Cursor="IBeam" MouseDown="TagsBorder_MouseDown">
+                    <WrapPanel VerticalAlignment="Center">
+                        <ItemsControl x:Name="TagsItemsControl" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ui:Button Content="{Binding}" Icon="{ui:SymbolIcon Symbol=Dismiss12}" Margin="0,0,4,4" Appearance="Secondary" FontSize="12" Padding="8,2" MinHeight="24" Click="RemoveTag_Click" Tag="{Binding}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBox x:Name="TagInputBox" MinWidth="100" Margin="0,0,0,4" Padding="0,4,0,0" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" KeyDown="TagInputBox_KeyDown" LostFocus="TagInputBox_LostFocus"/>
+                    </WrapPanel>
+                </Border>
 
                 <!-- Row 2 -->
                 <TextBlock Text="指定作者" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>

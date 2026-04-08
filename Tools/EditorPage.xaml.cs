@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,6 +19,7 @@ namespace BlogTools
         private string _currentContent = "";
         private string _originalState = "";
         private ScrollViewer? _parentSv;
+        private ObservableCollection<string> _tagsList = new ObservableCollection<string>();
 
         public EditorPage()
         {
@@ -33,6 +35,7 @@ namespace BlogTools
             Unloaded += EditorPage_Unloaded;
             InitializeTimeComboBoxes();
             InitializeWebViewsAsync();
+            TagsItemsControl.ItemsSource = _tagsList;
         }
 
         private void InitializeTimeComboBoxes()
@@ -418,7 +421,12 @@ namespace BlogTools
                 if (post.Categories.Count > 0) PrimaryCategoryBox.Text = post.Categories[0];
                 if (post.Categories.Count > 1) SecondaryCategoryBox.Text = post.Categories[1];
                 
-                TagsBox.Text = string.Join(", ", post.Tags);
+                _tagsList.Clear();
+                if (post.Tags != null)
+                {
+                    foreach (var t in post.Tags)
+                        if (!string.IsNullOrWhiteSpace(t)) _tagsList.Add(t.Trim());
+                }
 
                 AuthorBox.Text = post.Author;
                 MathSwitch.IsChecked = post.Math;
@@ -502,7 +510,8 @@ namespace BlogTools
             ModifyMinuteBox.SelectedIndex = -1;
             PrimaryCategoryBox.Text = "";
             SecondaryCategoryBox.Text = "";
-            TagsBox.Clear();
+            _tagsList.Clear();
+            TagInputBox.Clear();
             AuthorBox.Clear();
             MathSwitch.IsChecked = false;
             TocSwitch.IsChecked = true;
@@ -581,7 +590,8 @@ namespace BlogTools
             if (!string.IsNullOrWhiteSpace(prim)) cats.Add(prim);
             if (!string.IsNullOrWhiteSpace(sec)) cats.Add(sec);
             
-            var tags = TagsBox.Text.Split(new[] { ',', '\uFF0C', ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+            ParseTagsInput(); // Ensure pending input is parsed
+            var tags = _tagsList.ToList();
 
             var publishDate = PublishDatePicker.SelectedDate ?? DateTime.Now;
             int h = int.TryParse(PublishHourBox.SelectedItem as string, out int hVal) ? hVal : DateTime.Now.Hour;
@@ -768,6 +778,52 @@ namespace BlogTools
             if (parentObject == null) return null;
             if (parentObject is T parent) return parent;
             return FindVisualParent<T>(parentObject);
+        }
+        private void ParseTagsInput()
+        {
+            var text = TagInputBox.Text;
+            if (string.IsNullOrWhiteSpace(text)) return;
+            var delimiters = new[] { ',', '，', '.', '。', ';', '；', '、' };
+            var tokens = text.Split(delimiters, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).Where(s => s.Length > 0);
+            foreach (var token in tokens)
+            {
+                if (!_tagsList.Contains(token))
+                {
+                    _tagsList.Add(token);
+                }
+            }
+            TagInputBox.Text = "";
+        }
+
+        private void TagInputBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                ParseTagsInput();
+                e.Handled = true;
+            }
+            else if (e.Key == System.Windows.Input.Key.Back && string.IsNullOrEmpty(TagInputBox.Text) && _tagsList.Count > 0)
+            {
+                _tagsList.RemoveAt(_tagsList.Count - 1);
+            }
+        }
+
+        private void TagInputBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ParseTagsInput();
+        }
+
+        private void TagsBorder_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            TagInputBox.Focus();
+        }
+
+        private void RemoveTag_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is string tag)
+            {
+                _tagsList.Remove(tag);
+            }
         }
     }
 }
