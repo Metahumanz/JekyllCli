@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using Wpf.Ui.Appearance;
 using Microsoft.Win32;
 using System.IO;
@@ -15,6 +17,7 @@ namespace BlogTools
     public partial class SettingsPage : Page
     {
         private Dictionary<string, object>? _config;
+        private bool _isLoading = false;
 
         public SettingsPage()
         {
@@ -24,11 +27,22 @@ namespace BlogTools
             App.BlogFilesChanged += OnBlogFilesChanged;
             
             ThemeToggle.IsChecked = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
+
+            // 下拉框打开/关闭时控制 ScrollViewerHelper 的事件转发
+            FontComboBox.DropDownOpened += (s, args) => Helpers.ScrollViewerHelper.SuppressScrollBubble = true;
+            FontComboBox.DropDownClosed += (s, args) => Helpers.ScrollViewerHelper.SuppressScrollBubble = false;
+
+            // handledEventsToo: true 让 ComboBox 即使在 ScrollViewerHelper 拦截后仍能收到滚轮事件
+            FontComboBox.AddHandler(UIElement.PreviewMouseWheelEvent,
+                new System.Windows.Input.MouseWheelEventHandler(FontComboBox_PreviewMouseWheel), true);
+
+            CompositionTarget.Rendering += OnCompositionTargetRendering;
         }
 
         private void SettingsPage_Unloaded(object sender, RoutedEventArgs e)
         {
             App.BlogFilesChanged -= OnBlogFilesChanged;
+            CompositionTarget.Rendering -= OnCompositionTargetRendering;
         }
 
         private void OnBlogFilesChanged()
@@ -38,12 +52,14 @@ namespace BlogTools
 
         private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
+            _isLoading = true;
             var parentSv = FindVisualParent<ScrollViewer>(this);
             parentSv?.ScrollToTop();
 
             CurrentPathBlock.Text = App.JekyllContext.BlogPath;
             var settings = StorageService.Load();
             RememberMetadataToggle.IsChecked = settings.RememberMetadataExpanded;
+            AutoUpdateModifiedTimeToggle.IsChecked = settings.AutoUpdateModifiedTime;
             SilentUpdateToggle.IsChecked = settings.SilentUpdate;
             ThemeToggle.IsChecked = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
             _config = App.JekyllContext.LoadConfig();
@@ -66,6 +82,7 @@ namespace BlogTools
                     break;
                 }
             }
+            _isLoading = false;
 
             TitleBox.Text = GetStringValue(_config, "title");
             TaglineBox.Text = GetStringValue(_config, "tagline");
@@ -175,6 +192,20 @@ namespace BlogTools
             StorageService.Save(settings);
         }
 
+        private void AutoUpdateModifiedTime_Checked(object sender, RoutedEventArgs e)
+        {
+            var settings = StorageService.Load();
+            settings.AutoUpdateModifiedTime = true;
+            StorageService.Save(settings);
+        }
+
+        private void AutoUpdateModifiedTime_Unchecked(object sender, RoutedEventArgs e)
+        {
+            var settings = StorageService.Load();
+            settings.AutoUpdateModifiedTime = false;
+            StorageService.Save(settings);
+        }
+
         private void ThemeToggle_Checked(object sender, RoutedEventArgs e)
         {
             ApplicationThemeManager.Apply(ApplicationTheme.Dark);
@@ -183,6 +214,153 @@ namespace BlogTools
         private void ThemeToggle_Unchecked(object sender, RoutedEventArgs e)
         {
             ApplicationThemeManager.Apply(ApplicationTheme.Light);
+        }
+
+        private void FontComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isLoading) return;
+            var selectedFont = (FontComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+            if (string.IsNullOrWhiteSpace(selectedFont)) return;
+
+            // 立即保存到 settings.json
+            var settings = StorageService.Load();
+            settings.AppFontFamily = selectedFont;
+            StorageService.Save(settings);
+
+            // 立即应用到主窗口
+            var mainWindow = Application.Current.MainWindow;
+            if (mainWindow != null)
+            {
+                mainWindow.FontFamily = new System.Windows.Media.FontFamily(selectedFont);
+            }
+        }
+
+        private double _targetDropdownScrollOffset = -1;
+        private double _currentDropdownScrollOffset = -1;
+        private ScrollViewer? _activeDropdownScrollViewer = null;
+
+        private double _targetPageScrollOffset = -1;
+        private double _currentPageScrollOffset = -1;
+
+        private void OnCompositionTargetRendering(object? sender, EventArgs e)
+        {
+            // 处理下拉框的平滑滚动
+            if (_activeDropdownScrollViewer != null && _targetDropdownScrollOffset >= 0 && _currentDropdownScrollOffset >= 0)
+            {
+                double diff = _targetDropdownScrollOffset - _currentDropdownScrollOffset;
+                if (Math.Abs(diff) < 0.5)
+                {
+                    _currentDropdownScrollOffset = _targetDropdownScrollOffset;
+                    _activeDropdownScrollViewer.ScrollToVerticalOffset(_currentDropdownScrollOffset);
+                    _activeDropdownScrollViewer = null;
+                }
+                else
+                {
+                    _currentDropdownScrollOffset += diff * 0.2;
+                    _activeDropdownScrollViewer.ScrollToVerticalOffset(_currentDropdownScrollOffset);
+                }
+            }
+
+            // 处理页面的平滑滚动
+            if (_activePageScrollViewer != null && _targetPageScrollOffset >= 0 && _currentPageScrollOffset >= 0)
+            {
+                double diffPage = _targetPageScrollOffset - _currentPageScrollOffset;
+                if (Math.Abs(diffPage) < 0.5)
+                {
+                    _currentPageScrollOffset = _targetPageScrollOffset;
+                    _activePageScrollViewer.ScrollToVerticalOffset(_currentPageScrollOffset);
+                    _targetPageScrollOffset = -1;
+                    _activePageScrollViewer = null;
+                }
+                else
+                {
+                    _currentPageScrollOffset += diffPage * 0.18; // 稍微增加页面滚动的阻尼感
+                    _activePageScrollViewer.ScrollToVerticalOffset(_currentPageScrollOffset);
+                }
+            }
+        }
+
+        private ScrollViewer? _activePageScrollViewer = null;
+
+        private void PageScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            if (Helpers.ScrollViewerHelper.SuppressScrollBubble) return;
+
+            // 真正的滚动容器是在外层的 MainWindow 中，而不是当前的 PageScrollViewer
+            var rootSv = FindVisualParent<ScrollViewer>(this);
+            if (rootSv == null) return;
+
+            e.Handled = true;
+            _activePageScrollViewer = rootSv;
+
+            if (_targetPageScrollOffset == -1)
+            {
+                _targetPageScrollOffset = rootSv.VerticalOffset;
+                _currentPageScrollOffset = rootSv.VerticalOffset;
+            }
+
+            _targetPageScrollOffset -= e.Delta * 2.0; // 放大滚动增量
+            _targetPageScrollOffset = Math.Max(0, Math.Min(rootSv.ScrollableHeight, _targetPageScrollOffset));
+        }
+
+        private void FontComboBox_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            if (!FontComboBox.IsDropDownOpen)
+            {
+                _targetDropdownScrollOffset = -1;
+                _currentDropdownScrollOffset = -1;
+                _activeDropdownScrollViewer = null;
+                return;
+            }
+
+            // 检测鼠标是否在 Popup 区域内
+            var popup = FindVisualChild<System.Windows.Controls.Primitives.Popup>(FontComboBox);
+            if (popup?.Child is FrameworkElement popupChild)
+            {
+                var mousePos = e.GetPosition(popupChild);
+                bool isOverPopup = mousePos.X >= 0 && mousePos.Y >= 0
+                    && mousePos.X <= popupChild.ActualWidth
+                    && mousePos.Y <= popupChild.ActualHeight;
+
+                if (isOverPopup)
+                {
+                    // 鼠标在下拉框内 → 只滚动下拉列表
+                    e.Handled = true;
+                    var sv = FindVisualChild<ScrollViewer>(popupChild);
+                    if (sv != null)
+                    {
+                        if (_activeDropdownScrollViewer != sv)
+                        {
+                            _activeDropdownScrollViewer = sv;
+                            _currentDropdownScrollOffset = sv.VerticalOffset;
+                            _targetDropdownScrollOffset = sv.VerticalOffset;
+                        }
+
+                        // e.Delta 通常为 120，放大滚动速度并加上物理阻尼感
+                        _targetDropdownScrollOffset -= e.Delta * 2.0; 
+                        _targetDropdownScrollOffset = Math.Max(0, Math.Min(sv.ScrollableHeight, _targetDropdownScrollOffset));
+                    }
+                }
+                else
+                {
+                    // 鼠标不在下拉框内 → 关闭下拉框，让页面滚动
+                    FontComboBox.IsDropDownOpen = false;
+                }
+            }
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            int count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (child is T result) return result;
+                var found = FindVisualChild<T>(child);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         private void SaveConfigToMemory()

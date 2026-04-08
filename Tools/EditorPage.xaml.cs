@@ -546,26 +546,63 @@ namespace BlogTools
             ModifyMinuteBox.SelectedItem = DateTime.Now.Minute.ToString("D2");
         }
 
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            await SavePostAsync();
+        }
+
+        private async System.Threading.Tasks.Task<bool> SavePostAsync()
         {
             if (string.IsNullOrWhiteSpace(TitleBox.Text))
             {
                 ShowInfo("文章必须有一个标题！", InfoBarSeverity.Error);
-                return;
+                return false;
             }
 
             var post = GeneratePostObject();
+
+            if (App.CurrentEditPost != null && CheckIsDirty())
+            {
+                bool timeManuallyChanged = post.LastModifiedAt != App.CurrentEditPost.LastModifiedAt;
+                if (!timeManuallyChanged)
+                {
+                    var settings = BlogTools.Services.StorageService.Load();
+                    if (settings.AutoUpdateModifiedTime)
+                    {
+                        SetModifyNow_Click(null!, new RoutedEventArgs());
+                        post = GeneratePostObject();
+                    }
+                    else
+                    {
+                        var askModify = new Wpf.Ui.Controls.MessageBox
+                        {
+                            Title = "未更新修改时间",
+                            Content = "检测到文章有修改，是否将修改时间更新为当前时间？",
+                            PrimaryButtonText = "更新时间",
+                            CloseButtonText = "不更新"
+                        };
+                        var result = await askModify.ShowDialogAsync();
+                        if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
+                        {
+                            SetModifyNow_Click(null!, new RoutedEventArgs());
+                            post = GeneratePostObject();
+                        }
+                    }
+                }
+            }
+
             App.JekyllContext.SavePost(post);
             App.CurrentEditPost = post;
 
             UpdateOriginalState();
             ShowInfo($"已存放到本地: {post.FileName}", InfoBarSeverity.Success);
+            return true;
         }
 
         private async void PublishButton_Click(object sender, RoutedEventArgs e)
         {
-            SaveButton_Click(sender, e);
-            if (!StatusInfo.IsOpen || StatusInfo.Severity == InfoBarSeverity.Error)
+            bool saved = await SavePostAsync();
+            if (!saved || StatusInfo.Severity == InfoBarSeverity.Error)
                 return;
 
             ShowInfo("正在拉取并推送至远端...", InfoBarSeverity.Informational);

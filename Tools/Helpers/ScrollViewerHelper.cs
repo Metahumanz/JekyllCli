@@ -6,6 +6,12 @@ namespace BlogTools.Helpers
 {
     public static class ScrollViewerHelper
     {
+        /// <summary>
+        /// When true, the scroll-bubble handler skips forwarding wheel events to parent.
+        /// Used by ComboBox dropdown to gain exclusive scroll control.
+        /// </summary>
+        public static bool SuppressScrollBubble { get; set; }
+
         public static readonly DependencyProperty BubbleScrollEventsProperty =
             DependencyProperty.RegisterAttached(
                 "BubbleScrollEvents",
@@ -34,6 +40,9 @@ namespace BlogTools.Helpers
         {
             var sv = sender as ScrollViewer;
             if (sv == null) return;
+
+            // When a ComboBox dropdown has exclusive scroll control, skip entirely
+            if (SuppressScrollBubble) return;
 
             e.Handled = true;
 

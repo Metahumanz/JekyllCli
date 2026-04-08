@@ -11,6 +11,7 @@ namespace BlogTools.Services
         public bool IsMetadataExpanded { get; set; } = false;
         public string AppFontFamily { get; set; } = string.Empty;
         public bool SilentUpdate { get; set; } = false;
+        public bool AutoUpdateModifiedTime { get; set; } = false;
     }
 
     public static class StorageService

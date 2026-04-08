@@ -38,7 +38,8 @@
 
         <ui:InfoBar Grid.Row="1" x:Name="StatusInfo" IsOpen="False" Message="" Severity="Success" Margin="0,0,0,8" />
 
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Background="Transparent" Focusable="False" helpers:ScrollViewerHelper.BubbleScrollEvents="True">
+        <ScrollViewer Grid.Row="2" x:Name="PageScrollViewer" VerticalScrollBarVisibility="Auto" Background="Transparent" Focusable="False" 
+                      PreviewMouseWheel="PageScrollViewer_PreviewMouseWheel">
             <StackPanel Background="Transparent" Margin="0,0,16,0">
 
                 <!-- ═══ 第一组：工作区 ═══ -->
@@ -57,15 +58,27 @@
                 <!-- ═══ 撰写偏好 ═══ -->
                 <TextBlock Text="撰写偏好" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <ui:CardControl Margin="0,0,0,24" Icon="{ui:SymbolIcon Symbol=Document24}">
-                    <ui:CardControl.Header>
-                        <StackPanel>
-                            <TextBlock Text="记忆文章属性展开状态" FontWeight="SemiBold" FontSize="14" />
-                            <TextBlock Text="若开启，撰写页面将自动记忆并恢复元数据面板的展开或折叠状态。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
-                        </StackPanel>
-                    </ui:CardControl.Header>
-                    <ui:ToggleSwitch x:Name="RememberMetadataToggle" Checked="RememberMetadata_Checked" Unchecked="RememberMetadata_Unchecked" />
-                </ui:CardControl>
+                <StackPanel Margin="0,0,0,24">
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Document24}">
+                        <ui:CardControl.Header>
+                            <StackPanel>
+                                <TextBlock Text="记忆文章属性展开状态" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="若开启，撰写页面将自动记忆并恢复元数据面板的展开或折叠状态。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            </StackPanel>
+                        </ui:CardControl.Header>
+                        <ui:ToggleSwitch x:Name="RememberMetadataToggle" Checked="RememberMetadata_Checked" Unchecked="RememberMetadata_Unchecked" />
+                    </ui:CardControl>
+
+                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Clock24}">
+                        <ui:CardControl.Header>
+                            <StackPanel>
+                                <TextBlock Text="自动补齐修改时间" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="自动将已修改文章的 last_modified_at 更新为当前时间，不再弹窗体验更流畅。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            </StackPanel>
+                        </ui:CardControl.Header>
+                        <ui:ToggleSwitch x:Name="AutoUpdateModifiedTimeToggle" Checked="AutoUpdateModifiedTime_Checked" Unchecked="AutoUpdateModifiedTime_Unchecked" />
+                    </ui:CardControl>
+                </StackPanel>
 
                 <!-- ═══ 外观 ═══ -->
                 <TextBlock Text="外观" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
@@ -88,7 +101,10 @@
                                 <TextBlock Text="选择全局显示字体" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
-                        <ComboBox x:Name="FontComboBox" Width="200"/>
+                        <ComboBox x:Name="FontComboBox" Width="200" MaxDropDownHeight="300"
+                                  IsEditable="True" IsTextSearchEnabled="True"
+                                  SelectionChanged="FontComboBox_SelectionChanged"
+                                  ScrollViewer.CanContentScroll="False"/>
                     </ui:CardControl>
                 </StackPanel>
 
