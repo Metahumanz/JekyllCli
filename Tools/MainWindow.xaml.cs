@@ -10,6 +10,7 @@ namespace BlogTools
         public MainWindow()
         {
             InitializeComponent();
+            Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
             ApplyGlobalFont();
             ApplyDynamicTitleAndIcon();
             Loaded += MainWindow_Loaded;
@@ -49,15 +50,12 @@ namespace BlogTools
                 }
 
                 // Avatar not found - show a one-time hint after window loads
-                Loaded += (_, _) =>
+                Loaded += async (_, _) =>
                 {
-                    var result = System.Windows.MessageBox.Show(
-                        "未检测到站点头像 (Avatar)，是否前往「引擎设置」配置？",
-                        "BlogTools 提示",
-                        System.Windows.MessageBoxButton.YesNo,
-                        System.Windows.MessageBoxImage.Information);
-
-                    if (result == System.Windows.MessageBoxResult.Yes)
+                    var msg = new Wpf.Ui.Controls.MessageBox { Title = "BlogTools 提示", Content = "未检测到站点头像 (Avatar)，是否前往「引擎设置」配置？", PrimaryButtonText = "确定", CloseButtonText = "取消" };
+                    var result = await msg.ShowDialogAsync();
+                    
+                    if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
                     {
                         RootNavigation.Navigate(typeof(SettingsPage));
                     }

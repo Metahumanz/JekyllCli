@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <SelfContained>false</SelfContained>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

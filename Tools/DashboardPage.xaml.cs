@@ -329,7 +329,7 @@ namespace BlogTools
             w?.RootNavigation.Navigate(typeof(EditorPage));
         }
 
-        private void ViewLiveSite_Click(object sender, RoutedEventArgs e)
+        private async void ViewLiveSite_Click(object sender, RoutedEventArgs e)
         {
             var config = App.JekyllContext.LoadConfig();
             if (config.TryGetValue("url", out var urlObj) && urlObj is string url && !string.IsNullOrWhiteSpace(url))
@@ -339,7 +339,8 @@ namespace BlogTools
             }
             else
             {
-                MessageBox.Show("No valid URL found in _config.yml", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                var msg = new Wpf.Ui.Controls.MessageBox { Title = "Error", Content = "No valid URL found in _config.yml", CloseButtonText = "OK" };
+                await msg.ShowDialogAsync();
             }
         }
 

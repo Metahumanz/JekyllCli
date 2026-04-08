@@ -106,12 +106,13 @@ namespace BlogTools
             }
         }
 
-        private void DeletePost_Click(object sender, RoutedEventArgs e)
+        private async void DeletePost_Click(object sender, RoutedEventArgs e)
         {
             if (sender is FrameworkElement fe && fe.DataContext is BlogPost post)
             {
-                var result = System.Windows.MessageBox.Show($"您确定要彻底删除这篇文章 '{post.Title}' 吗？", "删除确认", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
-                if (result == System.Windows.MessageBoxResult.Yes)
+                var msg = new Wpf.Ui.Controls.MessageBox { Title = "删除确认", Content = $"您确定要彻底删除这篇文章 '{post.Title}' 吗？", PrimaryButtonText = "确定", CloseButtonText = "取消" };
+                var result = await msg.ShowDialogAsync();
+                if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
                 {
                     App.JekyllContext.DeletePost(post.FullPath);
                     LoadPosts(); // Refresh list

@@ -16,6 +16,7 @@ namespace BlogTools
         private MarkdownPipeline _pipeline;
         private bool _isWebViewReady = false;
         private string _currentContent = "";
+        private string _originalState = "";
         private ScrollViewer? _parentSv;
 
         public EditorPage()
@@ -62,6 +63,13 @@ namespace BlogTools
             PreviewWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 "localassets", katexFolder,
                 Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
+
+            if (!string.IsNullOrEmpty(App.JekyllContext.BlogPath))
+            {
+                PreviewWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                    "bloglocal", App.JekyllContext.BlogPath,
+                    Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
+            }
 
             var isDark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
             var darkCss = isDark ? "body { background-color: #1e1e1e; color: #d4d4d4; }" : "body { background-color: #ffffff; color: #000000; }";
@@ -110,6 +118,7 @@ namespace BlogTools
             ";
 
             var initialHtml = "<!DOCTYPE html><html><head><meta charset='utf-8' />"
+                + "<base href='https://bloglocal/' />"
                 + "<style>" + katexCss + "</style>"
                 + "<script>" + katexJs + "</script>"
                 + "<style>"
@@ -148,8 +157,19 @@ namespace BlogTools
             "<textarea id='editor' spellcheck='false' placeholder='在此撰写 Markdown 内容...'></textarea>" +
             "<script>" +
             "const el = document.getElementById('editor');" +
-            "el.addEventListener('input', () => { window.chrome.webview.postMessage(el.value); });" +
+            "el.addEventListener('input', () => { window.chrome.webview.postMessage('CONTENT:' + el.value); });" +
             "window.chrome.webview.addEventListener('message', event => { if (el.value !== event.data) el.value = event.data; });" +
+            "el.addEventListener('paste', function(e) {" +
+            "    var items = (e.clipboardData || e.originalEvent.clipboardData).items;" +
+            "    for (var index in items) {" +
+            "        var item = items[index];" +
+            "        if (item.kind === 'file' && item.type.indexOf('image/') !== -1) {" +
+            "            e.preventDefault();" +
+            "            window.chrome.webview.postMessage('ACTION:pasteImage');" +
+            "            break;" +
+            "        }" +
+            "    }" +
+            "});" +
             "</script></body></html>";
 
             EditorWebView.NavigateToString(editorHtml);
@@ -158,14 +178,178 @@ namespace BlogTools
 
         private void EditorWebView_WebMessageReceived(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
         {
-            _currentContent = e.TryGetWebMessageAsString() ?? "";
-            UpdateWebViewContent();
-            SmartDetectMath();
+            var msg = e.TryGetWebMessageAsString() ?? "";
+            if (msg.StartsWith("CONTENT:"))
+            {
+                _currentContent = msg.Substring(8);
+                UpdateWebViewContent();
+                SmartDetectMath();
+            }
+            else if (msg == "ACTION:pasteImage")
+            {
+                _ = HandlePastedImageAsync();
+            }
+        }
+
+        private async System.Threading.Tasks.Task HandlePastedImageAsync()
+        {
+            if (string.IsNullOrWhiteSpace(TitleBox.Text))
+            {
+                var msg = new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "请先填写文章标题，以便确定图片存放目录！", CloseButtonText = "确定" };
+                await msg.ShowDialogAsync();
+                return;
+            }
+
+            try
+            {
+                string[] pastedFiles = Array.Empty<string>();
+                System.Windows.Media.Imaging.BitmapSource? pastedImage = null;
+
+                if (System.Windows.Clipboard.ContainsFileDropList())
+                {
+                    var dropList = System.Windows.Clipboard.GetFileDropList();
+                    pastedFiles = dropList.Cast<string>().Where(f => 
+                        f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || 
+                        f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || 
+                        f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) || 
+                        f.EndsWith(".gif", StringComparison.OrdinalIgnoreCase) || 
+                        f.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ||
+                        f.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)).ToArray();
+                }
+                else if (System.Windows.Clipboard.ContainsImage())
+                {
+                    pastedImage = System.Windows.Clipboard.GetImage();
+                }
+
+                if (pastedFiles.Length == 0 && pastedImage == null) return;
+
+                var safeDirName = System.Text.RegularExpressions.Regex.Replace(TitleBox.Text, @"[\\/:*?""<>|]+", "-").Trim('-', ' ');
+                safeDirName = System.Text.RegularExpressions.Regex.Replace(safeDirName, @"\s+", "-").ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(safeDirName)) safeDirName = "untitled";
+
+                var relativeDir = $"assets/img/inposts/{safeDirName}";
+                var absPathDir = System.IO.Path.Combine(App.JekyllContext.BlogPath, relativeDir.Replace("/", "\\"));
+                
+                if (!System.IO.Directory.Exists(absPathDir))
+                {
+                    System.IO.Directory.CreateDirectory(absPathDir);
+                }
+
+                string injectedMd = "";
+
+                foreach (var file in pastedFiles)
+                {
+                    var fileName = System.IO.Path.GetFileName(file);
+                    var destFile = System.IO.Path.Combine(absPathDir, fileName);
+                    int counter = 1;
+                    while (System.IO.File.Exists(destFile))
+                    {
+                        destFile = System.IO.Path.Combine(absPathDir, $"{System.IO.Path.GetFileNameWithoutExtension(fileName)}-{counter}{System.IO.Path.GetExtension(fileName)}");
+                        fileName = System.IO.Path.GetFileName(destFile);
+                        counter++;
+                    }
+                    System.IO.File.Copy(file, destFile);
+                    injectedMd += $"![{System.IO.Path.GetFileNameWithoutExtension(fileName)}](/{relativeDir}/{fileName})\n";
+                }
+
+                if (pastedImage != null)
+                {
+                    var fileName = $"image-{DateTime.Now:yyyyMMddHHmmss}.png";
+                    var destFile = System.IO.Path.Combine(absPathDir, fileName);
+                    using (var fileStream = new System.IO.FileStream(destFile, System.IO.FileMode.Create))
+                    {
+                        var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(pastedImage));
+                        encoder.Save(fileStream);
+                    }
+                    injectedMd += $"![{System.IO.Path.GetFileNameWithoutExtension(fileName)}](/{relativeDir}/{fileName})\n";
+                }
+
+                injectedMd = injectedMd.TrimEnd('\n');
+
+                var script = $@"
+                    (function() {{
+                        var el = document.getElementById('editor');
+                        if (el) {{
+                            el.focus();
+                            var textToInsert = {System.Text.Json.JsonSerializer.Serialize(injectedMd)};
+                            document.execCommand('insertText', false, textToInsert);
+                            var event = new Event('input', {{ bubbles: true }});
+                            el.dispatchEvent(event);
+                        }}
+                    }})();
+                ";
+                await EditorWebView.ExecuteScriptAsync(script);
+            }
+            catch (Exception ex)
+            {
+                var msg = new Wpf.Ui.Controls.MessageBox { Title = "出错", Content = $"粘贴图片处理失败:\n{ex.Message}", CloseButtonText = "确定" };
+                await msg.ShowDialogAsync();
+            }
+        }
+
+        private bool _allowNav = false;
+        private async void Nav_Navigating(Wpf.Ui.Controls.NavigationView sender, Wpf.Ui.Controls.NavigatingCancelEventArgs e)
+        {
+            if (_allowNav) return;
+            if (CheckIsDirty())
+            {
+                e.Cancel = true;
+                var msg = new Wpf.Ui.Controls.MessageBox { Title = "确认离开", Content = "您有未保存的草稿，确定要离开吗？未保存的内容将会丢失。", PrimaryButtonText = "确定离开", CloseButtonText = "取消" };
+                var res = await msg.ShowDialogAsync();
+                if (res == Wpf.Ui.Controls.MessageBoxResult.Primary)
+                {
+                    _allowNav = true;
+                    // Let's just navigate to Dashboard if we can't figure out the target page
+                    sender.Navigate(typeof(DashboardPage));
+                }
+            }
+        }
+
+        private bool _allowClose = false;
+        private async void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (_allowClose) return;
+            if (CheckIsDirty())
+            {
+                e.Cancel = true;
+                var msg = new Wpf.Ui.Controls.MessageBox { Title = "确认退出", Content = "您有未保存的草稿，确定要退出程序吗？未保存的内容将会丢失。", PrimaryButtonText = "确定退出", CloseButtonText = "取消" };
+                var res = await msg.ShowDialogAsync();
+                if (res == Wpf.Ui.Controls.MessageBoxResult.Primary)
+                {
+                    _allowClose = true;
+                    Application.Current.MainWindow.Close();
+                }
+            }
+        }
+
+        private void UpdateOriginalState()
+        {
+            try
+            {
+                var post = GeneratePostObject();
+                _originalState = System.Text.Json.JsonSerializer.Serialize(post);
+            }
+            catch { }
+        }
+
+        private bool CheckIsDirty()
+        {
+            try
+            {
+                var post = GeneratePostObject();
+                return System.Text.Json.JsonSerializer.Serialize(post) != _originalState;
+            }
+            catch { return false; }
         }
 
         private void EditorPage_Unloaded(object sender, RoutedEventArgs e)
         {
             if (_parentSv != null) _parentSv.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+            
+            var nav = (Application.Current.MainWindow as MainWindow)?.RootNavigation;
+            if (nav != null) nav.Navigating -= Nav_Navigating;
+            Application.Current.MainWindow.Closing -= MainWindow_Closing;
         }
 
         private void MetadataExpander_Expanded(object sender, RoutedEventArgs e)
@@ -199,6 +383,10 @@ namespace BlogTools
             {
                 MetadataExpander.IsExpanded = settings.IsMetadataExpanded;
             }
+
+            var nav = (Application.Current.MainWindow as MainWindow)?.RootNavigation;
+            if (nav != null) nav.Navigating += Nav_Navigating;
+            Application.Current.MainWindow.Closing += MainWindow_Closing;
 
             var allPosts = App.JekyllContext.GetAllPosts();
             var primaryCats = new HashSet<string>();
@@ -259,6 +447,8 @@ namespace BlogTools
                     EditorWebView.CoreWebView2.PostWebMessageAsString(_currentContent);
                 };
             }
+            
+            UpdateOriginalState();
         }
 
         private void SmartDetectMath()
@@ -324,6 +514,7 @@ namespace BlogTools
             if (EditorWebView.CoreWebView2 != null)
                 EditorWebView.CoreWebView2.PostWebMessageAsString("");
                 
+            UpdateOriginalState();
             ShowInfo("已重置，准备开始新创作。", InfoBarSeverity.Informational);
         }
 
@@ -353,6 +544,7 @@ namespace BlogTools
             App.JekyllContext.SavePost(post);
             App.CurrentEditPost = post;
 
+            UpdateOriginalState();
             ShowInfo($"已存放到本地: {post.FileName}", InfoBarSeverity.Success);
         }
 
@@ -436,7 +628,8 @@ namespace BlogTools
         {
             if (string.IsNullOrWhiteSpace(TitleBox.Text))
             {
-                System.Windows.MessageBox.Show("请先填写文章标题，以便确定图片存放目录！", "提示", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                var msg = new Wpf.Ui.Controls.MessageBox { Title = "提示", Content = "请先填写文章标题，以便确定图片存放目录！", CloseButtonText = "确定" };
+                await msg.ShowDialogAsync();
                 return;
             }
 
@@ -455,7 +648,7 @@ namespace BlogTools
                     safeDirName = System.Text.RegularExpressions.Regex.Replace(safeDirName, @"\s+", "-").ToLowerInvariant();
                     if (string.IsNullOrWhiteSpace(safeDirName)) safeDirName = "untitled";
 
-                    var relativeDir = $"assets/img/inpost/{safeDirName}";
+                    var relativeDir = $"assets/img/inposts/{safeDirName}";
                     var absPathDir = System.IO.Path.Combine(App.JekyllContext.BlogPath, relativeDir.Replace("/", "\\"));
                     
                     if (!System.IO.Directory.Exists(absPathDir))
@@ -487,13 +680,9 @@ namespace BlogTools
                         (function() {{
                             var el = document.getElementById('editor');
                             if (el) {{
-                                var start = el.selectionStart;
-                                var end = el.selectionEnd;
-                                var val = el.value;
+                                el.focus();
                                 var textToInsert = {System.Text.Json.JsonSerializer.Serialize(mdSyntax)};
-                                el.value = val.substring(0, start) + textToInsert + val.substring(end);
-                                el.selectionStart = el.selectionEnd = start + textToInsert.length;
-                                // Emit input event to trigger preview update
+                                document.execCommand('insertText', false, textToInsert);
                                 var event = new Event('input', {{ bubbles: true }});
                                 el.dispatchEvent(event);
                             }}
@@ -504,7 +693,8 @@ namespace BlogTools
                 }
                 catch (Exception ex)
                 {
-                    System.Windows.MessageBox.Show($"处理图片时出错:\n{ex.Message}", "出错", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    var msg = new Wpf.Ui.Controls.MessageBox { Title = "出错", Content = $"处理图片时出错:\n{ex.Message}", CloseButtonText = "确定" };
+                    await msg.ShowDialogAsync();
                 }
             }
         }

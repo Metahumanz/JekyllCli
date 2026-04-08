@@ -121,7 +121,7 @@ namespace BlogTools
             }
         }
 
-        private void ChangeBlogPath_Click(object sender, RoutedEventArgs e)
+        private async void ChangeBlogPath_Click(object sender, RoutedEventArgs e)
         {
             OpenFolderDialog dialog = new OpenFolderDialog
             {
@@ -133,7 +133,8 @@ namespace BlogTools
                 string newPath = dialog.FolderName;
                 if (!File.Exists(Path.Combine(newPath, "_config.yml")))
                 {
-                    MessageBox.Show("该目录不是有效的 Jekyll 根目录（未找到 _config.yml 文件）。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    var msg = new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = "该目录不是有效的 Jekyll 根目录（未找到 _config.yml 文件）。", CloseButtonText = "确定" };
+                    await msg.ShowDialogAsync();
                     return;
                 }
 
@@ -341,7 +342,7 @@ namespace BlogTools
                 VersionBlock.Text = $"获取更新失败: {ex.Message}";
             }
         }
-        private void UploadFavicons_Click(object sender, RoutedEventArgs e)
+        private async void UploadFavicons_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
@@ -367,7 +368,8 @@ namespace BlogTools
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"复制文件 {System.IO.Path.GetFileName(file)} 失败:\n{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        var msg = new Wpf.Ui.Controls.MessageBox { Title = "错误", Content = $"复制文件 {System.IO.Path.GetFileName(file)} 失败:\n{ex.Message}", CloseButtonText = "确定" };
+                        await msg.ShowDialogAsync();
                     }
                 }
                 
