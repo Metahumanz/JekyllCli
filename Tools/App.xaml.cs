@@ -106,7 +106,7 @@ namespace BlogTools
                 // 延迟 3 秒再检查，让主窗口有足够的时间完成初始化和加载
                 await Task.Delay(3000);
 
-                var (hasUpdate, latestVersion, downloadUrl) = await UpdateService.CheckForUpdateAsync();
+                var (hasUpdate, latestVersion, downloadUrl, _) = await UpdateService.CheckForUpdateAsync();
                 if (!hasUpdate || string.IsNullOrEmpty(downloadUrl))
                     return;
 

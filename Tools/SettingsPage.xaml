@@ -283,6 +283,13 @@
                         <ui:ToggleSwitch x:Name="SilentUpdateToggle" Checked="SilentUpdate_Checked" Unchecked="SilentUpdate_Unchecked" />
                     </ui:CardControl>
 
+                    <ui:CardAction Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Star24}" Command="{Binding Path=.}" Click="OpenGithubStar_Click">
+                        <StackPanel>
+                            <TextBlock Text="觉得好用？给项目点个 Star 🌟" FontWeight="SemiBold" FontSize="14" />
+                            <TextBlock Text="一键跳转项目主页，您的支持是我持续更新的动力" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                        </StackPanel>
+                    </ui:CardAction>
+
                     <!-- 下载进度条：默认隐藏 -->
                     <Border x:Name="ProgressPanel" Visibility="Collapsed"
                             Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"

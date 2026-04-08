@@ -328,6 +328,19 @@ namespace BlogTools
             return FindVisualParent<T>(parentObject);
         }
 
+        private void OpenGithubStar_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "https://github.com/Metahumanz/JekyllCli",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        }
+
         private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
         {
             await PerformUpdateCheckAsync(isManual: true);
@@ -343,7 +356,19 @@ namespace BlogTools
 
             try
             {
-                var (hasUpdate, latestVersion, downloadUrl) = await UpdateService.CheckForUpdateAsync();
+                var (hasUpdate, latestVersion, downloadUrl, errorMsg) = await UpdateService.CheckForUpdateAsync();
+
+                if (!string.IsNullOrEmpty(errorMsg))
+                {
+                    VersionBlock.Text = "检查失败";
+                    if (isManual)
+                    {
+                        StatusInfo.Message = $"更新检查失败: {errorMsg}\n(可能是网络原因或未走代理)";
+                        StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Error;
+                        StatusInfo.IsOpen = true;
+                    }
+                    return;
+                }
 
                 if (!hasUpdate)
                 {

@@ -16,11 +16,32 @@ namespace BlogTools.Services
     {
         private const string GitHubApi = "https://api.github.com/repos/Metahumanz/JekyllCli/releases/latest";
         private const string AssetName = "JekyllCli-win-x64-minimal.zip";
-        private static readonly HttpClient _http = new HttpClient();
+        private static readonly HttpClient _httpDirect = new HttpClient(new HttpClientHandler { UseProxy = false }) { Timeout = TimeSpan.FromSeconds(5) };
+        private static readonly HttpClient _httpProxy = new HttpClient(new HttpClientHandler
+        {
+            UseProxy = true,
+            Proxy = System.Net.WebRequest.GetSystemWebProxy(),
+            DefaultProxyCredentials = System.Net.CredentialCache.DefaultCredentials
+        }) { Timeout = TimeSpan.FromSeconds(10) };
 
         static UpdateService()
         {
-            _http.DefaultRequestHeaders.UserAgent.ParseAdd("JekyllCli-Updater");
+            _httpDirect.DefaultRequestHeaders.UserAgent.ParseAdd("JekyllCli-Updater");
+            _httpProxy.DefaultRequestHeaders.UserAgent.ParseAdd("JekyllCli-Updater");
+        }
+
+        private static async Task<(string response, HttpClient effectiveClient)> FetchWithFallbackAsync(string url)
+        {
+            try
+            {
+                return (await _httpDirect.GetStringAsync(url), _httpDirect);
+            }
+            catch (Exception exDirect)
+            {
+                Debug.WriteLine($"[UpdateService] Direct connection failed: {exDirect.Message}. Falling back to proxy.");
+                var resp = await _httpProxy.GetStringAsync(url);
+                return (resp, _httpProxy);
+            }
         }
 
         /// <summary>
@@ -33,13 +54,13 @@ namespace BlogTools.Services
 
         /// <summary>
         /// 检查 GitHub Release 是否有更新。
-        /// 返回 (是否有更新, 最新版本号, 下载链接)。
+        /// 返回 (是否有更新, 最新版本号, 下载链接, 错误信息)。
         /// </summary>
-        public static async Task<(bool HasUpdate, string LatestVersion, string DownloadUrl)> CheckForUpdateAsync()
+        public static async Task<(bool HasUpdate, string LatestVersion, string DownloadUrl, string ErrorMessage)> CheckForUpdateAsync()
         {
             try
             {
-                var response = await _http.GetStringAsync(GitHubApi);
+                var (response, _) = await FetchWithFallbackAsync(GitHubApi);
                 using var doc = JsonDocument.Parse(response);
                 var root = doc.RootElement;
 
@@ -47,7 +68,7 @@ namespace BlogTools.Services
                 var versionStr = tagName.TrimStart('v', 'V');
 
                 if (!Version.TryParse(versionStr, out var remoteVersion))
-                    return (false, tagName, "");
+                    return (false, tagName, "", "");
 
                 var currentVersion = GetCurrentVersion();
 
@@ -56,7 +77,7 @@ namespace BlogTools.Services
                 var remote = new Version(remoteVersion.Major, remoteVersion.Minor, remoteVersion.Build);
 
                 if (remote <= current)
-                    return (false, tagName, "");
+                    return (false, tagName, "", "");
 
                 // 在 assets 数组中找到目标下载文件
                 string downloadUrl = "";
@@ -73,12 +94,17 @@ namespace BlogTools.Services
                     }
                 }
 
-                return (true, tagName, downloadUrl);
+                if (string.IsNullOrEmpty(downloadUrl))
+                {
+                     return (false, tagName, "", "已探测到新版本号，但更新包未上传完成或未找到 minimal.zip");
+                }
+
+                return (true, tagName, downloadUrl, "");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"[UpdateService] CheckForUpdate failed: {ex.Message}");
-                return (false, "", "");
+                return (false, "", "", ex.Message);
             }
         }
 
@@ -95,8 +121,18 @@ namespace BlogTools.Services
 
             var zipPath = Path.Combine(tempDir, AssetName);
 
-            using var response = await _http.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
-            response.EnsureSuccessStatusCode();
+            HttpResponseMessage response;
+            try
+            {
+                response = await _httpDirect.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
+                response.EnsureSuccessStatusCode();
+            }
+            catch
+            {
+                Debug.WriteLine("[UpdateService] Direct download failed. Falling back to proxy.");
+                response = await _httpProxy.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
+                response.EnsureSuccessStatusCode();
+            }
 
             var totalBytes = response.Content.Headers.ContentLength ?? -1;
             long downloadedBytes = 0;
@@ -115,6 +151,8 @@ namespace BlogTools.Services
                     progress?.Report((int)(downloadedBytes * 100 / totalBytes));
                 }
             }
+
+            response.Dispose();
 
             progress?.Report(100);
             return zipPath;
