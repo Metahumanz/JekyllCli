@@ -133,13 +133,7 @@ namespace BlogTools.Services
                 ?? throw new InvalidOperationException("无法确定当前程序路径");
             var appDir = Path.GetDirectoryName(currentExe)!;
             var exeName = Path.GetFileName(currentExe);
-            var oldExe = currentExe + ".old";
-
-            // 先清理残留
-            if (File.Exists(oldExe))
-            {
-                try { File.Delete(oldExe); } catch { }
-            }
+            var oldExe = currentExe + "." + Guid.NewGuid().ToString().Substring(0, 8) + ".old";
 
             // 解压 ZIP 到临时目录
             var extractDir = Path.Combine(Path.GetTempPath(), "JekyllCli_Extract");
@@ -181,12 +175,19 @@ namespace BlogTools.Services
             {
                 var currentExe = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName;
                 if (currentExe == null) return;
+                var appDir = Path.GetDirectoryName(currentExe);
+                if (appDir == null) return;
 
-                var oldExe = currentExe + ".old";
-                if (File.Exists(oldExe))
+                // 清理所有遗留的 .old 文件
+                var oldFiles = Directory.GetFiles(appDir, "*.old");
+                foreach (var oldExe in oldFiles)
                 {
-                    File.Delete(oldExe);
-                    Debug.WriteLine("[UpdateService] Cleaned up old version file.");
+                    try
+                    {
+                        File.Delete(oldExe);
+                        Debug.WriteLine($"[UpdateService] Cleaned up old version file: {oldExe}");
+                    }
+                    catch { }
                 }
 
                 // 清理临时更新文件夹
