@@ -260,7 +260,7 @@
                 </StackPanel>
 
                 <!-- ═══ 更新中心 ═══ -->
-                <TextBlock Text="获取更新" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                <TextBlock Text="更新中心" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Margin="0,0,0,24">
                     <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowDownload24}">
@@ -270,9 +270,32 @@
                                 <TextBlock x:Name="VersionBlock" Text="版本获取中..." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
-                        <ui:Button Content="前往 GitHub Releases" Click="CheckUpdate_Click" />
+                        <ui:Button x:Name="CheckUpdateButton" Content="检查更新" Click="CheckUpdate_Click" />
                     </ui:CardControl>
+
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowSync24}">
+                        <ui:CardControl.Header>
+                            <StackPanel>
+                                <TextBlock Text="静默更新" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="开启后，下载完成将自动执行更新并重启，无需手动确认。" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            </StackPanel>
+                        </ui:CardControl.Header>
+                        <ui:ToggleSwitch x:Name="SilentUpdateToggle" Checked="SilentUpdate_Checked" Unchecked="SilentUpdate_Unchecked" />
+                    </ui:CardControl>
+
+                    <!-- 下载进度条：默认隐藏 -->
+                    <Border x:Name="ProgressPanel" Visibility="Collapsed"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,4,0,0">
+                        <StackPanel>
+                            <TextBlock x:Name="ProgressText" Text="准备下载..." FontSize="12"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" />
+                            <ProgressBar x:Name="DownloadProgress" Minimum="0" Maximum="100" Value="0" Height="6" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
+
 
             </StackPanel>
         </ScrollViewer>

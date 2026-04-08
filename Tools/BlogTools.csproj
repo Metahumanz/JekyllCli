@@ -8,8 +8,26 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <SelfContained>false</SelfContained>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
+
+    <!-- 单文件发布配置 -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
+
+  <!-- 屏蔽第三方库散落的 XML 文档文件 -->
+  <PropertyGroup>
+    <PublishDocumentationFile>false</PublishDocumentationFile>
+  </PropertyGroup>
+  <Target Name="RemoveDocumentationFiles" AfterTargets="Publish">
+    <ItemGroup>
+      <DocFilesToRemove Include="$(PublishDir)*.xml" />
+      <DocFilesToRemove Include="$(PublishDir)*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(DocFilesToRemove)" />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Markdig" Version="1.1.2" />
@@ -18,10 +36,12 @@
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
+  <!-- KaTeX 作为嵌入式资源打入 EXE -->
   <ItemGroup>
-    <Content Include="Assets\katex\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <EmbeddedResource Include="Assets\katex\**\*">
+      <LogicalName>katex/%(RecursiveDir)%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>
+

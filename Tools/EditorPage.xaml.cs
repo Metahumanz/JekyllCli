@@ -62,7 +62,12 @@ namespace BlogTools
             await PreviewWebView.EnsureCoreWebView2Async(env);
             await EditorWebView.EnsureCoreWebView2Async(env);
 
-            var katexFolder = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "katex");
+            // 从嵌入式资源提取 KaTeX 到临时目录
+            var katexFolder = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "BlogTools", "katex");
+            ExtractKatexResources(katexFolder);
+
             PreviewWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
                 "localassets", katexFolder,
                 Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
@@ -824,6 +829,42 @@ namespace BlogTools
             {
                 _tagsList.Remove(tag);
             }
+        }
+
+        /// <summary>
+        /// 从 EmbeddedResource 中提取 KaTeX 文件到指定目录。
+        /// 使用版本标记文件避免重复解压。
+        /// </summary>
+        private static void ExtractKatexResources(string targetDir)
+        {
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0";
+            var stampFile = System.IO.Path.Combine(targetDir, ".version");
+
+            // 如果版本号匹配，跳过提取
+            if (System.IO.File.Exists(stampFile) && System.IO.File.ReadAllText(stampFile).Trim() == version)
+                return;
+
+            System.IO.Directory.CreateDirectory(targetDir);
+
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            var prefix = "katex/";
+            foreach (var resName in assembly.GetManifestResourceNames())
+            {
+                if (!resName.StartsWith(prefix)) continue;
+
+                // resName 格式: "katex/fonts/xxx.woff2" 或 "katex/katex.min.css"
+                var relativePath = resName.Substring(prefix.Length);
+                var destPath = System.IO.Path.Combine(targetDir, relativePath.Replace("/", "\\"));
+                var destDir = System.IO.Path.GetDirectoryName(destPath);
+                if (destDir != null) System.IO.Directory.CreateDirectory(destDir);
+
+                using var stream = assembly.GetManifestResourceStream(resName);
+                if (stream == null) continue;
+                using var fs = System.IO.File.Create(destPath);
+                stream.CopyTo(fs);
+            }
+
+            System.IO.File.WriteAllText(stampFile, version);
         }
     }
 }

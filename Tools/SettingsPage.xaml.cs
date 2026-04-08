@@ -44,6 +44,7 @@ namespace BlogTools
             CurrentPathBlock.Text = App.JekyllContext.BlogPath;
             var settings = StorageService.Load();
             RememberMetadataToggle.IsChecked = settings.RememberMetadataExpanded;
+            SilentUpdateToggle.IsChecked = settings.SilentUpdate;
             _config = App.JekyllContext.LoadConfig();
 
             FontComboBox.Items.Clear();
@@ -326,22 +327,124 @@ namespace BlogTools
             return FindVisualParent<T>(parentObject);
         }
 
-        private void CheckUpdate_Click(object sender, RoutedEventArgs e)
+        private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
         {
+            await PerformUpdateCheckAsync(isManual: true);
+        }
+
+        /// <summary>
+        /// 公开方法，供 App.xaml.cs 启动时调用进行自动检查。
+        /// </summary>
+        public async Task PerformUpdateCheckAsync(bool isManual = false)
+        {
+            CheckUpdateButton.IsEnabled = false;
+            VersionBlock.Text = "正在检查更新...";
+
             try
             {
-                VersionBlock.Text = "即将打开浏览器检查更新...";
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                var (hasUpdate, latestVersion, downloadUrl) = await UpdateService.CheckForUpdateAsync();
+
+                if (!hasUpdate)
                 {
-                    FileName = "https://github.com/Metahumanz/JekyllCli/releases/latest",
-                    UseShellExecute = true
+                    var current = UpdateService.GetCurrentVersion();
+                    VersionBlock.Text = $"当前版本: v{current.Major}.{current.Minor}.{current.Build} — 已是最新版本 ✓";
+                    if (isManual)
+                    {
+                        StatusInfo.Message = "当前已是最新版本！";
+                        StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
+                        StatusInfo.IsOpen = true;
+                    }
+                    return;
+                }
+
+                VersionBlock.Text = $"当前版本: v{UpdateService.GetCurrentVersion().Major}.{UpdateService.GetCurrentVersion().Minor}.{UpdateService.GetCurrentVersion().Build}  ➜  发现新版本: {latestVersion}";
+
+                // 弹窗询问是否下载
+                var askDownload = new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = "发现新版本",
+                    Content = $"发现新版本 {latestVersion}，是否立即下载？",
+                    PrimaryButtonText = "立即下载",
+                    CloseButtonText = "稍后再说"
+                };
+                var result = await askDownload.ShowDialogAsync();
+                if (result != Wpf.Ui.Controls.MessageBoxResult.Primary)
+                    return;
+
+                // 开始下载
+                ProgressPanel.Visibility = Visibility.Visible;
+                ProgressText.Text = "正在下载更新...";
+                DownloadProgress.Value = 0;
+
+                var progress = new Progress<int>(percent =>
+                {
+                    DownloadProgress.Value = percent;
+                    ProgressText.Text = $"正在下载更新... {percent}%";
                 });
+
+                var zipPath = await UpdateService.DownloadUpdateAsync(downloadUrl, progress);
+
+                ProgressText.Text = "下载完成！";
+                DownloadProgress.Value = 100;
+
+                // 检查是否静默更新
+                var settings = StorageService.Load();
+                if (settings.SilentUpdate)
+                {
+                    ProgressText.Text = "正在应用更新，即将重启...";
+                    await Task.Delay(500);
+                    UpdateService.ApplyUpdate(zipPath);
+                    return;
+                }
+
+                // 弹窗询问是否立即更新
+                var askApply = new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = "下载完成",
+                    Content = "更新已下载完成，是否立即更新？更新后应用将自动重启。",
+                    PrimaryButtonText = "立即更新",
+                    CloseButtonText = "稍后再说"
+                };
+                var applyResult = await askApply.ShowDialogAsync();
+                if (applyResult == Wpf.Ui.Controls.MessageBoxResult.Primary)
+                {
+                    ProgressText.Text = "正在应用更新，即将重启...";
+                    await Task.Delay(500);
+                    UpdateService.ApplyUpdate(zipPath);
+                }
+                else
+                {
+                    ProgressPanel.Visibility = Visibility.Collapsed;
+                }
             }
             catch (Exception ex)
             {
-                VersionBlock.Text = $"获取更新失败: {ex.Message}";
+                VersionBlock.Text = $"检查更新失败: {ex.Message}";
+                StatusInfo.Message = $"更新检查出错: {ex.Message}";
+                StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Error;
+                StatusInfo.IsOpen = true;
+                ProgressPanel.Visibility = Visibility.Collapsed;
+            }
+            finally
+            {
+                CheckUpdateButton.IsEnabled = true;
             }
         }
+
+        private void SilentUpdate_Checked(object sender, RoutedEventArgs e)
+        {
+            var settings = StorageService.Load();
+            settings.SilentUpdate = true;
+            StorageService.Save(settings);
+        }
+
+        private void SilentUpdate_Unchecked(object sender, RoutedEventArgs e)
+        {
+            var settings = StorageService.Load();
+            settings.SilentUpdate = false;
+            StorageService.Save(settings);
+        }
+
         private async void UploadFavicons_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
@@ -379,4 +482,4 @@ namespace BlogTools
             }
         }
     }
-}
+}

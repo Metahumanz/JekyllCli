@@ -23,7 +23,7 @@ jobs:
     - name: Publish WPF App
       run: |
         cd Tools
-        dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true -o ../publish_output
+        dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o ../publish_output
 
     - name: Copy Blank Blog Template for Bundle
       run: |
