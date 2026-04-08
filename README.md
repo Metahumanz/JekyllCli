@@ -6,13 +6,12 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
 
 ---
 
-## ✨ v1.1.1 全新特性
+## ✨ v1.3.1 全新特性
 
-- 📦 **双版本发布**：提供自带 `Blog` 模板的 `Bundle` 版与不带模板的 `Minimal` 纯净版。
-- 🛠️ **轻量级更迭**：抛弃了原本臃肿的 Velopack 自动更新机制，回归纯净绿色的解压即用模式。
-- 🖼️ **文章图片与网站图标**：编辑器新增 `上传本地图片(Alt+I)` 快捷导入，自动归档并插入 Markdown；设置页支持一键导入 Favicons 网站图标集。
-- 🧭 **站点导航管理**：新增 `_tabs` 导航栏选项卡的可视化配置（包括 About, Archives, Categories, Tags）。
-- 📺 **B站深度适配**：直接深度读取并写入 `_data/contact.yml`，完美将推特替换为 Bilibili，原生兼容 Chirpy 最新规范。
+- 🎨 **图标自适应切换**：引入全新设计的沉稳专业风格图标，并实现深浅色主题自适应逻辑。窗口图标与任务栏图标将随应用主题色实时切换。
+- 📦 **真正单文件发布**：现在工具编译后仅为一个单一的 `JekyllCli.exe`，所有托管库、原生 DLL 以及 KaTeX 渲染引擎均已完美集成在 EXE 内部，真正做到解压即用。
+- 🔄 **应用内自热更新**：新增基于“重命名法”的自更新机制。工具在启动时自动静默检查 GitHub 最新 Release，支持一键下载并在应用内完成自动替换与重启。
+- 🎨 **UI 自适应优化**：初始化欢迎向导已支持按内容自动调整窗口高度，彻底解决在小屏幕或特定缩放下的组件遮挡问题。
 
 ---
 
@@ -22,7 +21,8 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
 - [二、初始配置与如何使用](#二初始配置与如何使用)
 - [三、进阶：如何修改工具源码](#三进阶如何修改工具源码)
 - [四、自行打包与自动化发布](#四自行打包与自动化发布)
-- [五、开源协议](#五开源协议)
+- [五、版本更新日志](#五版本更新日志)
+- [六、开源协议](#六开源协议)
 
 ---
 
@@ -39,44 +39,38 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
    | 推荐人群 | 下载文件名 | 包含内容 | 特点 |
    | :--- | :--- | :--- | :--- |
    | **新手/快速试用** | `JekyllCli-win-x64-bundle.zip` | **工具 + 博客模板** | **最推荐**。解压即开即用，自带完整的博客基座。 |
-   | **长期使用/追求稳定** | `JekyllCli-win-Setup.exe` | **安装程序** | 将工具安装到系统，支持桌面快捷方式和全自动静默更新。 |
-   | **已有博客/老鸟** | `JekyllCli-win-x64-minimal.zip` | **仅工具** | 纯净极简。适合已有博客目录，只需一个管理工具的用户。 |
+   | **已有博客/老鸟** | `JekyllCli-win-x64-minimal.zip` | **仅工具 (单一 EXE)** | 极致精简。只有一个 EXE，适合已有博客目录的用户。 |
 
-   > 💡 **提示**：从此版本开始，本工具为绿色免安装无后台拉取的纯粹应用，您可以随时下载新版本直接覆盖。
+   > 💡 **提示**：本工具支持**自动检查更新**，一旦有新版本发布，您将在启动时收到弹窗提醒，点击即可完成无缝升级。
 
 3. **运行工具**：
-   - **压缩包版**：解开压缩包，双击运行 `JekyllCli.exe`。
-   - **安装版 (Setup.exe)**：双击安装后，从桌面快捷方式启动。
+   - 解开压缩包，双击运行 `JekyllCli.exe` 即可启动。
 
 ## 二、初始配置与如何使用
 
-如果您是**第一次启动该工具**，或者刚刚将本仓库克隆下来，该如何完成博客配置呢？
+如果您是**第一次启动该工具**，该如何完成博客配置呢？
 
 ### 1. 链接博客数据源
-首次打开 JekyllCli 会弹出**初始欢迎向导**：
+首次打开 JekyllCli 会弹出**自动适配高度的初始欢迎向导**：
 - **选择博客目录**：
     - **已有博客**：直接指定包含 `_config.yml` 的本地文件夹。
     - **零基础开始**：如果你下载的是 `bundle` 版，点击“使用内置模板”即可一键完成初始化。
-    - **从 GitHub 拉取**：点击“从 GitHub 拉取”，工具将自动克隆 Chirpy 官方模板库到你指定的路径。
-- **选择语言和时区**：在向导第二步下拉菜单选择你的第一语言。如果是中国用户，系统将自动帮助写入 `Asia/Shanghai` 时区和中文设定。
+- **选择语言和时区**：在向导第二步下拉菜单选择你的语言。系统将自动帮助写入时区和语言设定。
 
 ### 2. 界面核心功能
-- **仪表盘大盘**：实时读取本地 Markdown 共计写了多少文章。支持直接检测与远端仓库（比如 GitHub）的差异版本。
-- **WebView2 沉浸式写作编辑**：
-  - **分类联想**：新增一级/二级分类双下拉框，自动扫描历史库中的所有分类供快速选择，也支持直接键入新分类。
+- **仪表盘大盘**：实时读取本地 Markdown 统计。
+- **Fluent 写作编辑**：
   - **公式支持**：内置 KaTeX 数学公式引擎，支持离线渲染。
-  - **同步滚动**：支持编辑区与预览区的双向同步定位。
-- **可视化设置面板**：
-  - **外观定制**：读取并应用用户操作系统中的字体，让界面符合你的视觉审美。
-  - **社交与导航配置**：支持 Bilibili 主页链接配置，以及文章导航栏 _tabs 的名称排序修改。
-  - **静态资源上传**：支持批量上传网站 Favicons 与博客文章插图，自动存入 `assets/img/` 专属目录。
-  - **更新中心**：一键检测并前往 GitHub Releases 下载最新版本覆盖。
+  - **同步滚动**：预览与编辑双向定位。
+- **现代化设置面板**：
+  - **更新中心**：一键检测并执行应用内静默升级。
+  - **静态资源上传**：支持批量上传网站 Favicons 与博客插图。
 
 ---
 
 ## 三、进阶：如何修改工具源码
 
-本项目的桌面端是用 **C# 10 + WPF + WPF UI (.NET 10)** 编写的。如果你懂 C#，你可以随心所欲定制这把瑞士军刀：
+本项目的桌面端是用 **C# 10 + WPF + WPF UI (.NET 10)** 编写的。
 
 1. **环境准备**：
    - **Visual Studio 2022** / **Rider** 等集成开发环境，并装配 `.NET 桌面开发` 工作负载。
@@ -85,49 +79,43 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
    JekyllCli/
    ├── Blog/           // 官方干净 Chirpy Starter 博客文件存放处
    ├── Tools/          // WPF 本地客户端的所有源码存放处
-   │   ├── Assets/     // 挂载如离线公式等需要随包被分发的外部资产
-   │   ├── Services/   // 核心运行层：含调用 Git 命令解析，以及 `_config.yml`、Markdown FrontMatter 解析
-   │   ├── Views/      // XAML 界面库
+   │   ├── Assets/     // 应用图标与 KaTeX 嵌入式资源
+   │   ├── Services/   // 核心逻辑：Git 调用、Jekyll 解析、更新服务
    │   └── App.xaml    // 入口配置
    ├── .github/
    └── README.md
    ```
-3. **本地 Run 调试**：
-   - 通过终端进入源码目录 `cd Tools`，执行：
+3. **本地编译运行**：
+   - 进入 `Tools` 目录执行：
    ```bash
    dotnet build
    dotnet run
    ```
-4. 开发时如遇到数据源挂在旧地址引发卡顿或 bug，可手工清理掉隐藏在此目录生成的 `Settings.json` 即可重置缓存。
 
 ---
 
 ## 四、自行打包与自动化发布
 
-如果您在 `Tools` 里加了私有功能，并且想分享给别人，可以通过这两种方式发布 release 版本：
+如果您在 `Tools` 里加了私有功能，想自行发布：
 
-### 方法一：使用本机 .NET CLI 本地发布
-命令行进入 `Tools/` 后运行原生命令生成单一 `.exe` 文件（包含免安装依赖）：
+### 方法一：单文件发布
+命令行进入 `Tools/` 后运行命令生成单一 `.exe` 文件：
 ```powershell
-dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:PublishReadyToRun=true -o ../publish_output
+dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o ../publish_output
 ```
-随后只需将生成的 `publish_output` 里面的所有文件打包进 zip 压缩包即可散发。
 
-### 方法二：完全利用 GitHub Actions 云打包 (已配置！)
-无需借助肉身操作，本项目已内置 **GitHub Actions 释放流** (`.github/workflows/release.yml`) 🚀：
-- 从你的本地进行 Git 标记： 
+### 方法二：GitHub Actions 自动化 (推荐)
+本项目已内置 **GitHub Actions 释放流** (`.github/workflows/release.yml`)：
+- 只需要在本地推送一个以 **`v`** 开头的 Tag（如 v1.3.1）：
   ```bash
-  git tag v1.0.0
-  git push origin v1.0.0
+  git tag v1.3.1
+  git push origin v1.3.1
   ```
-- 只要推送的标头为 **`v`**（如 v1.1, v2.0），都会自动触发云端 Windows 服务器编译环境！
-- Action 会编译发布单文件版后，**自动在您的仓库页面创建 Release 并附加 Zip**，并附生成变更日志供别人下载。
-
-> 📌 **最后注意关于您的博客本身发布（而非工具的发布）**： 强烈建议打开 `Blog` 上的 Actions 把这当做一个正常的云端构建使用（Push 即刷新博文），这部分请查阅 [Chirpy 的官方部署向导](https://chirpy.cotes.page/posts/getting-started/)。
+- GitHub 将自动在云端完成编译、压缩并发布至 Release 页面。
 
 ---
 
 ## 五、开源协议
 
 1. 本套件的整体架构及 WPF `Tools` 辅助程序由原始作者开发，**采用 GPLv3 协议开源**。
-2. 在 `Blog` 文件夹下寄托的老 Chirpy 代码由 [@cotes2020](https://github.com/cotes2020) 等维护，原文件遵从的 **MIT 协议**。
+2. 在 `Blog` 文件夹下的 Chirpy 代码遵从 **MIT 协议**。

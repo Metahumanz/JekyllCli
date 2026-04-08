@@ -5,6 +5,7 @@ using BlogTools.Models;
 using BlogTools.Services;
 using Microsoft.Win32;
 using System.Threading.Tasks;
+using Wpf.Ui.Appearance;
 
 
 namespace BlogTools
@@ -29,6 +30,9 @@ namespace BlogTools
             // 清理上次更新残留的 .old 文件
             UpdateService.CleanupOldVersion();
 
+            // 监听全局主题变化，自动更新所有窗口图标
+            ApplicationThemeManager.Changed += OnThemeChanged;
+
             var settings = StorageService.Load();
             string? blogPath = settings.BlogPath;
 
@@ -36,6 +40,7 @@ namespace BlogTools
             {
                 Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 var setupWindow = new SetupWindow();
+                ApplyThemeIcon(setupWindow);
                 setupWindow.ShowDialog();
 
                 if (!setupWindow.IsSetupSuccessful)
@@ -61,10 +66,37 @@ namespace BlogTools
 
             // Show MainWindow
             var mainWindow = new MainWindow();
+            ApplyThemeIcon(mainWindow);
             mainWindow.Show();
 
             // 启动后延迟自动检查更新（不阻塞主窗口显示）
             _ = AutoCheckUpdateAsync(mainWindow);
+        }
+
+        /// <summary>
+        /// 根据当前主题为窗口设置对应的深色/浅色图标。
+        /// </summary>
+        public static void ApplyThemeIcon(Window window)
+        {
+            var isDark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
+            var iconUri = isDark
+                ? new Uri("pack://application:,,,/Assets/app_icon_dark.png")
+                : new Uri("pack://application:,,,/Assets/app_icon_light.png");
+            window.Icon = new System.Windows.Media.Imaging.BitmapImage(iconUri);
+        }
+
+        /// <summary>
+        /// 当应用主题改变时，更新所有已打开窗口的图标。
+        /// </summary>
+        private static void OnThemeChanged(ApplicationTheme currentTheme, System.Windows.Media.Color accent)
+        {
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                foreach (Window window in Application.Current.Windows)
+                {
+                    ApplyThemeIcon(window);
+                }
+            });
         }
 
         private async Task AutoCheckUpdateAsync(MainWindow mainWindow)

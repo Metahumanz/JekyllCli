@@ -45,6 +45,7 @@ namespace BlogTools
             var settings = StorageService.Load();
             RememberMetadataToggle.IsChecked = settings.RememberMetadataExpanded;
             SilentUpdateToggle.IsChecked = settings.SilentUpdate;
+            ThemeToggle.IsChecked = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
             _config = App.JekyllContext.LoadConfig();
 
             FontComboBox.Items.Clear();
