@@ -4,20 +4,16 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
-using Wpf.Ui.Appearance;
 using Microsoft.Win32;
-using System.IO;
-using BlogTools.Services;
-
-using System.Threading.Tasks;
 
 namespace BlogTools
 {
     public partial class SettingsPage : Page
     {
         private Dictionary<string, object>? _config;
-        private bool _isLoading = false;
+        private double _targetPageScrollOffset = -1;
+        private double _currentPageScrollOffset = -1;
+        private ScrollViewer? _activePageScrollViewer;
 
         public SettingsPage()
         {
@@ -25,17 +21,6 @@ namespace BlogTools
             Loaded += SettingsPage_Loaded;
             Unloaded += SettingsPage_Unloaded;
             App.BlogFilesChanged += OnBlogFilesChanged;
-            
-            ThemeToggle.IsChecked = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
-
-            // 下拉框打开/关闭时控制 ScrollViewerHelper 的事件转发
-            FontComboBox.DropDownOpened += (s, args) => Helpers.ScrollViewerHelper.SuppressScrollBubble = true;
-            FontComboBox.DropDownClosed += (s, args) => Helpers.ScrollViewerHelper.SuppressScrollBubble = false;
-
-            // handledEventsToo: true 让 ComboBox 即使在 ScrollViewerHelper 拦截后仍能收到滚轮事件
-            FontComboBox.AddHandler(UIElement.PreviewMouseWheelEvent,
-                new System.Windows.Input.MouseWheelEventHandler(FontComboBox_PreviewMouseWheel), true);
-
             CompositionTarget.Rendering += OnCompositionTargetRendering;
         }
 
@@ -52,49 +37,10 @@ namespace BlogTools
 
         private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
-            _isLoading = true;
             var parentSv = FindVisualParent<ScrollViewer>(this);
             parentSv?.ScrollToTop();
 
-            CurrentPathBlock.Text = App.JekyllContext.BlogPath;
-            var settings = StorageService.Load();
-            RememberMetadataToggle.IsChecked = settings.RememberMetadataExpanded;
-            KeepToolboxToolWhenPinnedToggle.IsChecked = settings.KeepToolboxToolWhenPinned;
-            AutoUpdateModifiedTimeToggle.IsChecked = settings.AutoUpdateModifiedTime;
-            SilentUpdateToggle.IsChecked = settings.SilentUpdate;
-            ThemeToggle.IsChecked = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
-
-            // Load Language setting
-            foreach (ComboBoxItem item in LanguageComboBox.Items)
-            {
-                if (item.Tag?.ToString() == settings.AppLanguage)
-                {
-                    LanguageComboBox.SelectedItem = item;
-                    break;
-                }
-            }
-            if (LanguageComboBox.SelectedItem == null) LanguageComboBox.SelectedIndex = 0; // Default to Auto
             _config = App.JekyllContext.LoadConfig();
-
-            FontComboBox.Items.Clear();
-            foreach (var family in System.Windows.Media.Fonts.SystemFontFamilies.OrderBy(f => f.Source))
-            {
-                FontComboBox.Items.Add(new ComboBoxItem { Content = family.Source, FontFamily = family });
-            }
-
-            var font = settings.AppFontFamily;
-            if (string.IsNullOrWhiteSpace(font)) font = GetStringValue(_config, "blogtools_font");
-            if (string.IsNullOrWhiteSpace(font)) font = "Microsoft YaHei UI";
-
-            foreach (ComboBoxItem item in FontComboBox.Items)
-            {
-                if (item.Content.ToString() == font)
-                {
-                    FontComboBox.SelectedItem = item;
-                    break;
-                }
-            }
-            _isLoading = false;
 
             TitleBox.Text = GetStringValue(_config, "title");
             TaglineBox.Text = GetStringValue(_config, "tagline");
@@ -107,10 +53,19 @@ namespace BlogTools
                 AuthorNameBox.Text = GetStringValue(socialDict, "name");
                 EmailBox.Text = GetStringValue(socialDict, "email");
             }
+            else
+            {
+                AuthorNameBox.Text = string.Empty;
+                EmailBox.Text = string.Empty;
+            }
 
             if (_config.TryGetValue("github", out var githubObj) && githubObj is Dictionary<object, object> githubDict)
             {
                 GithubBox.Text = GetStringValue(githubDict, "username");
+            }
+            else
+            {
+                GithubBox.Text = string.Empty;
             }
 
             var contacts = App.JekyllContext.LoadData<System.Collections.Generic.List<System.Collections.Generic.Dictionary<object, object>>>("_data/contact.yml");
@@ -121,17 +76,14 @@ namespace BlogTools
                 {
                     BilibiliBox.Text = u?.ToString();
                 }
+                else
+                {
+                    BilibiliBox.Text = string.Empty;
+                }
             }
-
-            try
+            else
             {
-                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                var versionStr = $"{version?.Major}.{version?.Minor}.{version?.Build}";
-                VersionBlock.Text = string.Format(Application.Current.FindResource("CommonVersionCurrent").ToString()!, versionStr);
-            }
-            catch
-            {
-                VersionBlock.Text = Application.Current.FindResource("CommonVersionDev").ToString();
+                BilibiliBox.Text = string.Empty;
             }
 
             // Load Tabs
@@ -153,160 +105,8 @@ namespace BlogTools
             }
         }
 
-        private async void ChangeBlogPath_Click(object sender, RoutedEventArgs e)
-        {
-            OpenFolderDialog dialog = new OpenFolderDialog
-            {
-                Title = Application.Current.FindResource("SettingsBtnChangePath").ToString()!
-            };
-
-            if (dialog.ShowDialog() == true)
-            {
-                string newPath = dialog.FolderName;
-                if (!File.Exists(Path.Combine(newPath, "_config.yml")))
-                {
-                    var msg = new Wpf.Ui.Controls.MessageBox 
-                    { 
-                        Title = Application.Current.FindResource("CommonError").ToString()!, 
-                        Content = Application.Current.FindResource("SettingsMsgInvalidRoot").ToString()!, 
-                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()! 
-                    };
-                    await msg.ShowDialogAsync();
-                    return;
-                }
-
-                // 1. Update settings
-                var settings = StorageService.Load();
-                settings.BlogPath = newPath;
-                StorageService.Save(settings);
-
-                // 2. Re-init services
-                App.JekyllContext = new JekyllService(newPath);
-                App.GitContext = new GitService(newPath);
-
-                // 3. Restart file watcher for new path
-                App.StartFileWatcher(newPath);
-
-                // 4. Refresh UI
-                SettingsPage_Loaded(sender, e);
-                
-                StatusInfo.Message = Application.Current.FindResource("SettingsMsgPathChanged").ToString()!;
-                StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
-                StatusInfo.IsOpen = true;
-            }
-        }
-
-        private void RememberMetadata_Checked(object sender, RoutedEventArgs e)
-        {
-            var settings = StorageService.Load();
-            settings.RememberMetadataExpanded = true;
-            StorageService.Save(settings);
-        }
-
-        private void RememberMetadata_Unchecked(object sender, RoutedEventArgs e)
-        {
-            var settings = StorageService.Load();
-            settings.RememberMetadataExpanded = false;
-            StorageService.Save(settings);
-        }
-
-        private void AutoUpdateModifiedTime_Checked(object sender, RoutedEventArgs e)
-        {
-            var settings = StorageService.Load();
-            settings.AutoUpdateModifiedTime = true;
-            StorageService.Save(settings);
-        }
-
-        private void AutoUpdateModifiedTime_Unchecked(object sender, RoutedEventArgs e)
-        {
-            var settings = StorageService.Load();
-            settings.AutoUpdateModifiedTime = false;
-            StorageService.Save(settings);
-        }
-
-        private void KeepToolboxToolWhenPinned_Checked(object sender, RoutedEventArgs e)
-        {
-            var settings = StorageService.Load();
-            settings.KeepToolboxToolWhenPinned = true;
-            StorageService.Save(settings);
-        }
-
-        private void KeepToolboxToolWhenPinned_Unchecked(object sender, RoutedEventArgs e)
-        {
-            var settings = StorageService.Load();
-            settings.KeepToolboxToolWhenPinned = false;
-            StorageService.Save(settings);
-        }
-
-        private void ThemeToggle_Checked(object sender, RoutedEventArgs e)
-        {
-            ApplicationThemeManager.Apply(ApplicationTheme.Dark);
-        }
-
-        private void ThemeToggle_Unchecked(object sender, RoutedEventArgs e)
-        {
-            ApplicationThemeManager.Apply(ApplicationTheme.Light);
-        }
-
-        private void FontComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isLoading) return;
-            var selectedFont = (FontComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
-            if (string.IsNullOrWhiteSpace(selectedFont)) return;
-
-            // 立即保存到 settings.json
-            var settings = StorageService.Load();
-            settings.AppFontFamily = selectedFont;
-            StorageService.Save(settings);
-
-            // 立即应用到主窗口
-            if (Application.Current.MainWindow is MainWindow mainWindow)
-            {
-                mainWindow.ApplyGlobalFont(selectedFont);
-            }
-        }
-
-        private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_isLoading) return;
-            var selectedTag = (LanguageComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
-            if (string.IsNullOrWhiteSpace(selectedTag)) return;
-
-            // 1. Save to settings
-            var settings = StorageService.Load();
-            settings.AppLanguage = selectedTag;
-            StorageService.Save(settings);
-
-            // 2. Apply language immediately
-            App.ApplyLanguage(selectedTag);
-        }
-
-        private double _targetDropdownScrollOffset = -1;
-        private double _currentDropdownScrollOffset = -1;
-        private ScrollViewer? _activeDropdownScrollViewer = null;
-
-        private double _targetPageScrollOffset = -1;
-        private double _currentPageScrollOffset = -1;
-        private ScrollViewer? _activePageScrollViewer = null;
-
         private void OnCompositionTargetRendering(object? sender, EventArgs e)
         {
-            if (_activeDropdownScrollViewer != null && _targetDropdownScrollOffset >= 0 && _currentDropdownScrollOffset >= 0)
-            {
-                double diff = _targetDropdownScrollOffset - _currentDropdownScrollOffset;
-                if (Math.Abs(diff) < 0.5)
-                {
-                    _currentDropdownScrollOffset = _targetDropdownScrollOffset;
-                    _activeDropdownScrollViewer.ScrollToVerticalOffset(_currentDropdownScrollOffset);
-                    _activeDropdownScrollViewer = null;
-                }
-                else
-                {
-                    _currentDropdownScrollOffset += diff * 0.2;
-                    _activeDropdownScrollViewer.ScrollToVerticalOffset(_currentDropdownScrollOffset);
-                }
-            }
-
             if (_activePageScrollViewer != null && _targetPageScrollOffset >= 0 && _currentPageScrollOffset >= 0)
             {
                 double diffPage = _targetPageScrollOffset - _currentPageScrollOffset;
@@ -345,72 +145,9 @@ namespace BlogTools
             _targetPageScrollOffset = Math.Max(0, Math.Min(rootSv.ScrollableHeight, _targetPageScrollOffset));
         }
 
-        private void FontComboBox_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
-        {
-            if (!FontComboBox.IsDropDownOpen)
-            {
-                _targetDropdownScrollOffset = -1;
-                _currentDropdownScrollOffset = -1;
-                _activeDropdownScrollViewer = null;
-                return;
-            }
-
-            var popup = FindVisualChild<System.Windows.Controls.Primitives.Popup>(FontComboBox);
-            if (popup?.Child is FrameworkElement popupChild)
-            {
-                var mousePos = e.GetPosition(popupChild);
-                bool isOverPopup = mousePos.X >= 0 && mousePos.Y >= 0
-                    && mousePos.X <= popupChild.ActualWidth
-                    && mousePos.Y <= popupChild.ActualHeight;
-
-                if (isOverPopup)
-                {
-                    e.Handled = true;
-                    var sv = FindVisualChild<ScrollViewer>(popupChild);
-                    if (sv != null)
-                    {
-                        if (_activeDropdownScrollViewer != sv)
-                        {
-                            _activeDropdownScrollViewer = sv;
-                            _currentDropdownScrollOffset = sv.VerticalOffset;
-                            _targetDropdownScrollOffset = sv.VerticalOffset;
-                        }
-
-                        _targetDropdownScrollOffset -= e.Delta * 2.0;
-                        _targetDropdownScrollOffset = Math.Max(0, Math.Min(sv.ScrollableHeight, _targetDropdownScrollOffset));
-                    }
-                }
-                else
-                {
-                    FontComboBox.IsDropDownOpen = false;
-                }
-            }
-        }
-
-        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
-        {
-            if (parent == null) return null;
-            int count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
-            for (int i = 0; i < count; i++)
-            {
-                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
-                if (child is T result) return result;
-                var found = FindVisualChild<T>(child);
-                if (found != null) return found;
-            }
-            return null;
-        }
-
         private void SaveConfigToMemory()
         {
             _config ??= App.JekyllContext.LoadConfig();
-
-            var selectedFont = (FontComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
-            _config["blogtools_font"] = string.IsNullOrWhiteSpace(selectedFont) ? "Microsoft YaHei UI" : selectedFont;
-            
-            var settings = StorageService.Load();
-            settings.AppFontFamily = _config["blogtools_font"]?.ToString() ?? string.Empty;
-            StorageService.Save(settings);
             
             _config["title"] = TitleBox.Text;
             _config["tagline"] = TaglineBox.Text;
@@ -458,15 +195,10 @@ namespace BlogTools
             SaveTab("_tabs/archives.md", ArchivesTitleBox, null, ArchivesOrderBox, null);
             SaveTab("_tabs/categories.md", CategoriesTitleBox, null, CategoriesOrderBox, null);
             SaveTab("_tabs/tags.md", TagsTitleBox, null, TagsOrderBox, null);
-            
-            // Apply font dynamically after save!
-            if (Application.Current.MainWindow is MainWindow mainWindow && _config.TryGetValue("blogtools_font", out var fontObj))
+
+            if (Application.Current.MainWindow is MainWindow mainWindow)
             {
-                var fontName = fontObj?.ToString();
-                if (!string.IsNullOrWhiteSpace(fontName))
-                {
-                    mainWindow.ApplyGlobalFont(fontName);
-                }
+                mainWindow.RefreshShellFromCurrentBlogConfig();
             }
         }
 
@@ -487,7 +219,7 @@ namespace BlogTools
             
             try
             {
-                var result = await App.GitContext.CommitAndPushAsync("Update blog configuration settings");
+                await App.GitContext.CommitAndPushAsync("Update blog configuration settings");
                 StatusInfo.Message = Application.Current.FindResource("SettingsMsgPublishSuccess").ToString()!;
                 StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
             }
@@ -543,19 +275,6 @@ namespace BlogTools
             return FindVisualParent<T>(parentObject);
         }
 
-        private void OpenGithubStar_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "https://github.com/Metahumanz/JekyllCli",
-                    UseShellExecute = true
-                });
-            }
-            catch { }
-        }
-
         private void OpenFaviconGenerator_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -567,138 +286,6 @@ namespace BlogTools
                 });
             }
             catch { }
-        }
-
-        private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
-        {
-            await PerformUpdateCheckAsync(isManual: true);
-        }
-
-        /// <summary>
-        /// 公开方法，供 App.xaml.cs 启动时调用进行自动检查。
-        /// </summary>
-        public async Task PerformUpdateCheckAsync(bool isManual = false)
-        {
-            CheckUpdateButton.IsEnabled = false;
-            VersionBlock.Text = Application.Current.FindResource("SettingsMsgUpdateChecking").ToString()!;
-
-            try
-            {
-                var (hasUpdate, latestVersion, downloadUrl, errorMsg) = await UpdateService.CheckForUpdateAsync();
-
-                if (!string.IsNullOrEmpty(errorMsg))
-                {
-                    VersionBlock.Text = Application.Current.FindResource("SettingsMsgUpdateFailed").ToString()!;
-                    if (isManual)
-                    {
-                        StatusInfo.Message = string.Format(Application.Current.FindResource("SettingsMsgUpdateError").ToString()!, errorMsg);
-                        StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Error;
-                        StatusInfo.IsOpen = true;
-                    }
-                    return;
-                }
-
-                if (!hasUpdate)
-                {
-                    var current = UpdateService.GetCurrentVersion();
-                    var currentVersionText = $"v{current.Major}.{current.Minor}.{current.Build}";
-                    VersionBlock.Text = string.Format(Application.Current.FindResource("SettingsMsgUpdateLatest").ToString()!, currentVersionText);
-                    if (isManual)
-                    {
-                        StatusInfo.Message = Application.Current.FindResource("SettingsMsgUpdateLatest").ToString()!; 
-                        // Better: just use the whole string or a dedicated key. Let's keep it simple for now.
-                        StatusInfo.IsOpen = true;
-                    }
-                    return;
-                }
-
-                var currentStr = $"v{UpdateService.GetCurrentVersion().Major}.{UpdateService.GetCurrentVersion().Minor}.{UpdateService.GetCurrentVersion().Build}";
-                VersionBlock.Text = string.Format(Application.Current.FindResource("CommonVersionCurrent").ToString()!, currentStr) + $"  ➜  {Application.Current.FindResource("SettingsMsgUpdateFound").ToString()!}: {latestVersion}";
-
-                // 弹窗询问是否下载
-                var askDownload = new Wpf.Ui.Controls.MessageBox
-                {
-                    Title = Application.Current.FindResource("SettingsMsgUpdateFound").ToString()!,
-                    Content = string.Format(Application.Current.FindResource("SettingsMsgAskDownload").ToString()!, latestVersion),
-                    PrimaryButtonText = Application.Current.FindResource("SettingsBtnDownloadNow").ToString()!,
-                    CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
-                };
-                var result = await askDownload.ShowDialogAsync();
-                if (result != Wpf.Ui.Controls.MessageBoxResult.Primary)
-                    return;
-
-                // 开始下载
-                ProgressPanel.Visibility = Visibility.Visible;
-                ProgressText.Text = string.Format(Application.Current.FindResource("SettingsMsgUpdateDownloading").ToString()!, 0);
-                DownloadProgress.Value = 0;
-
-                var progress = new Progress<int>(percent =>
-                {
-                    DownloadProgress.Value = percent;
-                    ProgressText.Text = string.Format(Application.Current.FindResource("SettingsMsgUpdateDownloading").ToString()!, percent);
-                });
-
-                var zipPath = await UpdateService.DownloadUpdateAsync(downloadUrl, progress);
-
-                ProgressText.Text = Application.Current.FindResource("SettingsMsgDownloadComplete").ToString()!;
-                DownloadProgress.Value = 100;
-
-                // 检查是否静默更新
-                var settings = StorageService.Load();
-                if (settings.SilentUpdate)
-                {
-                    ProgressText.Text = Application.Current.FindResource("SettingsMsgSilentUpdating").ToString()!;
-                    await Task.Delay(500);
-                    UpdateService.ApplyUpdate(zipPath);
-                    return;
-                }
-
-                // 弹窗询问是否立即更新
-                var askApply = new Wpf.Ui.Controls.MessageBox
-                {
-                    Title = Application.Current.FindResource("SettingsMsgDownloadComplete").ToString()!,
-                    Content = Application.Current.FindResource("SettingsMsgAskApply").ToString()!,
-                    PrimaryButtonText = Application.Current.FindResource("SettingsBtnApplyNow").ToString()!,
-                    CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
-                };
-                var applyResult = await askApply.ShowDialogAsync();
-                if (applyResult == Wpf.Ui.Controls.MessageBoxResult.Primary)
-                {
-                    ProgressText.Text = Application.Current.FindResource("SettingsMsgSilentUpdating").ToString()!;
-                    await Task.Delay(500);
-                    UpdateService.ApplyUpdate(zipPath);
-                }
-                else
-                {
-                    ProgressPanel.Visibility = Visibility.Collapsed;
-                }
-            }
-            catch (Exception ex)
-            {
-                VersionBlock.Text = string.Format(Application.Current.FindResource("SettingsMsgUpdateFailed").ToString()! + ": {0}", ex.Message);
-                StatusInfo.Message = string.Format(Application.Current.FindResource("SettingsMsgUpdateError").ToString()!, ex.Message);
-                StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Error;
-                StatusInfo.IsOpen = true;
-                ProgressPanel.Visibility = Visibility.Collapsed;
-            }
-            finally
-            {
-                CheckUpdateButton.IsEnabled = true;
-            }
-        }
-
-        private void SilentUpdate_Checked(object sender, RoutedEventArgs e)
-        {
-            var settings = StorageService.Load();
-            settings.SilentUpdate = true;
-            StorageService.Save(settings);
-        }
-
-        private void SilentUpdate_Unchecked(object sender, RoutedEventArgs e)
-        {
-            var settings = StorageService.Load();
-            settings.SilentUpdate = false;
-            StorageService.Save(settings);
         }
 
         private async void UploadFavicons_Click(object sender, RoutedEventArgs e)

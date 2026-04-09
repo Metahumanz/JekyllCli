@@ -7,7 +7,8 @@
     <system:String x:Key="NavDashboard">仪表盘</system:String>
     <system:String x:Key="NavManagePosts">存量管理</system:String>
     <system:String x:Key="NavEditor">撰写文章</system:String>
-    <system:String x:Key="NavSettings">软件设置</system:String>
+    <system:String x:Key="NavSettings">博客设置</system:String>
+    <system:String x:Key="NavAppSettings">软件设置</system:String>
     <system:String x:Key="StatsPosts">文章总数</system:String>
     <system:String x:Key="StatsCategories">分类统计</system:String>
     <system:String x:Key="StatsTags">标签统计</system:String>
@@ -30,7 +31,7 @@
     <system:String x:Key="DashboardChirpyUpgradeSub">包含一项必须手动处理的破坏性变更，点击展开查看详情</system:String>
     <system:String x:Key="DashboardFaviconImportant">⚠️ 必须操作：重新配置网站图标 (Favicon)</system:String>
     <system:String x:Key="DashboardFaviconDesc">v7.4.0 更改了 Favicon 的加载与管理逻辑。升级后必须按照最新规范重新生成并替换图标文件，否则图标将失效。步骤：前往 Real Favicon Generator 上传你的 512×512 头像 → 下载生成包 → 删掉 site.webmanifest → 将剩余 PNG/ICO/SVG 覆盖到 assets/img/favicons/ 目录。</system:String>
-    <system:String x:Key="DashboardBtnFaviconSettings">前往设置页配置 Favicon</system:String>
+    <system:String x:Key="DashboardBtnFaviconSettings">前往博客设置页配置 Favicon</system:String>
     <system:String x:Key="DashboardBtnOpenFaviconGenerator">打开 Real Favicon Generator ↗</system:String>
     <system:String x:Key="DashboardFeatureTitle">✨ 新功能亮点</system:String>
     <system:String x:Key="DashboardBugFixTitle">🐛 核心修复</system:String>
@@ -152,8 +153,10 @@
     <system:String x:Key="ManagePostsTipDelete">删除文章</system:String>
 
     <!-- SettingsPage -->
-    <system:String x:Key="SettingsTitle">引擎设置</system:String>
-    <system:String x:Key="SettingsSub">管理全局配置、外观与发布选项</system:String>
+    <system:String x:Key="SettingsTitle">博客设置</system:String>
+    <system:String x:Key="SettingsSub">管理站点信息、导航资源与发布流程</system:String>
+    <system:String x:Key="AppSettingsTitle">软件设置</system:String>
+    <system:String x:Key="AppSettingsSub">管理工作区、撰写偏好、外观与应用更新</system:String>
     
     <system:String x:Key="SettingsSecWorkspace">工作区</system:String>
     <system:String x:Key="SettingsLabelBlogPath">博客本地根目录</system:String>
@@ -277,7 +280,7 @@
     <system:String x:Key="ManagePostsMsgDeleteConfirm">您确定要彻底删除这篇文章 '{0}' 吗？</system:String>
 
     <!-- App Messages -->
-    <system:String x:Key="AppMsgUpdatePrompt">发现新版本 {0}（当前: {1}），是否前往设置页下载？</system:String>
+    <system:String x:Key="AppMsgUpdatePrompt">发现新版本 {0}（当前: {1}），是否前往软件设置页下载？</system:String>
     <system:String x:Key="AppBtnGoToUpdate">前往更新</system:String>
 
     <!-- Setup Messages -->

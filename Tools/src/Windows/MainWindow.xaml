@@ -21,8 +21,11 @@
                 <ui:NavigationViewItem Content="{DynamicResource NavDashboard}" Icon="{ui:SymbolIcon Symbol=Home24}" TargetPageType="{x:Type local:DashboardPage}" />
                 <ui:NavigationViewItem Content="{DynamicResource NavManagePosts}" Icon="{ui:SymbolIcon Symbol=Library24}" TargetPageType="{x:Type local:ManagePostsPage}" />
                 <ui:NavigationViewItem Content="{DynamicResource NavEditor}" Icon="{ui:SymbolIcon Symbol=Edit24}" TargetPageType="{x:Type local:EditorPage}" />
-                <ui:NavigationViewItem Content="{DynamicResource NavSettings}" Icon="{ui:SymbolIcon Symbol=Settings24}" TargetPageType="{x:Type local:SettingsPage}" />
+                <ui:NavigationViewItem Content="{DynamicResource NavSettings}" Icon="{ui:SymbolIcon Symbol=Globe24}" TargetPageType="{x:Type local:SettingsPage}" />
             </ui:NavigationView.MenuItems>
+            <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Content="{DynamicResource NavAppSettings}" Icon="{ui:SymbolIcon Symbol=Settings24}" TargetPageType="{x:Type local:AppSettingsPage}" />
+            </ui:NavigationView.FooterMenuItems>
         </ui:NavigationView>
     </Grid>
 </ui:FluentWindow>

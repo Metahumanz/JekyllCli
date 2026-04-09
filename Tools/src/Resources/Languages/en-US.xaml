@@ -7,7 +7,8 @@
     <system:String x:Key="NavDashboard">Dashboard</system:String>
     <system:String x:Key="NavManagePosts">Manage Posts</system:String>
     <system:String x:Key="NavEditor">Write Post</system:String>
-    <system:String x:Key="NavSettings">Settings</system:String>
+    <system:String x:Key="NavSettings">Blog Settings</system:String>
+    <system:String x:Key="NavAppSettings">App Settings</system:String>
 
     <!-- DashboardPage -->
     <system:String x:Key="DashboardWelcomeTitle">Welcome to Blog Management</system:String>
@@ -16,7 +17,7 @@
     <system:String x:Key="DashboardChirpyUpgradeSub">Contains a breaking change requiring manual action, click to expand details</system:String>
     <system:String x:Key="DashboardFaviconImportant">⚠️ Required Action: Reconfigure Site Icons (Favicon)</system:String>
     <system:String x:Key="DashboardFaviconDesc">v7.4.0 changed the Favicon loading and management logic. You must regenerate and replace the icon files according to the latest specifications after the upgrade, otherwise the icons will be invalid. Action: Go to Real Favicon Generator to upload your 512×512 avatar → download the generated package → delete site.webmanifest → overwrite the remaining PNG/ICO/SVG files to the assets/img/favicons/ directory.</system:String>
-    <system:String x:Key="DashboardBtnFaviconSettings">Go to Settings to configure Favicon</system:String>
+    <system:String x:Key="DashboardBtnFaviconSettings">Go to Blog Settings to configure Favicon</system:String>
     <system:String x:Key="DashboardBtnOpenFaviconGenerator">Open Real Favicon Generator ↗</system:String>
     <system:String x:Key="DashboardFeatureTitle">✨ New Feature Highlights</system:String>
     <system:String x:Key="DashboardBugFixTitle">🐛 Core Fixes</system:String>
@@ -149,8 +150,10 @@
     <system:String x:Key="ManagePostsTipDelete">Delete Post</system:String>
 
     <!-- SettingsPage -->
-    <system:String x:Key="SettingsTitle">Settings</system:String>
-    <system:String x:Key="SettingsSub">Manage global configuration, appearance, and publishing options</system:String>
+    <system:String x:Key="SettingsTitle">Blog Settings</system:String>
+    <system:String x:Key="SettingsSub">Manage site information, navigation assets, and publishing</system:String>
+    <system:String x:Key="AppSettingsTitle">App Settings</system:String>
+    <system:String x:Key="AppSettingsSub">Manage workspace, writing preferences, appearance, and updates</system:String>
     
     <system:String x:Key="SettingsSecWorkspace">Workspace</system:String>
     <system:String x:Key="SettingsLabelBlogPath">Blog Local Root Directory</system:String>
@@ -274,7 +277,7 @@
     <system:String x:Key="ManagePostsMsgDeleteConfirm">Are you sure you want to permanently delete the article '{0}'?</system:String>
 
     <!-- App Messages -->
-    <system:String x:Key="AppMsgUpdatePrompt">New version {0} found (current: {1}). Go to settings to download?</system:String>
+    <system:String x:Key="AppMsgUpdatePrompt">New version {0} found (current: {1}). Go to App Settings to download?</system:String>
     <system:String x:Key="AppBtnGoToUpdate">Go to Update</system:String>
 
     <!-- Setup Messages -->

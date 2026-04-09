@@ -11,13 +11,22 @@ namespace BlogTools
         {
             InitializeComponent();
             Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
-            ApplyGlobalFont();
-            ApplyDynamicTitleAndIcon();
+            RefreshShellFromCurrentBlogConfig();
             Loaded += MainWindow_Loaded;
+        }
+
+        public void RefreshShellFromCurrentBlogConfig()
+        {
+            ApplyDynamicTitleAndIcon();
+            ApplyGlobalFont();
         }
 
         private void ApplyDynamicTitleAndIcon()
         {
+            var defaultTitle = Application.Current.TryFindResource("AppTitle")?.ToString() ?? "JekyllCli";
+            Title = defaultTitle;
+            AppTitleBar.Title = defaultTitle;
+
             var config = App.JekyllContext.LoadConfig();
 
             // Dynamic title from _config.yml
