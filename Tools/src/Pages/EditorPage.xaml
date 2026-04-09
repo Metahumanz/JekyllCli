@@ -65,6 +65,64 @@
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="FontSize" Value="20" />
             </Style>
+            <DataTemplate x:Key="EditorToolGlyphTemplate">
+                <Grid Width="24" Height="24">
+                    <ui:SymbolIcon x:Name="ToolSymbol"
+                                   Symbol="{Binding Symbol}"
+                                   FontSize="{Binding SymbolFontSize}"
+                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}"
+                                   Style="{StaticResource EditorToolIconStyle}" />
+                    <TextBlock x:Name="ToolLabel"
+                               Visibility="Collapsed"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                    <Grid x:Name="DividerGlyph"
+                          Visibility="Collapsed"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Width="18"
+                          Height="18">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="1"
+                                Height="2"
+                                CornerRadius="1"
+                                Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                    </Grid>
+                </Grid>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding Id}" Value="h1">
+                        <Setter TargetName="ToolSymbol" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="ToolLabel" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="ToolLabel" Property="Text" Value="H1" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Id}" Value="h2">
+                        <Setter TargetName="ToolSymbol" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="ToolLabel" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="ToolLabel" Property="Text" Value="H2" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Id}" Value="h3">
+                        <Setter TargetName="ToolSymbol" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="ToolLabel" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="ToolLabel" Property="Text" Value="H3" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Id}" Value="h4">
+                        <Setter TargetName="ToolSymbol" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="ToolLabel" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="ToolLabel" Property="Text" Value="H4" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Id}" Value="divider">
+                        <Setter TargetName="ToolSymbol" Property="Visibility" Value="Collapsed" />
+                        <Setter TargetName="DividerGlyph" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
         </Grid.Resources>
 
         <Grid.RowDefinitions>
@@ -280,11 +338,9 @@
                                                         PreviewMouseMove="ToolButton_PreviewMouseMove"
                                                         PreviewMouseLeftButtonUp="ToolButton_PreviewMouseLeftButtonUp"
                                                         Style="{StaticResource EditorToolButtonStyle}"
+                                                        Content="{Binding}"
+                                                        ContentTemplate="{StaticResource EditorToolGlyphTemplate}"
                                                         ToolTip="{Binding ToolTipText}">
-                                                    <ui:SymbolIcon Symbol="{Binding Symbol}"
-                                                                   FontSize="{Binding SymbolFontSize}"
-                                                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}"
-                                                                   Style="{StaticResource EditorToolIconStyle}" />
                                                 </Button>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -350,11 +406,9 @@
                                         PreviewMouseMove="ToolButton_PreviewMouseMove"
                                         PreviewMouseLeftButtonUp="ToolButton_PreviewMouseLeftButtonUp"
                                         Style="{StaticResource EditorSideToolButtonStyle}"
+                                        Content="{Binding}"
+                                        ContentTemplate="{StaticResource EditorToolGlyphTemplate}"
                                         ToolTip="{Binding ToolTipText}">
-                                    <ui:SymbolIcon Symbol="{Binding Symbol}"
-                                                   FontSize="{Binding SymbolFontSize}"
-                                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}"
-                                                   Style="{StaticResource EditorToolIconStyle}" />
                                 </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
