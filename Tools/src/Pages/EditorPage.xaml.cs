@@ -2601,12 +2601,36 @@ namespace BlogTools
             if (e.Key == System.Windows.Input.Key.Enter)
             {
                 ParseTagsInput();
+                DismissTagInput();
+                e.Handled = true;
+            }
+            else if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                TagInputBox.Clear();
+                DismissTagInput();
                 e.Handled = true;
             }
             else if (e.Key == System.Windows.Input.Key.Back && string.IsNullOrEmpty(TagInputBox.Text) && _tagsList.Count > 0)
             {
                 _tagsList.RemoveAt(_tagsList.Count - 1);
             }
+        }
+
+        private void DismissTagInput()
+        {
+            if (RootGrid == null)
+            {
+                Keyboard.ClearFocus();
+                return;
+            }
+
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    FocusManager.SetFocusedElement(FocusManager.GetFocusScope(RootGrid), RootGrid);
+                    Keyboard.Focus(RootGrid);
+                }),
+                System.Windows.Threading.DispatcherPriority.Input);
         }
 
         private void TagInputBox_LostFocus(object sender, RoutedEventArgs e)
