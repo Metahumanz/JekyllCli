@@ -119,6 +119,8 @@ This project has built-in **GitHub Actions release workflows** (`.github/workflo
 
 ## V. Version Changelog
 
+- **v1.6.0**: Upgraded the writing area into a draggable, customizable Markdown toolbox with quick actions for headings, emphasis, lists, code blocks, tables, and more, and allowed favorite tools to be pinned to the center rail; added the link insertion dialog, richer hover tips, and a setting that controls whether pinning keeps a copy in the toolbox; improved mouse/touch scrolling and modified-date sorting on the post management page, and fixed WPF build failures caused by intermediate-output permission issues.
+- **v1.5.0**: Added an "Insert Link" shortcut to the writing area with a dialog for display text, URL, and same-tab/new-tab behavior; introduced a unified hover lift effect for common UI components so the interface feels lighter and more responsive.
 - **v1.4.1**: Fully implemented UI internationalization with adaptive English/Chinese switching; extended physics-based smooth scrolling to all pages for an ultra-smooth experience; fixed several hardcoded Chinese strings.
 - **v1.4.0**: Added a physics-based spring algorithm (exponential decay) for the settings page smooth scrolling engine; added an optional auto-completion feature for the last modified time; fixed scrolling bugs in the font dropdown list and added search support; supported single-file publishing for the minimal version.
 - **v1.3.3**: Fixed the issue where GitHub API update detection silently failed on some networks without a system proxy; added a quick jump-to-GitHub-Star entry in the settings interface.
