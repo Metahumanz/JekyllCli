@@ -80,9 +80,9 @@ The desktop client of this project is written in **C# 10 + WPF + WPF UI (.NET 10
    ```text
    JekyllCli/
    ├── Blog/           // Clean Chirpy Starter blog files
-   ├── Tools/          // All source code for the WPF local client
+   ├── Tools/          // WPF local client project root
+   │   ├── src/        // Pages, windows, services, models, and language resources
    │   ├── Assets/     // Application icons & KaTeX embedded resources
-   │   ├── Services/   // Core logic: Git invocation, Jekyll parsing, update services
    │   └── App.xaml    // Entry point configuration
    ├── .github/
    └── README.md
@@ -119,7 +119,7 @@ This project has built-in **GitHub Actions release workflows** (`.github/workflo
 
 ## V. Version Changelog
 
-- **v1.6.0**: Upgraded the writing area into a draggable, customizable Markdown toolbox with quick actions for headings, emphasis, lists, code blocks, tables, and more, and allowed favorite tools to be pinned to the center rail; added the link insertion dialog, richer hover tips, and a setting that controls whether pinning keeps a copy in the toolbox; improved mouse/touch scrolling and modified-date sorting on the post management page, and fixed WPF build failures caused by intermediate-output permission issues.
+- **v1.6.0**: Upgraded the writing area into a draggable, customizable Markdown toolbox with quick actions for headings, emphasis, lists, code blocks, tables, and more, and allowed favorite tools to be pinned to the center rail; added the link insertion dialog, richer hover tips, and a setting that controls whether pinning keeps a copy in the toolbox; improved mouse/touch scrolling and modified-date sorting on the post management page, fixed WPF build failures caused by intermediate-output permission issues, and reorganized the `Tools` source tree into a dedicated `src/` layout.
 - **v1.5.0**: Added an "Insert Link" shortcut to the writing area with a dialog for display text, URL, and same-tab/new-tab behavior; introduced a unified hover lift effect for common UI components so the interface feels lighter and more responsive.
 - **v1.4.1**: Fully implemented UI internationalization with adaptive English/Chinese switching; extended physics-based smooth scrolling to all pages for an ultra-smooth experience; fixed several hardcoded Chinese strings.
 - **v1.4.0**: Added a physics-based spring algorithm (exponential decay) for the settings page smooth scrolling engine; added an optional auto-completion feature for the last modified time; fixed scrolling bugs in the font dropdown list and added search support; supported single-file publishing for the minimal version.

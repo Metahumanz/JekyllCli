@@ -13,25 +13,57 @@
 
     <Grid x:Name="RootGrid" Margin="16,16,16,16">
         <Grid.Resources>
-            <Style x:Key="EditorToolButtonStyle" TargetType="ui:Button">
-                <Setter Property="Appearance" Value="Secondary" />
+            <Style x:Key="EditorToolButtonStyle" TargetType="Button">
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="Margin" Value="0,0,8,8" />
-                <Setter Property="Width" Value="44" />
-                <Setter Property="Height" Value="44" />
-                <Setter Property="MinWidth" Value="44" />
-                <Setter Property="MinHeight" Value="44" />
+                <Setter Property="Width" Value="46" />
+                <Setter Property="Height" Value="46" />
+                <Setter Property="MinWidth" Value="46" />
+                <Setter Property="MinHeight" Value="46" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="ToolTipService.InitialShowDelay" Value="220" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="ToolButtonBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ToolButtonBorder" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter TargetName="ToolButtonBorder" Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="ToolButtonBorder" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                                    <Setter TargetName="ToolButtonBorder" Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="ToolButtonBorder" Property="Opacity" Value="0.5" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
-            <Style x:Key="EditorSideToolButtonStyle" TargetType="ui:Button" BasedOn="{StaticResource EditorToolButtonStyle}">
+            <Style x:Key="EditorSideToolButtonStyle" TargetType="Button" BasedOn="{StaticResource EditorToolButtonStyle}">
                 <Setter Property="Margin" Value="0,0,0,10" />
                 <Setter Property="HorizontalAlignment" Value="Center" />
             </Style>
             <Style x:Key="EditorToolIconStyle" TargetType="ui:SymbolIcon">
                 <Setter Property="HorizontalAlignment" Value="Center" />
                 <Setter Property="VerticalAlignment" Value="Center" />
-                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                <Setter Property="FontSize" Value="18" />
+                <Setter Property="FontSize" Value="20" />
             </Style>
         </Grid.Resources>
 
@@ -243,16 +275,17 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <ui:Button Click="ToolbarTool_Click"
-                                                           PreviewMouseLeftButtonDown="ToolButton_PreviewMouseLeftButtonDown"
-                                                           PreviewMouseMove="ToolButton_PreviewMouseMove"
-                                                           PreviewMouseLeftButtonUp="ToolButton_PreviewMouseLeftButtonUp"
-                                                           Style="{StaticResource EditorToolButtonStyle}"
-                                                           ToolTip="{Binding ToolTipText}">
+                                                <Button Click="ToolbarTool_Click"
+                                                        PreviewMouseLeftButtonDown="ToolButton_PreviewMouseLeftButtonDown"
+                                                        PreviewMouseMove="ToolButton_PreviewMouseMove"
+                                                        PreviewMouseLeftButtonUp="ToolButton_PreviewMouseLeftButtonUp"
+                                                        Style="{StaticResource EditorToolButtonStyle}"
+                                                        ToolTip="{Binding ToolTipText}">
                                                     <ui:SymbolIcon Symbol="{Binding Symbol}"
                                                                    FontSize="{Binding SymbolFontSize}"
+                                                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}"
                                                                    Style="{StaticResource EditorToolIconStyle}" />
-                                                </ui:Button>
+                                                </Button>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
@@ -312,16 +345,17 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <ui:Button Click="ToolbarTool_Click"
-                                           PreviewMouseLeftButtonDown="ToolButton_PreviewMouseLeftButtonDown"
-                                           PreviewMouseMove="ToolButton_PreviewMouseMove"
-                                           PreviewMouseLeftButtonUp="ToolButton_PreviewMouseLeftButtonUp"
-                                           Style="{StaticResource EditorSideToolButtonStyle}"
-                                           ToolTip="{Binding ToolTipText}">
+                                <Button Click="ToolbarTool_Click"
+                                        PreviewMouseLeftButtonDown="ToolButton_PreviewMouseLeftButtonDown"
+                                        PreviewMouseMove="ToolButton_PreviewMouseMove"
+                                        PreviewMouseLeftButtonUp="ToolButton_PreviewMouseLeftButtonUp"
+                                        Style="{StaticResource EditorSideToolButtonStyle}"
+                                        ToolTip="{Binding ToolTipText}">
                                     <ui:SymbolIcon Symbol="{Binding Symbol}"
                                                    FontSize="{Binding SymbolFontSize}"
+                                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}"
                                                    Style="{StaticResource EditorToolIconStyle}" />
-                                </ui:Button>
+                                </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

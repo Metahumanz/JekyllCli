@@ -113,12 +113,12 @@ namespace BlogTools
                 languageCode = CultureInfo.CurrentCulture.Name.StartsWith("zh") ? "zh-CN" : "en-US";
             }
 
-            var dictPath = $"pack://application:,,,/Resources/Languages/{languageCode}.xaml";
+            var dictPath = $"pack://application:,,,/src/Resources/Languages/{languageCode}.xaml";
             var dict = new ResourceDictionary() { Source = new Uri(dictPath) };
 
             // Find and replace the existing language dictionary
             var existingDict = Application.Current.Resources.MergedDictionaries.FirstOrDefault(d => 
-                d.Source != null && d.Source.OriginalString.Contains("/Resources/Languages/"));
+                d.Source != null && d.Source.OriginalString.Contains("/src/Resources/Languages/"));
             
             if (existingDict != null)
             {
