@@ -53,7 +53,7 @@
                             <TextBlock x:Name="CurrentPathBlock" Text="C:\..." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                         </StackPanel>
                     </ui:CardControl.Header>
-                    <ui:Button Content="{DynamicResource SettingsBtnChangePath}" Click="ChangeBlogPath_Click" />
+                    <ui:Button Content="{DynamicResource SettingsBtnChangePath}" Style="{StaticResource LiftedUiButtonStyle}" Click="ChangeBlogPath_Click" />
                 </ui:CardControl>
 
                 <!-- ═══ 撰写偏好 ═══ -->
@@ -309,7 +309,7 @@
                                 <TextBlock Text="{DynamicResource SettingsDescFaviconUpload}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
-                        <ui:Button Content="{DynamicResource SettingsBtnUpload}" Click="UploadFavicons_Click" />
+                        <ui:Button Content="{DynamicResource SettingsBtnUpload}" Style="{StaticResource LiftedUiButtonStyle}" Click="UploadFavicons_Click" />
                     </ui:CardControl>
                 </StackPanel>
 
@@ -324,7 +324,7 @@
                                 <TextBlock x:Name="VersionBlock" Text="..." Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
-                        <ui:Button x:Name="CheckUpdateButton" Content="{DynamicResource SettingsBtnCheckUpdate}" Click="CheckUpdate_Click" />
+                        <ui:Button x:Name="CheckUpdateButton" Style="{StaticResource LiftedUiButtonStyle}" Content="{DynamicResource SettingsBtnCheckUpdate}" Click="CheckUpdate_Click" />
                     </ui:CardControl>
 
                     <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowSync24}">
@@ -365,8 +365,8 @@
         <Border Grid.Row="3" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Padding="0,12,0,0" Margin="0,8,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                    <ui:Button Content="{DynamicResource SettingsBtnSave}" Click="SaveSettings_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,12,0" Padding="16,8"/>
-                    <ui:Button Content="{DynamicResource SettingsBtnPublish}" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Padding="16,8"/>
+                    <ui:Button Content="{DynamicResource SettingsBtnSave}" Style="{StaticResource LiftedUiButtonStyle}" Click="SaveSettings_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,12,0" Padding="16,8"/>
+                    <ui:Button Content="{DynamicResource SettingsBtnPublish}" Style="{StaticResource LiftedUiButtonStyle}" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Padding="16,8"/>
                 </StackPanel>
                 <TextBlock VerticalAlignment="Center" Margin="16,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"
                            Text="{DynamicResource SettingsRecommendActions}"/>

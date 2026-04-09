@@ -88,6 +88,7 @@ namespace BlogTools
         private readonly ObservableCollection<string> _tagsList = new();
         private readonly ObservableCollection<EditorToolViewItem> _ribbonTools = new();
         private readonly ObservableCollection<EditorToolViewItem> _sideTools = new();
+        private readonly ObservableCollection<EditorToolViewItem> _writeOnlyRibbonTools = new();
         private readonly Dictionary<string, EditorToolDefinition> _toolDefinitions = new(StringComparer.Ordinal);
         private Point _toolDragStartPoint;
         private EditorToolViewItem? _draggedTool;
@@ -250,15 +251,13 @@ namespace BlogTools
 
         private void InitializeEditorTools()
         {
-            RibbonToolsItemsControl.ItemsSource = _ribbonTools;
-            SideToolsItemsControl.ItemsSource = _sideTools;
-
             if (_toolDefinitions.Count == 0)
             {
                 RegisterToolDefinitions();
             }
 
             LoadEditorToolLayout();
+            UpdateVisibleToolCollections();
         }
 
         private void LoadEditorViewPreferences()
@@ -306,6 +305,7 @@ namespace BlogTools
             }
 
             _editorSplitRatio = ClampEditorSplitRatio(_editorSplitRatio);
+            UpdateVisibleToolCollections();
             ApplyEditorViewModeLayout();
 
             UpdateViewModeSelector();
@@ -875,6 +875,11 @@ namespace BlogTools
 
         private void ToolButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsUsingWriteOnlyMergedRibbonTools())
+            {
+                return;
+            }
+
             if (sender is FrameworkElement { DataContext: EditorToolViewItem item })
             {
                 _draggedTool = item;
@@ -884,6 +889,11 @@ namespace BlogTools
 
         private void ToolButton_PreviewMouseMove(object sender, MouseEventArgs e)
         {
+            if (IsUsingWriteOnlyMergedRibbonTools())
+            {
+                return;
+            }
+
             if (_draggedTool == null || e.LeftButton != MouseButtonState.Pressed)
             {
                 return;
@@ -905,6 +915,52 @@ namespace BlogTools
         private void ToolButton_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             _draggedTool = null;
+        }
+
+        private void UpdateVisibleToolCollections()
+        {
+            if (RibbonToolsItemsControl == null || SideToolsItemsControl == null)
+            {
+                return;
+            }
+
+            SideToolsItemsControl.ItemsSource = _sideTools;
+
+            if (!IsUsingWriteOnlyMergedRibbonTools())
+            {
+                RibbonToolsItemsControl.ItemsSource = _ribbonTools;
+                RibbonToolsItemsControl.InvalidateMeasure();
+                return;
+            }
+
+            _writeOnlyRibbonTools.Clear();
+
+            foreach (var item in _ribbonTools)
+            {
+                _writeOnlyRibbonTools.Add(item);
+            }
+
+            var seenIds = _writeOnlyRibbonTools
+                .Select(item => item.Id)
+                .ToHashSet(StringComparer.Ordinal);
+
+            foreach (var item in _sideTools)
+            {
+                if (!seenIds.Add(item.Id))
+                {
+                    continue;
+                }
+
+                _writeOnlyRibbonTools.Add(CreateToolViewItem(item.Id, EditorToolHost.Ribbon));
+            }
+
+            RibbonToolsItemsControl.ItemsSource = _writeOnlyRibbonTools;
+            RibbonToolsItemsControl.InvalidateMeasure();
+        }
+
+        private bool IsUsingWriteOnlyMergedRibbonTools()
+        {
+            return _editorViewMode == EditorViewMode.WriteOnly && _sideTools.Count > 0;
         }
 
         private void RibbonToolsHost_DragOver(object sender, DragEventArgs e)

@@ -10,6 +10,118 @@
                 <!-- Default Language Dictionary -->
                 <ResourceDictionary Source="pack://application:,,,/src/Resources/Languages/zh-CN.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="LiftedUiButtonStyle" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource {x:Type ui:Button}}">
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+                <Setter Property="RenderTransform">
+                    <Setter.Value>
+                        <TransformGroup>
+                            <ScaleTransform ScaleX="1" ScaleY="1" />
+                            <TranslateTransform Y="0" />
+                        </TransformGroup>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="RenderTransform">
+                            <Setter.Value>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="1.03" ScaleY="1.03" />
+                                    <TranslateTransform Y="-1" />
+                                </TransformGroup>
+                            </Setter.Value>
+                        </Setter>
+                        <Setter Property="Effect">
+                            <Setter.Value>
+                                <DropShadowEffect BlurRadius="18"
+                                                  Direction="270"
+                                                  ShadowDepth="4"
+                                                  Color="Black"
+                                                  Opacity="0.18" />
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter Property="RenderTransform">
+                            <Setter.Value>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="0.98" ScaleY="0.98" />
+                                    <TranslateTransform Y="0" />
+                                </TransformGroup>
+                            </Setter.Value>
+                        </Setter>
+                        <Setter Property="Effect">
+                            <Setter.Value>
+                                <DropShadowEffect BlurRadius="14"
+                                                  Direction="270"
+                                                  ShadowDepth="3"
+                                                  Color="Black"
+                                                  Opacity="0.08" />
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.6" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="LiftedButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+                <Setter Property="RenderTransform">
+                    <Setter.Value>
+                        <TransformGroup>
+                            <ScaleTransform ScaleX="1" ScaleY="1" />
+                            <TranslateTransform Y="0" />
+                        </TransformGroup>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="RenderTransform">
+                            <Setter.Value>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="1.03" ScaleY="1.03" />
+                                    <TranslateTransform Y="-1" />
+                                </TransformGroup>
+                            </Setter.Value>
+                        </Setter>
+                        <Setter Property="Effect">
+                            <Setter.Value>
+                                <DropShadowEffect BlurRadius="18"
+                                                  Direction="270"
+                                                  ShadowDepth="4"
+                                                  Color="Black"
+                                                  Opacity="0.18" />
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter Property="RenderTransform">
+                            <Setter.Value>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="0.98" ScaleY="0.98" />
+                                    <TranslateTransform Y="0" />
+                                </TransformGroup>
+                            </Setter.Value>
+                        </Setter>
+                        <Setter Property="Effect">
+                            <Setter.Value>
+                                <DropShadowEffect BlurRadius="14"
+                                                  Direction="270"
+                                                  ShadowDepth="3"
+                                                  Color="Black"
+                                                  Opacity="0.08" />
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.6" />
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

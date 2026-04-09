@@ -133,6 +133,7 @@ namespace BlogTools.Helpers
                 element is DataGridRowHeader ||
                 element is DataGridColumnHeader ||
                 element is RepeatButton ||
+                element is ToggleButton ||
                 element is Thumb ||
                 element is Expander ||
                 element is Wpf.Ui.Controls.CardControl ||

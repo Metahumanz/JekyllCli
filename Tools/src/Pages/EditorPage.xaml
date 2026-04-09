@@ -15,7 +15,7 @@
           Margin="16,16,16,16"
           Focusable="True">
         <Grid.Resources>
-            <Style x:Key="EditorToolButtonStyle" TargetType="Button">
+            <Style x:Key="EditorToolButtonStyle" TargetType="Button" BasedOn="{StaticResource LiftedButtonStyle}">
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="Margin" Value="0,0,8,8" />
                 <Setter Property="Width" Value="46" />
@@ -23,10 +23,10 @@
                 <Setter Property="MinWidth" Value="46" />
                 <Setter Property="MinHeight" Value="46" />
                 <Setter Property="Cursor" Value="Hand" />
-                <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="ToolTipService.InitialShowDelay" Value="220" />
                 <Setter Property="Template">
@@ -36,19 +36,19 @@
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="10"
+                                    CornerRadius="8"
                                     SnapsToDevicePixels="True">
                                 <ContentPresenter HorizontalAlignment="Center"
                                                   VerticalAlignment="Center" />
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="ToolButtonBorder" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                                    <Setter TargetName="ToolButtonBorder" Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                    <Setter TargetName="ToolButtonBorder" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                                    <Setter TargetName="ToolButtonBorder" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorSecondaryBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="ToolButtonBorder" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
-                                    <Setter TargetName="ToolButtonBorder" Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                    <Setter TargetName="ToolButtonBorder" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter TargetName="ToolButtonBorder" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorSecondaryBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter TargetName="ToolButtonBorder" Property="Opacity" Value="0.5" />
@@ -67,7 +67,7 @@
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="FontSize" Value="20" />
             </Style>
-            <Style x:Key="HeaderActionButtonStyle" TargetType="Button">
+            <Style x:Key="HeaderActionButtonStyle" TargetType="Button" BasedOn="{StaticResource LiftedButtonStyle}">
                 <Setter Property="Padding" Value="12,0" />
                 <Setter Property="Margin" Value="0,0,8,0" />
                 <Setter Property="Height" Value="40" />
@@ -75,10 +75,10 @@
                 <Setter Property="MinWidth" Value="44" />
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="Cursor" Value="Hand" />
-                <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="ToolTipService.InitialShowDelay" Value="220" />
                 <Setter Property="Template">
@@ -88,7 +88,7 @@
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="10"
+                                    CornerRadius="8"
                                     SnapsToDevicePixels="True">
                                 <ContentPresenter Margin="{TemplateBinding Padding}"
                                                   HorizontalAlignment="Center"
@@ -96,12 +96,12 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="HeaderActionBorder" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                                    <Setter TargetName="HeaderActionBorder" Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                    <Setter TargetName="HeaderActionBorder" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                                    <Setter TargetName="HeaderActionBorder" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorSecondaryBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="HeaderActionBorder" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
-                                    <Setter TargetName="HeaderActionBorder" Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                    <Setter TargetName="HeaderActionBorder" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter TargetName="HeaderActionBorder" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorSecondaryBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter TargetName="HeaderActionBorder" Property="Opacity" Value="0.5" />
@@ -112,8 +112,30 @@
                 </Setter>
             </Style>
             <Style x:Key="HeaderPrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderActionButtonStyle}">
-                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="HeaderPrimaryActionBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="HeaderPrimaryActionBorder" Property="Opacity" Value="0.5" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
             <Style x:Key="HeaderIconButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderActionButtonStyle}">
                 <Setter Property="Width" Value="40" />
