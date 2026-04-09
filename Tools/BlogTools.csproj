@@ -8,7 +8,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <SelfContained>false</SelfContained>
-    <Version>1.4.1</Version>
+    <Version>1.5.0</Version>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj_codex\**;**\*_wpftmp*;**\*.wpftmp*</DefaultItemExcludes>
 
     <!-- 单文件发布配置 -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -35,6 +36,19 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3856.49" />
     <PackageReference Include="WPF-UI" Version="4.2.0" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="obj_codex\**\*.cs" />
+    <Compile Remove="**\*_wpftmp*.cs" />
+    <EmbeddedResource Remove="obj_codex\**\*" />
+    <EmbeddedResource Remove="**\*_wpftmp*" />
+    <None Remove="obj_codex\**\*" />
+    <None Remove="**\*_wpftmp*" />
+    <Page Remove="obj_codex\**\*" />
+    <Page Remove="**\*_wpftmp*" />
+    <Resource Remove="obj_codex\**\*" />
+    <Resource Remove="**\*_wpftmp*" />
   </ItemGroup>
 
   <!-- 应用图标与资源 -->

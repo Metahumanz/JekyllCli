@@ -8,6 +8,7 @@
 *.sln.docstates
 Tools/bin/
 Tools/obj/
+Tools/obj_codex/
 Tools/tempobj/
 Tools/Release/
 Tools/Release_Standalone/

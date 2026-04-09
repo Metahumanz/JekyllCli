@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(TEMP)\JekyllCli\obj\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+    <GenerateTemporaryTargetAssemblyDebuggingInformation>true</GenerateTemporaryTargetAssemblyDebuggingInformation>
+  </PropertyGroup>
+</Project>
