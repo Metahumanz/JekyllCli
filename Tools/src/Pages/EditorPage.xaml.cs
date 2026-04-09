@@ -69,7 +69,7 @@ namespace BlogTools
         private const double RibbonInsertionThickness = 4.0;
         private const double SideInsertionThickness = 4.0;
         private const double MinimumInsertionLength = 30.0;
-        private const double SideToolsColumnWidth = 104.0;
+        private const double SideToolsColumnWidth = 88.0;
         private const double DefaultEditorSplitRatio = 0.5;
         private const double MinimumEditorSplitRatio = 0.1;
         private const double MaximumEditorSplitRatio = 0.9;

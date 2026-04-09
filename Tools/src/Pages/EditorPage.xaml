@@ -65,6 +65,60 @@
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="FontSize" Value="20" />
             </Style>
+            <Style x:Key="HeaderActionButtonStyle" TargetType="Button">
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="Margin" Value="0,0,8,0" />
+                <Setter Property="Height" Value="40" />
+                <Setter Property="MinHeight" Value="40" />
+                <Setter Property="MinWidth" Value="44" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Foreground" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                <Setter Property="ToolTipService.InitialShowDelay" Value="220" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="HeaderActionBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="HeaderActionBorder" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter TargetName="HeaderActionBorder" Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="HeaderActionBorder" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                                    <Setter TargetName="HeaderActionBorder" Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="HeaderActionBorder" Property="Opacity" Value="0.5" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="HeaderPrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderActionButtonStyle}">
+                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+            </Style>
+            <Style x:Key="HeaderIconButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderActionButtonStyle}">
+                <Setter Property="Width" Value="40" />
+                <Setter Property="MinWidth" Value="40" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="0" />
+            </Style>
             <DataTemplate x:Key="EditorToolGlyphTemplate">
                 <Grid Width="24" Height="24">
                     <ui:SymbolIcon x:Name="ToolSymbol"
@@ -151,15 +205,15 @@
                         FontSize="18"
                         FontWeight="Bold"
                         Margin="0,0,16,0" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <ui:Button x:Name="ViewModeButton"
-                           Click="ViewModeButton_Click"
-                           Appearance="Secondary"
-                           Padding="10,4"
-                           MinWidth="72"
-                           Margin="0,0,12,0"
-                           ToolTip="{DynamicResource EditorViewModeLabel}">
-                    <ui:Button.ContextMenu>
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                <Button x:Name="ViewModeButton"
+                        Click="ViewModeButton_Click"
+                        Style="{StaticResource HeaderActionButtonStyle}"
+                        MinWidth="96"
+                        ToolTip="{DynamicResource EditorViewModeLabel}">
+                    <Button.ContextMenu>
                         <ContextMenu x:Name="ViewModeContextMenu"
                                      Placement="Bottom">
                             <MenuItem x:Name="WriteOnlyMenuItem"
@@ -178,20 +232,52 @@
                                       IsCheckable="True"
                                       Click="ViewModeMenuItem_Click" />
                         </ContextMenu>
-                    </ui:Button.ContextMenu>
+                    </Button.ContextMenu>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="ViewModeButtonText"
-                                   VerticalAlignment="Center" />
+                                   VerticalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                         <TextBlock Text="▼"
                                    VerticalAlignment="Center"
                                    Margin="6,0,0,0"
                                    FontSize="10"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                     </StackPanel>
-                </ui:Button>
-                <ui:Button Content="{DynamicResource EditorBtnSaveDraft}" Click="SaveButton_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,8,0" />
-                <ui:Button Content="{DynamicResource EditorBtnPublish}" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Margin="0,0,8,0" />
-                <ui:Button Click="NewPost_Click" Icon="{ui:SymbolIcon Symbol=Delete24}" ToolTip="{DynamicResource EditorBtnClear}" />
+                </Button>
+                <Button Style="{StaticResource HeaderActionButtonStyle}"
+                        Click="SaveButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Save24"
+                                       FontSize="16"
+                                       Margin="0,0,6,0"
+                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                        <TextBlock Text="{DynamicResource EditorBtnSaveDraft}"
+                                   VerticalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HeaderPrimaryActionButtonStyle}"
+                        Click="PublishButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Send24"
+                                       FontSize="16"
+                                       Margin="0,0,6,0"
+                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                        <TextBlock Text="{DynamicResource EditorBtnPublish}"
+                                   VerticalAlignment="Center"
+                                   FontWeight="SemiBold"
+                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HeaderIconButtonStyle}"
+                        Click="NewPost_Click"
+                        ToolTip="{DynamicResource EditorBtnClear}">
+                    <ui:SymbolIcon Symbol="Delete24"
+                                   FontSize="16"
+                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                </Button>
             </StackPanel>
         </Grid>
 
@@ -289,7 +375,7 @@
         <Grid x:Name="EditorWorkspaceGrid" Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="EditorColumn" Width="*" />
-                <ColumnDefinition x:Name="SideToolsColumn" Width="104" />
+                <ColumnDefinition x:Name="SideToolsColumn" Width="88" />
                 <ColumnDefinition x:Name="PreviewColumn" Width="*" />
             </Grid.ColumnDefinitions>
 
@@ -413,14 +499,14 @@
 
             <Border x:Name="SideToolsPanel"
                     Grid.Column="1"
-                    Margin="4,0"
-                    Padding="6,14"
+                    Margin="3,0"
+                    Padding="4,12"
                     VerticalAlignment="Stretch"
                     Cursor="SizeWE"
                     BorderThickness="1"
                     BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
                     Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                    CornerRadius="16"
+                    CornerRadius="14"
                     RenderTransformOrigin="0.5,0.5"
                     ToolTip="{DynamicResource EditorViewModeDragTip}"
                     AllowDrop="True"
