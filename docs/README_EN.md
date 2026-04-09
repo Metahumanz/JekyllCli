@@ -119,6 +119,7 @@ This project has built-in **GitHub Actions release workflows** (`.github/workflo
 
 ## V. Version Changelog
 
+- **v1.6.2**: Streamlined the startup update prompt so a newly detected version can be downloaded directly from the dialog instead of sending users to Settings; added a dedicated download progress window and kept the post-download confirmation flow for applying the update immediately.
 - **v1.6.1**: Fixed the Markdown toolbox buttons so they keep a readable background and clearer contrast in dark theme; changed the heading tools to render stable `H1/H2/H3/H4` labels and replaced the divider tool with a clean horizontal-line glyph to avoid missing or garbled Fluent icon characters.
 - **v1.6.0**: Upgraded the writing area into a draggable, customizable Markdown toolbox with quick actions for headings, emphasis, lists, code blocks, tables, and more, and allowed favorite tools to be pinned to the center rail; added the link insertion dialog, richer hover tips, and a setting that controls whether pinning keeps a copy in the toolbox; improved mouse/touch scrolling and modified-date sorting on the post management page, fixed WPF build failures caused by intermediate-output permission issues, and reorganized the `Tools` source tree into a dedicated `src/` layout.
 - **v1.5.0**: Added an "Insert Link" shortcut to the writing area with a dialog for display text, URL, and same-tab/new-tab behavior; introduced a unified hover lift effect for common UI components so the interface feels lighter and more responsive.
