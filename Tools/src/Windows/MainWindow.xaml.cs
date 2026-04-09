@@ -28,10 +28,15 @@ namespace BlogTools
             }
         }
 
-        private void ApplyGlobalFont()
+        public void ApplyGlobalFont(string? fontName = null)
         {
             var settings = Services.StorageService.Load();
-            var font = settings.AppFontFamily;
+            var font = fontName;
+
+            if (string.IsNullOrWhiteSpace(font))
+            {
+                font = settings.AppFontFamily;
+            }
 
             if (string.IsNullOrWhiteSpace(font) && App.JekyllContext.LoadConfig().TryGetValue("blogtools_font", out var val))
             {
@@ -43,8 +48,8 @@ namespace BlogTools
                 FontFamily = new System.Windows.Media.FontFamily(font);
             }
 
-            RootNavigation.FontFamily = SystemFonts.MessageFontFamily;
-            AppTitleBar.FontFamily = SystemFonts.MessageFontFamily;
+            RootNavigation.FontFamily = FontFamily;
+            AppTitleBar.FontFamily = FontFamily;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)

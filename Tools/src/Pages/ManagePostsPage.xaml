@@ -2,7 +2,6 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:s="clr-namespace:System.Windows;assembly=PresentationFramework"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Title="{DynamicResource NavManagePosts}">
     <Page.Triggers>
@@ -27,7 +26,6 @@
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="FontFamily" Value="{x:Static s:SystemFonts.MessageFontFamily}" />
             <Setter Property="IsManipulationEnabled" Value="True" />
             <Setter Property="Stylus.IsFlicksEnabled" Value="False" />
             <Setter Property="HeadersVisibility" Value="Column" />
@@ -57,7 +55,6 @@
             <Setter Property="Padding" Value="16,11" />
             <Setter Property="HorizontalContentAlignment" Value="Left" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontFamily" Value="{x:Static s:SystemFonts.MessageFontFamily}" />
         </Style>
 
         <Style x:Key="ManagePostsDataGridRowStyle" TargetType="DataGridRow">

@@ -260,10 +260,9 @@ namespace BlogTools
             StorageService.Save(settings);
 
             // 立即应用到主窗口
-            var mainWindow = Application.Current.MainWindow;
-            if (mainWindow != null)
+            if (Application.Current.MainWindow is MainWindow mainWindow)
             {
-                mainWindow.FontFamily = new System.Windows.Media.FontFamily(selectedFont);
+                mainWindow.ApplyGlobalFont(selectedFont);
             }
         }
 
@@ -461,13 +460,12 @@ namespace BlogTools
             SaveTab("_tabs/tags.md", TagsTitleBox, null, TagsOrderBox, null);
             
             // Apply font dynamically after save!
-            var mainWindow = Application.Current.MainWindow;
-            if (mainWindow != null && _config.TryGetValue("blogtools_font", out var fontObj))
+            if (Application.Current.MainWindow is MainWindow mainWindow && _config.TryGetValue("blogtools_font", out var fontObj))
             {
                 var fontName = fontObj?.ToString();
                 if (!string.IsNullOrWhiteSpace(fontName))
                 {
-                    mainWindow.FontFamily = new System.Windows.Media.FontFamily(fontName);
+                    mainWindow.ApplyGlobalFont(fontName);
                 }
             }
         }

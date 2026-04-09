@@ -127,7 +127,7 @@
                             </StackPanel>
                         </ui:CardControl.Header>
                         <ComboBox x:Name="FontComboBox" Width="200" MaxDropDownHeight="300"
-                                  IsEditable="True" IsTextSearchEnabled="True"
+                                  IsTextSearchEnabled="True"
                                   SelectionChanged="FontComboBox_SelectionChanged"
                                   helpers:SmoothScrollHelper.SmoothingEnabled="True"
                                   ScrollViewer.CanContentScroll="False"/>

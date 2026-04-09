@@ -118,6 +118,7 @@ This project has built-in **GitHub Actions release workflows** (`.github/workflo
 
 ## V. Version Changelog
 
+- **v1.6.4**: Fixed the global font option in Settings so the selected font now applies consistently to the main window, navigation pane, title bar, and post management list; also removed manual text entry from the font dropdown and kept it as a searchable picker.
 - **v1.6.3**: Added three writing layouts for the editor: Write Only, Split, and Preview Only, with draggable split sizing that can snap from split view into single-pane modes; redesigned the top mode switch, save draft, publish, and clear actions so they share the same visual language as the editor toolbar; refined tag entry so `Enter` adds the tag and exits input, while `Esc` discards the current text and immediately removes focus.
 - **v1.6.2**: Streamlined the startup update prompt so a newly detected version can be downloaded directly from the dialog instead of sending users to Settings; added a dedicated download progress window and kept the post-download confirmation flow for applying the update immediately.
 - **v1.6.1**: Fixed the Markdown toolbox buttons so they keep a readable background and clearer contrast in dark theme; changed the heading tools to render stable `H1/H2/H3/H4` labels and replaced the divider tool with a clean horizontal-line glyph to avoid missing or garbled Fluent icon characters.
