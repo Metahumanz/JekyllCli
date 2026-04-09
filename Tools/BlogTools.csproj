@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <SelfContained>false</SelfContained>
-    <Version>1.6.2</Version>
+    <Version>1.6.3</Version>
     <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**;obj_codex\**;**\*_wpftmp*;**\*.wpftmp*</DefaultItemExcludes>
 
     <!-- 单文件发布配置 -->
