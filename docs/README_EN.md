@@ -90,7 +90,6 @@ The desktop client of this project is written in **C# 10 + WPF + WPF UI (.NET 10
 3. **Run Locally**:
    - Enter the `Tools` directory and execute:
    ```bash
-   dotnet build
    dotnet run
    ```
 
@@ -103,15 +102,15 @@ If you add private features in `Tools` and want to publish it yourself:
 ### Method 1: Single File Publishing
 Navigate to `Tools/` in your command line and run the following command to generate a single `.exe` file:
 ```powershell
-dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o ../publish_output
+dotnet publish
 ```
 
 ### Method 2: GitHub Actions Automation (Recommended)
 This project has built-in **GitHub Actions release workflows** (`.github/workflows/release.yml`):
-- Simply push a Tag starting with **`v`** (e.g., v1.4.0) locally:
+- Simply push a Tag starting with **`v`** (e.g., v1.0.0) locally:
   ```bash
-  git tag v1.4.0
-  git push origin v1.4.0
+  git tag v1.0.0
+  git push origin v1.0.0
   ```
 - GitHub will automatically compile, compress, and publish to the Release page in the cloud.
 

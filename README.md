@@ -88,7 +88,6 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
 3. **本地编译运行**：
    - 进入 `Tools` 目录执行：
    ```bash
-   dotnet build
    dotnet run
    ```
 
@@ -101,15 +100,15 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
 ### 方法一：单文件发布
 命令行进入 `Tools/` 后运行命令生成单一 `.exe` 文件：
 ```powershell
-dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -o ../publish_output
+dotnet publish
 ```
 
 ### 方法二：GitHub Actions 自动化 (推荐)
 本项目已内置 **GitHub Actions 释放流** (`.github/workflows/release.yml`)：
-- 只需要在本地推送一个以 **`v`** 开头的 Tag（如 v1.3.3）：
+- 只需要在本地推送一个以 **`v`** 开头的 Tag（如 v1.0.0）：
   ```bash
-  git tag v1.3.3
-  git push origin v1.3.3
+  git tag v1.0.0
+  git push origin v1.0.0
   ```
 - GitHub 将自动在云端完成编译、压缩并发布至 Release 页面。
 
