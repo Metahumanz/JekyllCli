@@ -246,7 +246,7 @@ namespace BlogTools
             }
         }
 
-        private void ManagePostsPage_ManipulationStarting(object sender, ManipulationStartingEventArgs e)
+        private void ManagePostsPage_ManipulationStarting(object? sender, ManipulationStartingEventArgs e)
         {
             if (e.OriginalSource is not DependencyObject source ||
                 !IsWithinPostsDataGrid(source) ||
@@ -261,7 +261,7 @@ namespace BlogTools
             e.Mode = ManipulationModes.TranslateY;
         }
 
-        private void ManagePostsPage_ManipulationDelta(object sender, ManipulationDeltaEventArgs e)
+        private void ManagePostsPage_ManipulationDelta(object? sender, ManipulationDeltaEventArgs e)
         {
             if (e.OriginalSource is not DependencyObject source ||
                 !IsWithinPostsDataGrid(source) ||
@@ -294,7 +294,7 @@ namespace BlogTools
             }
         }
 
-        private void ManagePostsPage_ManipulationInertiaStarting(object sender, ManipulationInertiaStartingEventArgs e)
+        private void ManagePostsPage_ManipulationInertiaStarting(object? sender, ManipulationInertiaStartingEventArgs e)
         {
             if (e.OriginalSource is not DependencyObject source ||
                 !IsWithinPostsDataGrid(source) ||
