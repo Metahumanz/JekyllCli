@@ -137,4 +137,4 @@ dotnet publish BlogTools.csproj -c Release -r win-x64 --self-contained false -p:
 ## 六、开源协议
 
 1. 本套件的整体架构及 WPF `Tools` 辅助程序由原始作者开发，**采用 GPLv3 协议开源**。
-2. 在 `Blog` 文件夹下的 Chirpy 代码遵从 **MIT 协议**。
+2. 在 `Blog` 文件夹下的[Chirpy 代码](https://github.com/cotes2020/jekyll-theme-chirpy)遵从源项目 **MIT 协议**。

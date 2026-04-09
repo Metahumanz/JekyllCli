@@ -138,5 +138,5 @@ This project has built-in **GitHub Actions release workflows** (`.github/workflo
 
 ## VI. Open Source License
 
-1. The overall architecture and the WPF `Tools` auxiliary program are developed by the original author and are open-sourced under the **GPLv3 License**.
-2. The Chirpy code under the `Blog` folder complies with the **MIT License**.
+1. The overall architecture and the WPF `Tools` auxiliary program are developed by the author and are open-sourced under the **GPLv3 License**.
+2. The [Chirpy code](https://github.com/cotes2020/jekyll-theme-chirpy) under the `Blog` folder complies with the original **MIT License**.
