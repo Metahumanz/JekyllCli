@@ -140,28 +140,111 @@ namespace BlogTools
                     return;
 
                 // 在 UI 线程弹出对话框
-                await Dispatcher.InvokeAsync(async () =>
                 {
                     var current = UpdateService.GetCurrentVersion();
                     var currentStr = $"v{current.Major}.{current.Minor}.{current.Build}";
                     var msg = new Wpf.Ui.Controls.MessageBox
                     {
                         Title = Application.Current.FindResource("SettingsMsgUpdateFound").ToString()!,
-                        Content = string.Format(Application.Current.FindResource("AppMsgUpdatePrompt").ToString()!, latestVersion, currentStr),
-                        PrimaryButtonText = Application.Current.FindResource("AppBtnGoToUpdate").ToString()!,
+                        Content = string.Join(
+                            Environment.NewLine,
+                            string.Format(Application.Current.FindResource("SettingsMsgAskDownload").ToString()!, latestVersion),
+                            string.Format(Application.Current.FindResource("CommonVersionCurrent").ToString()!, currentStr)),
+                        PrimaryButtonText = Application.Current.FindResource("SettingsBtnDownloadNow").ToString()!,
                         CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
                     };
                     var result = await msg.ShowDialogAsync();
                     if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
                     {
                         // 导航到设置页并触发更新检查
-                        mainWindow.RootNavigation?.Navigate(typeof(SettingsPage));
+                        await DownloadAndApplyUpdateAsync(mainWindow, downloadUrl);
                     }
-                });
+                }
             }
             catch
             {
                 // 静默失败，不打扰用户
+            }
+        }
+
+        private async Task DownloadAndApplyUpdateAsync(Window owner, string downloadUrl)
+        {
+            UpdateProgressWindow? progressWindow = null;
+
+            try
+            {
+                progressWindow = new UpdateProgressWindow(owner);
+                progressWindow.UpdateProgress(
+                    string.Format(Application.Current.FindResource("SettingsMsgUpdateDownloading").ToString()!, 0),
+                    0);
+                progressWindow.Show();
+
+                var progress = new Progress<int>(percent =>
+                {
+                    progressWindow.UpdateProgress(
+                        string.Format(Application.Current.FindResource("SettingsMsgUpdateDownloading").ToString()!, percent),
+                        percent);
+                });
+
+                var zipPath = await UpdateService.DownloadUpdateAsync(downloadUrl, progress);
+
+                progressWindow.UpdateStatus(
+                    Application.Current.FindResource("SettingsMsgDownloadComplete").ToString()!,
+                    isIndeterminate: false,
+                    value: 100);
+
+                var settings = StorageService.Load();
+                if (settings.SilentUpdate)
+                {
+                    progressWindow.UpdateStatus(
+                        Application.Current.FindResource("SettingsMsgSilentUpdating").ToString()!,
+                        isIndeterminate: true);
+                    await Task.Delay(500);
+                    progressWindow.AllowClose = true;
+                    progressWindow.Close();
+                    UpdateService.ApplyUpdate(zipPath);
+                    return;
+                }
+
+                progressWindow.AllowClose = true;
+                progressWindow.Close();
+
+                var askApply = new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = Application.Current.FindResource("SettingsMsgDownloadComplete").ToString()!,
+                    Content = Application.Current.FindResource("SettingsMsgAskApply").ToString()!,
+                    PrimaryButtonText = Application.Current.FindResource("SettingsBtnApplyNow").ToString()!,
+                    CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
+                };
+                var applyResult = await askApply.ShowDialogAsync();
+                if (applyResult == Wpf.Ui.Controls.MessageBoxResult.Primary)
+                {
+                    progressWindow = new UpdateProgressWindow(owner);
+                    progressWindow.UpdateStatus(
+                        Application.Current.FindResource("SettingsMsgSilentUpdating").ToString()!,
+                        isIndeterminate: true);
+                    progressWindow.Show();
+                    await Task.Delay(500);
+                    progressWindow.AllowClose = true;
+                    progressWindow.Close();
+                    UpdateService.ApplyUpdate(zipPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (progressWindow != null)
+                {
+                    progressWindow.AllowClose = true;
+                    progressWindow.Close();
+                }
+
+                var msg = new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = Application.Current.FindResource("CommonError").ToString()!,
+                    Content = string.Format(Application.Current.FindResource("SettingsMsgUpdateError").ToString()!, ex.Message),
+                    CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                };
+                await msg.ShowDialogAsync();
             }
         }
 
