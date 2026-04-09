@@ -201,7 +201,12 @@ namespace BlogTools.Helpers
 
         private static ScrollViewer? CacheInnerScrollViewer(DataGrid dg)
         {
-            var innerSv = FindVisualChild<ScrollViewer>(dg);
+            dg.ApplyTemplate();
+            dg.UpdateLayout();
+
+            var innerSv = dg.Template?.FindName("DG_ScrollViewer", dg) as ScrollViewer;
+            innerSv ??= FindBestScrollViewer(dg, "DG_ScrollViewer");
+
             if (innerSv != null)
             {
                 dg.SetValue(InnerScrollViewerProperty, innerSv);
@@ -253,6 +258,28 @@ namespace BlogTools.Helpers
             return innerSv;
         }
 
+        private static ScrollViewer? FindBestScrollViewer(DependencyObject root, string preferredName)
+        {
+            ScrollViewer? fallback = null;
+
+            foreach (var scrollViewer in FindVisualChildren<ScrollViewer>(root))
+            {
+                if (string.Equals(scrollViewer.Name, preferredName, StringComparison.Ordinal))
+                {
+                    return scrollViewer;
+                }
+
+                if (fallback == null ||
+                    scrollViewer.ScrollableHeight > fallback.ScrollableHeight ||
+                    scrollViewer.ViewportHeight > fallback.ViewportHeight)
+                {
+                    fallback = scrollViewer;
+                }
+            }
+
+            return fallback;
+        }
+
         private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
         {
             if (parent == null) return null;
@@ -265,6 +292,26 @@ namespace BlogTools.Helpers
                 if (found != null) return found;
             }
             return null;
+        }
+
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) yield break;
+
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T result)
+                {
+                    yield return result;
+                }
+
+                foreach (var nested in FindVisualChildren<T>(child))
+                {
+                    yield return nested;
+                }
+            }
         }
     }
 }

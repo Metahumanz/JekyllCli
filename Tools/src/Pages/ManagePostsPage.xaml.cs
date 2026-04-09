@@ -20,8 +20,9 @@ namespace BlogTools
         private Dictionary<string, string>? _headerLabels;
         private readonly Dictionary<DataGridColumn, string> _columnSortMap = new();
         private ScrollViewer? _activeGridScrollViewer;
-        private double _targetGridScrollOffset = -1;
-        private double _currentGridScrollOffset = -1;
+        private ScrollViewer? _activeWheelScrollViewer;
+        private double _targetWheelScrollOffset = -1;
+        private double _currentWheelScrollOffset = -1;
 
         public ManagePostsPage()
         {
@@ -49,7 +50,8 @@ namespace BlogTools
             RemoveHandler(UIElement.ManipulationDeltaEvent, new EventHandler<ManipulationDeltaEventArgs>(ManagePostsPage_ManipulationDelta));
             RemoveHandler(UIElement.ManipulationInertiaStartingEvent, new EventHandler<ManipulationInertiaStartingEventArgs>(ManagePostsPage_ManipulationInertiaStarting));
             _activeGridScrollViewer = null;
-            ResetGridScrollAnimation();
+            _activeWheelScrollViewer = null;
+            ResetWheelScrollAnimation();
         }
 
         private void OnBlogFilesChanged()
@@ -124,6 +126,57 @@ namespace BlogTools
             ScrollGridToTop();
         }
 
+        private void ManagePostsPage_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (ScrollViewerHelper.SuppressScrollBubble)
+            {
+                return;
+            }
+
+            if (e.OriginalSource is not DependencyObject source)
+            {
+                return;
+            }
+
+            if (FindVisualParent<ScrollBar>(source) != null || FindVisualParent<Thumb>(source) != null)
+            {
+                return;
+            }
+
+            var gridScrollViewer = EnsureGridScrollViewer();
+            if (TryQueueSmoothScroll(gridScrollViewer, e.Delta))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            var parentScrollViewer = FindVisualParent<ScrollViewer>(this);
+            if (parentScrollViewer != null && !ReferenceEquals(parentScrollViewer, gridScrollViewer) && TryQueueSmoothScroll(parentScrollViewer, e.Delta))
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void OnCompositionTargetRendering(object? sender, EventArgs e)
+        {
+            if (_activeWheelScrollViewer == null || _targetWheelScrollOffset < 0 || _currentWheelScrollOffset < 0)
+            {
+                return;
+            }
+
+            double diff = _targetWheelScrollOffset - _currentWheelScrollOffset;
+            if (Math.Abs(diff) < 0.5)
+            {
+                _currentWheelScrollOffset = _targetWheelScrollOffset;
+                _activeWheelScrollViewer.ScrollToVerticalOffset(_currentWheelScrollOffset);
+                ResetWheelScrollAnimation();
+                return;
+            }
+
+            _currentWheelScrollOffset += diff * 0.18;
+            _activeWheelScrollViewer.ScrollToVerticalOffset(_currentWheelScrollOffset);
+        }
+
         private void PostsDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (e.OriginalSource is DependencyObject source)
@@ -172,80 +225,6 @@ namespace BlogTools
             ScrollGridToTop();
         }
 
-        private void ManagePostsPage_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            if (ScrollViewerHelper.SuppressScrollBubble)
-            {
-                return;
-            }
-
-            if (e.OriginalSource is not DependencyObject source)
-            {
-                return;
-            }
-
-            if (!IsWithinPostsDataGrid(source))
-            {
-                return;
-            }
-
-            if (FindVisualParent<ScrollBar>(source) != null)
-            {
-                return;
-            }
-
-            var gridScrollViewer = EnsureGridScrollViewer();
-            if (gridScrollViewer == null)
-            {
-                TryForwardWheelToParentScrollViewer(e);
-                return;
-            }
-
-            bool canScrollUp = gridScrollViewer.VerticalOffset > 0;
-            bool canScrollDown = gridScrollViewer.VerticalOffset < gridScrollViewer.ScrollableHeight;
-            bool shouldScrollGrid = gridScrollViewer.ScrollableHeight > 0 &&
-                ((e.Delta > 0 && canScrollUp) || (e.Delta < 0 && canScrollDown));
-
-            if (!shouldScrollGrid)
-            {
-                TryForwardWheelToParentScrollViewer(e);
-                return;
-            }
-
-            e.Handled = true;
-            _activeGridScrollViewer = gridScrollViewer;
-
-            if (_targetGridScrollOffset < 0 || _currentGridScrollOffset < 0)
-            {
-                _targetGridScrollOffset = gridScrollViewer.VerticalOffset;
-                _currentGridScrollOffset = gridScrollViewer.VerticalOffset;
-            }
-
-            _targetGridScrollOffset -= e.Delta * 2.0;
-            _targetGridScrollOffset = Math.Max(0, Math.Min(gridScrollViewer.ScrollableHeight, _targetGridScrollOffset));
-        }
-
-        private void OnCompositionTargetRendering(object? sender, EventArgs e)
-        {
-            if (_activeGridScrollViewer == null || _targetGridScrollOffset < 0 || _currentGridScrollOffset < 0)
-            {
-                return;
-            }
-
-            double diff = _targetGridScrollOffset - _currentGridScrollOffset;
-            if (Math.Abs(diff) < 0.5)
-            {
-                _currentGridScrollOffset = _targetGridScrollOffset;
-                _activeGridScrollViewer.ScrollToVerticalOffset(_currentGridScrollOffset);
-                ResetGridScrollAnimation();
-            }
-            else
-            {
-                _currentGridScrollOffset += diff * 0.18;
-                _activeGridScrollViewer.ScrollToVerticalOffset(_currentGridScrollOffset);
-            }
-        }
-
         private void ManagePostsPage_ManipulationStarting(object? sender, ManipulationStartingEventArgs e)
         {
             if (e.OriginalSource is not DependencyObject source ||
@@ -255,7 +234,6 @@ namespace BlogTools
                 return;
             }
 
-            ResetGridScrollAnimation();
             _activeGridScrollViewer = EnsureGridScrollViewer();
             e.ManipulationContainer = this;
             e.Mode = ManipulationModes.TranslateY;
@@ -269,8 +247,6 @@ namespace BlogTools
             {
                 return;
             }
-
-            ResetGridScrollAnimation();
 
             double deltaY = e.DeltaManipulation.Translation.Y;
             bool scrolledGrid = false;
@@ -347,7 +323,7 @@ namespace BlogTools
 
         private void ScrollGridToTop()
         {
-            ResetGridScrollAnimation();
+            ResetWheelScrollAnimation();
             EnsureGridScrollViewer()?.ScrollToTop();
         }
 
@@ -368,12 +344,6 @@ namespace BlogTools
 
             _activeGridScrollViewer = FindBestGridScrollViewer();
             return _activeGridScrollViewer;
-        }
-
-        private void ResetGridScrollAnimation()
-        {
-            _targetGridScrollOffset = -1;
-            _currentGridScrollOffset = -1;
         }
 
         private ScrollViewer? FindBestGridScrollViewer()
@@ -409,21 +379,49 @@ namespace BlogTools
                    ReferenceEquals(FindVisualParent<DataGrid>(source), PostsDataGrid);
         }
 
-        private void TryForwardWheelToParentScrollViewer(MouseWheelEventArgs e)
+        private bool TryQueueSmoothScroll(ScrollViewer? scrollViewer, int delta)
         {
-            var parentScrollViewer = FindVisualParent<ScrollViewer>(this);
-            if (parentScrollViewer == null || ReferenceEquals(parentScrollViewer, _activeGridScrollViewer))
+            if (scrollViewer == null || scrollViewer.ScrollableHeight <= 0)
             {
-                return;
+                return false;
             }
 
-            e.Handled = true;
-            var forwardedEvent = new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta)
+            bool isSameScrollViewer = ReferenceEquals(_activeWheelScrollViewer, scrollViewer);
+            double currentBaseOffset = isSameScrollViewer && _targetWheelScrollOffset >= 0
+                ? _targetWheelScrollOffset
+                : scrollViewer.VerticalOffset;
+
+            bool canScrollUp = currentBaseOffset > 0;
+            bool canScrollDown = currentBaseOffset < scrollViewer.ScrollableHeight;
+            if ((delta > 0 && !canScrollUp) || (delta < 0 && !canScrollDown))
             {
-                RoutedEvent = UIElement.MouseWheelEvent,
-                Source = PostsDataGrid
-            };
-            parentScrollViewer.RaiseEvent(forwardedEvent);
+                return false;
+            }
+
+            if (!isSameScrollViewer)
+            {
+                _targetWheelScrollOffset = scrollViewer.VerticalOffset;
+                _currentWheelScrollOffset = scrollViewer.VerticalOffset;
+            }
+
+            _activeWheelScrollViewer = scrollViewer;
+
+            if (_targetWheelScrollOffset < 0 || _currentWheelScrollOffset < 0)
+            {
+                _targetWheelScrollOffset = scrollViewer.VerticalOffset;
+                _currentWheelScrollOffset = scrollViewer.VerticalOffset;
+            }
+
+            _targetWheelScrollOffset -= delta * 2.0;
+            _targetWheelScrollOffset = Math.Max(0, Math.Min(scrollViewer.ScrollableHeight, _targetWheelScrollOffset));
+            return true;
+        }
+
+        private void ResetWheelScrollAnimation()
+        {
+            _targetWheelScrollOffset = -1;
+            _currentWheelScrollOffset = -1;
+            _activeWheelScrollViewer = null;
         }
 
         private static bool TryScrollViewerByVerticalDelta(ScrollViewer scrollViewer, double deltaY)
