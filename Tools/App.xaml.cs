@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Wpf.Ui.Appearance;
 using System.Linq;
 using System.Globalization;
+using System.Diagnostics;
 
 
 namespace BlogTools
@@ -31,6 +32,8 @@ namespace BlogTools
             base.OnStartup(e);
             HoverLiftHelper.Initialize();
 
+            bool isDocCaptureMode = TryGetDocScreenshotOptions(e.Args, out var captureOutputDir, out var captureBlogPath);
+
             // 清理上次更新残留的 .old 文件
             UpdateService.CleanupOldVersion();
 
@@ -38,13 +41,23 @@ namespace BlogTools
             ApplicationThemeManager.Changed += OnThemeChanged;
 
             var settings = StorageService.Load();
-            string? blogPath = settings.BlogPath;
+            string? blogPath = isDocCaptureMode ? captureBlogPath : settings.BlogPath;
 
             // Apply Language
-            ApplyLanguage(settings.AppLanguage);
+            ApplyLanguage(isDocCaptureMode ? "zh-CN" : settings.AppLanguage);
 
             if (string.IsNullOrEmpty(blogPath) || !Directory.Exists(blogPath) || !File.Exists(Path.Combine(blogPath, "_config.yml")))
             {
+                if (isDocCaptureMode)
+                {
+                    blogPath = ResolveBundledBlogPath();
+                    if (string.IsNullOrEmpty(blogPath) || !File.Exists(Path.Combine(blogPath, "_config.yml")))
+                    {
+                        throw new InvalidOperationException("Unable to resolve a valid bundled blog path for documentation screenshots.");
+                    }
+                }
+                else
+                {
                 Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
                 var setupWindow = new SetupWindow();
                 ApplyThemeIcon(setupWindow);
@@ -58,11 +71,15 @@ namespace BlogTools
                 
                 blogPath = setupWindow.SelectedBlogPath;
                 Application.Current.ShutdownMode = ShutdownMode.OnLastWindowClose;
+                }
             }
 
             // Save valid path
-            settings.BlogPath = blogPath;
-            StorageService.Save(settings);
+            if (!isDocCaptureMode)
+            {
+                settings.BlogPath = blogPath;
+                StorageService.Save(settings);
+            }
 
             // Initialize Services
             JekyllContext = new JekyllService(blogPath);
@@ -76,8 +93,78 @@ namespace BlogTools
             ApplyThemeIcon(mainWindow);
             mainWindow.Show();
 
+            if (isDocCaptureMode)
+            {
+                _ = RunDocScreenshotCaptureAsync(mainWindow, captureOutputDir);
+                return;
+            }
+
             // 启动后延迟自动检查更新（不阻塞主窗口显示）
             _ = AutoCheckUpdateAsync(mainWindow);
+        }
+
+        private static bool TryGetDocScreenshotOptions(string[] args, out string outputDir, out string? blogPath)
+        {
+            outputDir = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "docs", "images", "real"));
+            blogPath = null;
+            bool enabled = false;
+
+            foreach (var arg in args)
+            {
+                if (arg.Equals("--capture-doc-screenshots", StringComparison.OrdinalIgnoreCase))
+                {
+                    enabled = true;
+                }
+                else if (arg.StartsWith("--capture-doc-screenshots=", StringComparison.OrdinalIgnoreCase))
+                {
+                    enabled = true;
+                    outputDir = Path.GetFullPath(arg["--capture-doc-screenshots=".Length..].Trim('"'));
+                }
+                else if (arg.StartsWith("--capture-blog=", StringComparison.OrdinalIgnoreCase))
+                {
+                    blogPath = Path.GetFullPath(arg["--capture-blog=".Length..].Trim('"'));
+                }
+            }
+
+            return enabled;
+        }
+
+        private static string ResolveBundledBlogPath()
+        {
+            string defaultPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Blog"));
+            if (Directory.Exists(defaultPath))
+            {
+                return defaultPath;
+            }
+
+            return Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "Blog"));
+        }
+
+        private async Task RunDocScreenshotCaptureAsync(MainWindow mainWindow, string outputDir)
+        {
+            int exitCode = 0;
+            try
+            {
+                await DocScreenshotCaptureService.CaptureAsync(mainWindow, outputDir);
+            }
+            catch (Exception ex)
+            {
+                exitCode = 1;
+                try
+                {
+                    Directory.CreateDirectory(outputDir);
+                    File.WriteAllText(Path.Combine(outputDir, "capture-error.txt"), ex.ToString());
+                }
+                catch
+                {
+                }
+
+                Debug.WriteLine(ex);
+            }
+            finally
+            {
+                Shutdown(exitCode);
+            }
         }
 
         /// <summary>
