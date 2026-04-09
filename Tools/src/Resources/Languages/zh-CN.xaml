@@ -81,6 +81,10 @@
     <system:String x:Key="EditorTogglePin">置顶</system:String>
     <system:String x:Key="EditorLabelDescription">文章摘要</system:String>
     <system:String x:Key="EditorDescriptionPlaceholder">简明扼要的一段介绍...</system:String>
+    <system:String x:Key="EditorViewModeLabel">布局</system:String>
+    <system:String x:Key="EditorViewModeWriteOnly">仅撰写</system:String>
+    <system:String x:Key="EditorViewModeSplit">边写边预览</system:String>
+    <system:String x:Key="EditorViewModePreviewOnly">仅预览</system:String>
     <system:String x:Key="EditorBtnInsertLink">插入链接</system:String>
     <system:String x:Key="EditorDialogLinkTitle">插入链接</system:String>
     <system:String x:Key="EditorDialogLinkDescription">填写显示内容和链接地址，再选择是否新标签页打开即可。</system:String>
@@ -100,6 +104,7 @@
     <system:String x:Key="EditorToolboxExpand">展开</system:String>
     <system:String x:Key="EditorToolboxCollapseTip">收起 Markdown 工具区。拖动工具可调整顺序，拖到中栏可固定；是否保留原工具可在设置中切换。</system:String>
     <system:String x:Key="EditorToolboxExpandTip">展开 Markdown 工具区。拖动工具可调整顺序，拖到中栏可固定；是否保留原工具可在设置中切换。</system:String>
+    <system:String x:Key="EditorViewModeDragTip">拖动中栏空白区域可调整左右分栏宽度；拖到两侧边缘会自动切换为单栏模式。</system:String>
     <system:String x:Key="EditorToolboxGroupHeadings">标题</system:String>
     <system:String x:Key="EditorToolboxGroupText">文本样式</system:String>
     <system:String x:Key="EditorToolboxGroupBlocks">块元素</system:String>

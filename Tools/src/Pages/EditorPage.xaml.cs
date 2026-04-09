@@ -20,6 +20,19 @@ namespace BlogTools
 {
     public partial class EditorPage : Page
     {
+        private enum EditorViewMode
+        {
+            WriteOnly,
+            Split,
+            PreviewOnly
+        }
+
+        private enum LayoutDragSource
+        {
+            None,
+            SideRail
+        }
+
         private static readonly string[] DefaultRibbonToolIds =
         {
             "insert-image",
@@ -49,13 +62,22 @@ namespace BlogTools
 
         private static readonly Duration ToolboxAnimationDuration = new(TimeSpan.FromMilliseconds(220));
         private static readonly Duration DropCueAnimationDuration = new(TimeSpan.FromMilliseconds(170));
+        private static readonly Duration ViewModeAnimationDuration = new(TimeSpan.FromMilliseconds(240));
         private static readonly IEasingFunction PanelEase = new CubicEase { EasingMode = EasingMode.EaseOut };
+        private static readonly IEasingFunction ViewModeEase = new QuinticEase { EasingMode = EasingMode.EaseInOut };
         private const double ActiveDropScale = 1.015;
         private const double RibbonInsertionThickness = 4.0;
         private const double SideInsertionThickness = 4.0;
         private const double MinimumInsertionLength = 30.0;
+        private const double SideToolsColumnWidth = 104.0;
+        private const double DefaultEditorSplitRatio = 0.5;
+        private const double MinimumEditorSplitRatio = 0.1;
+        private const double MaximumEditorSplitRatio = 0.9;
+        private const double SplitAutoSwitchThreshold = 96.0;
+        private const double SplitRailDragActivationThreshold = 12.0;
 
         private readonly record struct ToolDropPlacement(int Index, Point Position, double Length);
+        private readonly record struct EditorViewModeWidths(double Editor, double Side, double Preview);
 
         private MarkdownPipeline _pipeline;
         private bool _isWebViewReady = false;
@@ -71,6 +93,16 @@ namespace BlogTools
         private EditorToolViewItem? _draggedTool;
         private bool _isRibbonDropCueActive;
         private bool _isSideDropCueActive;
+        private EditorViewMode _editorViewMode = EditorViewMode.Split;
+        private double _editorSplitRatio = DefaultEditorSplitRatio;
+        private bool _isViewModeAnimating;
+        private bool _isLayoutDragActive;
+        private bool _isLayoutDragArmed;
+        private LayoutDragSource _layoutDragSource;
+        private FrameworkElement? _layoutDragHost;
+        private Point _layoutDragStartPoint;
+        private double _layoutDragStartEditorWidth;
+        private double _layoutDragAvailableWidth;
 
         public EditorPage()
         {
@@ -87,7 +119,9 @@ namespace BlogTools
             InitializeTimeComboBoxes();
             TagsItemsControl.ItemsSource = _tagsList;
             InitializeEditorTools();
+            LoadEditorViewPreferences();
             UpdateToolboxVisualState(animate: false);
+            ApplyEditorViewMode(persist: false);
             InitializeWebViewsAsync();
         }
 
@@ -225,6 +259,286 @@ namespace BlogTools
             }
 
             LoadEditorToolLayout();
+        }
+
+        private void LoadEditorViewPreferences()
+        {
+            var settings = StorageService.Load();
+            _editorViewMode = ParseEditorViewMode(settings.EditorViewMode);
+            _editorSplitRatio = ClampEditorSplitRatio(settings.EditorSplitRatio);
+        }
+
+        private void SaveEditorViewPreferences()
+        {
+            var settings = StorageService.Load();
+            settings.EditorViewMode = _editorViewMode.ToString();
+            settings.EditorSplitRatio = _editorSplitRatio;
+            StorageService.Save(settings);
+        }
+
+        private static EditorViewMode ParseEditorViewMode(string? value)
+        {
+            return Enum.TryParse(value, ignoreCase: true, out EditorViewMode mode)
+                ? mode
+                : EditorViewMode.Split;
+        }
+
+        private static double ClampEditorSplitRatio(double ratio)
+        {
+            if (double.IsNaN(ratio) || double.IsInfinity(ratio) || ratio <= 0)
+            {
+                return DefaultEditorSplitRatio;
+            }
+
+            return Math.Max(MinimumEditorSplitRatio, Math.Min(MaximumEditorSplitRatio, ratio));
+        }
+
+        private void ApplyEditorViewMode(bool persist)
+        {
+            if (EditorColumn == null ||
+                SideToolsColumn == null ||
+                PreviewColumn == null ||
+                EditorPane == null ||
+                SideToolsPanel == null ||
+                PreviewPane == null)
+            {
+                return;
+            }
+
+            _editorSplitRatio = ClampEditorSplitRatio(_editorSplitRatio);
+            ApplyEditorViewModeLayout();
+
+            UpdateViewModeSelector();
+
+            if (persist)
+            {
+                SaveEditorViewPreferences();
+            }
+        }
+
+        private void ApplyEditorViewModeLayout()
+        {
+            switch (_editorViewMode)
+            {
+                case EditorViewMode.WriteOnly:
+                    EditorPane.Visibility = Visibility.Visible;
+                    SideToolsPanel.Visibility = Visibility.Collapsed;
+                    PreviewPane.Visibility = Visibility.Collapsed;
+                    EditorColumn.Width = new GridLength(1, GridUnitType.Star);
+                    SideToolsColumn.Width = new GridLength(0);
+                    PreviewColumn.Width = new GridLength(0);
+                    break;
+                case EditorViewMode.PreviewOnly:
+                    EditorPane.Visibility = Visibility.Collapsed;
+                    SideToolsPanel.Visibility = Visibility.Collapsed;
+                    PreviewPane.Visibility = Visibility.Visible;
+                    EditorColumn.Width = new GridLength(0);
+                    SideToolsColumn.Width = new GridLength(0);
+                    PreviewColumn.Width = new GridLength(1, GridUnitType.Star);
+                    break;
+                default:
+                    EditorPane.Visibility = Visibility.Visible;
+                    SideToolsPanel.Visibility = Visibility.Visible;
+                    PreviewPane.Visibility = Visibility.Visible;
+                    EditorColumn.Width = new GridLength(_editorSplitRatio, GridUnitType.Star);
+                    SideToolsColumn.Width = new GridLength(SideToolsColumnWidth);
+                    PreviewColumn.Width = new GridLength(1.0 - _editorSplitRatio, GridUnitType.Star);
+                    break;
+            }
+        }
+
+        private void UpdateViewModeSelector()
+        {
+            if (ViewModeButtonText == null)
+            {
+                return;
+            }
+
+            ViewModeButtonText.Text = GetEditorViewModeDisplayText(_editorViewMode);
+
+            if (WriteOnlyMenuItem != null)
+            {
+                WriteOnlyMenuItem.IsChecked = _editorViewMode == EditorViewMode.WriteOnly;
+            }
+
+            if (SplitMenuItem != null)
+            {
+                SplitMenuItem.IsChecked = _editorViewMode == EditorViewMode.Split;
+            }
+
+            if (PreviewOnlyMenuItem != null)
+            {
+                PreviewOnlyMenuItem.IsChecked = _editorViewMode == EditorViewMode.PreviewOnly;
+            }
+        }
+
+        private string GetEditorViewModeDisplayText(EditorViewMode mode)
+        {
+            string resourceKey = mode switch
+            {
+                EditorViewMode.WriteOnly => "EditorViewModeWriteOnly",
+                EditorViewMode.PreviewOnly => "EditorViewModePreviewOnly",
+                _ => "EditorViewModeSplit"
+            };
+
+            return Application.Current.FindResource(resourceKey).ToString()!;
+        }
+
+        private void SetEditorViewMode(EditorViewMode mode, bool persist = true, bool centerSplit = false)
+        {
+            double targetSplitRatio = centerSplit && mode == EditorViewMode.Split
+                ? DefaultEditorSplitRatio
+                : _editorSplitRatio;
+
+            targetSplitRatio = ClampEditorSplitRatio(targetSplitRatio);
+
+            if (mode == _editorViewMode && Math.Abs(targetSplitRatio - _editorSplitRatio) < 0.0001)
+            {
+                return;
+            }
+
+            _editorSplitRatio = targetSplitRatio;
+            _editorViewMode = mode;
+            ApplyEditorViewMode(persist);
+        }
+
+        private void ViewModeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isViewModeAnimating || ViewModeContextMenu == null)
+            {
+                return;
+            }
+
+            ViewModeContextMenu.PlacementTarget = ViewModeButton;
+            ViewModeContextMenu.IsOpen = true;
+        }
+
+        private void ViewModeMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isViewModeAnimating)
+            {
+                return;
+            }
+
+            if (sender is not System.Windows.Controls.MenuItem { Tag: string rawValue })
+            {
+                return;
+            }
+
+            var nextMode = ParseEditorViewMode(rawValue);
+            bool centerSplit = nextMode == EditorViewMode.Split && _editorViewMode != EditorViewMode.Split;
+            double nextSplitRatio = centerSplit
+                ? DefaultEditorSplitRatio
+                : _editorSplitRatio;
+
+            if (nextMode == _editorViewMode && Math.Abs(nextSplitRatio - _editorSplitRatio) < 0.0001)
+            {
+                return;
+            }
+
+            AnimateEditorViewModeChange(nextMode, nextSplitRatio, persist: true);
+        }
+
+        private void AnimateEditorViewModeChange(EditorViewMode targetMode, double targetSplitRatio, bool persist)
+        {
+            EndLayoutDrag(commitPreference: false);
+
+            if (EditorWorkspaceGrid == null ||
+                EditorWorkspaceGrid.ActualWidth <= 0 ||
+                EditorColumn == null ||
+                SideToolsColumn == null ||
+                PreviewColumn == null ||
+                EditorPane == null ||
+                SideToolsPanel == null ||
+                PreviewPane == null)
+            {
+                _editorSplitRatio = ClampEditorSplitRatio(targetSplitRatio);
+                _editorViewMode = targetMode;
+                ApplyEditorViewMode(persist);
+                return;
+            }
+
+            targetSplitRatio = ClampEditorSplitRatio(targetSplitRatio);
+
+            var fromWidths = GetEditorViewModeWidths(_editorViewMode, _editorSplitRatio);
+            var toWidths = GetEditorViewModeWidths(targetMode, targetSplitRatio);
+
+            if (Math.Abs(fromWidths.Editor - toWidths.Editor) < 0.5 &&
+                Math.Abs(fromWidths.Side - toWidths.Side) < 0.5 &&
+                Math.Abs(fromWidths.Preview - toWidths.Preview) < 0.5)
+            {
+                _editorSplitRatio = targetSplitRatio;
+                _editorViewMode = targetMode;
+                ApplyEditorViewMode(persist);
+                return;
+            }
+
+            _isViewModeAnimating = true;
+            _editorSplitRatio = targetSplitRatio;
+            _editorViewMode = targetMode;
+            UpdateViewModeSelector();
+            PrepareAnimatedViewModeChange(fromWidths);
+
+            var editorAnimation = CreateColumnWidthAnimation(fromWidths.Editor, toWidths.Editor);
+            var sideAnimation = CreateColumnWidthAnimation(fromWidths.Side, toWidths.Side);
+            var previewAnimation = CreateColumnWidthAnimation(fromWidths.Preview, toWidths.Preview);
+            previewAnimation.Completed += (_, _) =>
+            {
+                ClearColumnWidthAnimations();
+                ApplyEditorViewModeLayout();
+                _isViewModeAnimating = false;
+
+                if (persist)
+                {
+                    SaveEditorViewPreferences();
+                }
+            };
+
+            EditorColumn.BeginAnimation(ColumnDefinition.WidthProperty, editorAnimation);
+            SideToolsColumn.BeginAnimation(ColumnDefinition.WidthProperty, sideAnimation);
+            PreviewColumn.BeginAnimation(ColumnDefinition.WidthProperty, previewAnimation);
+        }
+
+        private EditorViewModeWidths GetEditorViewModeWidths(EditorViewMode mode, double splitRatio)
+        {
+            double totalWidth = Math.Max(0.0, EditorWorkspaceGrid.ActualWidth);
+            double splitWidth = Math.Max(0.0, totalWidth - SideToolsColumnWidth);
+            splitRatio = ClampEditorSplitRatio(splitRatio);
+
+            return mode switch
+            {
+                EditorViewMode.WriteOnly => new EditorViewModeWidths(totalWidth, 0.0, 0.0),
+                EditorViewMode.PreviewOnly => new EditorViewModeWidths(0.0, 0.0, totalWidth),
+                _ => new EditorViewModeWidths(splitWidth * splitRatio, SideToolsColumnWidth, splitWidth * (1.0 - splitRatio))
+            };
+        }
+
+        private void PrepareAnimatedViewModeChange(EditorViewModeWidths widths)
+        {
+            EditorPane.Visibility = Visibility.Visible;
+            SideToolsPanel.Visibility = Visibility.Visible;
+            PreviewPane.Visibility = Visibility.Visible;
+            EditorColumn.Width = new GridLength(widths.Editor, GridUnitType.Pixel);
+            SideToolsColumn.Width = new GridLength(widths.Side, GridUnitType.Pixel);
+            PreviewColumn.Width = new GridLength(widths.Preview, GridUnitType.Pixel);
+        }
+
+        private GridLengthAnimation CreateColumnWidthAnimation(double from, double to)
+        {
+            return new GridLengthAnimation
+            {
+                From = new GridLength(from, GridUnitType.Pixel),
+                To = new GridLength(to, GridUnitType.Pixel),
+                Duration = ViewModeAnimationDuration,
+                EasingFunction = ViewModeEase
+            };
+        }
+
+        private void ClearColumnWidthAnimations()
+        {
+            EditorColumn.BeginAnimation(ColumnDefinition.WidthProperty, null);
+            SideToolsColumn.BeginAnimation(ColumnDefinition.WidthProperty, null);
+            PreviewColumn.BeginAnimation(ColumnDefinition.WidthProperty, null);
         }
 
         private void RegisterToolDefinitions()
@@ -417,6 +731,146 @@ namespace BlogTools
         private static bool KeepToolboxToolWhenPinned()
         {
             return StorageService.Load().KeepToolboxToolWhenPinned;
+        }
+
+        private void SideToolsPanel_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_isViewModeAnimating ||
+                _editorViewMode != EditorViewMode.Split ||
+                sender is not FrameworkElement host ||
+                !CanStartLayoutDrag(e.OriginalSource as DependencyObject))
+            {
+                return;
+            }
+
+            BeginLayoutDrag(host, LayoutDragSource.SideRail, e.GetPosition(EditorWorkspaceGrid));
+            e.Handled = true;
+        }
+
+        private void SideToolsPanel_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isLayoutDragActive)
+            {
+                return;
+            }
+
+            if (e.LeftButton != MouseButtonState.Pressed)
+            {
+                EndLayoutDrag(commitPreference: true);
+                return;
+            }
+
+            var currentPosition = e.GetPosition(EditorWorkspaceGrid);
+            UpdateLayoutDrag(currentPosition);
+            e.Handled = true;
+        }
+
+        private void SideToolsPanel_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_isLayoutDragActive)
+            {
+                return;
+            }
+
+            EndLayoutDrag(commitPreference: true);
+            e.Handled = true;
+        }
+
+        private void SideToolsPanel_LostMouseCapture(object sender, MouseEventArgs e)
+        {
+            EndLayoutDrag(commitPreference: true);
+        }
+
+        private bool CanStartLayoutDrag(DependencyObject? source)
+        {
+            return source != null &&
+                   FindToolElement(source) == null &&
+                   FindVisualParent<ButtonBase>(source) == null;
+        }
+
+        private void BeginLayoutDrag(FrameworkElement host, LayoutDragSource source, Point startPoint)
+        {
+            _isLayoutDragActive = true;
+            _isLayoutDragArmed = false;
+            _layoutDragSource = source;
+            _layoutDragHost = host;
+            _layoutDragStartPoint = startPoint;
+            _layoutDragStartEditorWidth = EditorColumn.ActualWidth;
+            _layoutDragAvailableWidth = EditorColumn.ActualWidth + PreviewColumn.ActualWidth;
+
+            host.CaptureMouse();
+        }
+
+        private void UpdateLayoutDrag(Point currentPosition)
+        {
+            if (!_isLayoutDragArmed)
+            {
+                if (Math.Abs(currentPosition.X - _layoutDragStartPoint.X) < SplitRailDragActivationThreshold)
+                {
+                    return;
+                }
+
+                _isLayoutDragArmed = true;
+            }
+
+            UpdateSplitRailDrag(currentPosition);
+        }
+
+        private void UpdateSplitRailDrag(Point currentPosition)
+        {
+            if (_layoutDragAvailableWidth <= 0)
+            {
+                _layoutDragAvailableWidth = EditorColumn.ActualWidth + PreviewColumn.ActualWidth;
+                if (_layoutDragAvailableWidth <= 0)
+                {
+                    return;
+                }
+            }
+
+            double deltaX = currentPosition.X - _layoutDragStartPoint.X;
+            double nextEditorWidth = _layoutDragStartEditorWidth + deltaX;
+            double nextPreviewWidth = _layoutDragAvailableWidth - nextEditorWidth;
+
+            if (nextEditorWidth <= SplitAutoSwitchThreshold)
+            {
+                EndLayoutDrag(commitPreference: false);
+                SetEditorViewMode(EditorViewMode.PreviewOnly);
+                return;
+            }
+
+            if (nextPreviewWidth <= SplitAutoSwitchThreshold)
+            {
+                EndLayoutDrag(commitPreference: false);
+                SetEditorViewMode(EditorViewMode.WriteOnly);
+                return;
+            }
+
+            _editorSplitRatio = ClampEditorSplitRatio(nextEditorWidth / _layoutDragAvailableWidth);
+            ApplyEditorViewMode(persist: false);
+        }
+
+        private void EndLayoutDrag(bool commitPreference)
+        {
+            if (!_isLayoutDragActive)
+            {
+                return;
+            }
+
+            _isLayoutDragActive = false;
+            _isLayoutDragArmed = false;
+            _layoutDragSource = LayoutDragSource.None;
+
+            if (_layoutDragHost?.IsMouseCaptured == true)
+            {
+                _layoutDragHost.ReleaseMouseCapture();
+            }
+
+            _layoutDragHost = null;
+
+            if (commitPreference)
+            {
+                SaveEditorViewPreferences();
+            }
         }
 
         private void ToolButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -1424,6 +1878,7 @@ namespace BlogTools
         private void EditorPage_Unloaded(object sender, RoutedEventArgs e)
         {
             if (_parentSv != null) _parentSv.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+            EndLayoutDrag(commitPreference: true);
             ClearDropCues();
             
             var nav = (Application.Current.MainWindow as MainWindow)?.RootNavigation;
@@ -2206,6 +2661,58 @@ namespace BlogTools
             }
 
             System.IO.File.WriteAllText(stampFile, version);
+        }
+
+        private sealed class GridLengthAnimation : AnimationTimeline
+        {
+            public override Type TargetPropertyType => typeof(GridLength);
+
+            public GridLength? From
+            {
+                get => (GridLength?)GetValue(FromProperty);
+                set => SetValue(FromProperty, value);
+            }
+
+            public static readonly DependencyProperty FromProperty =
+                DependencyProperty.Register(nameof(From), typeof(GridLength?), typeof(GridLengthAnimation));
+
+            public GridLength? To
+            {
+                get => (GridLength?)GetValue(ToProperty);
+                set => SetValue(ToProperty, value);
+            }
+
+            public static readonly DependencyProperty ToProperty =
+                DependencyProperty.Register(nameof(To), typeof(GridLength?), typeof(GridLengthAnimation));
+
+            public IEasingFunction? EasingFunction
+            {
+                get => (IEasingFunction?)GetValue(EasingFunctionProperty);
+                set => SetValue(EasingFunctionProperty, value);
+            }
+
+            public static readonly DependencyProperty EasingFunctionProperty =
+                DependencyProperty.Register(nameof(EasingFunction), typeof(IEasingFunction), typeof(GridLengthAnimation));
+
+            public override object GetCurrentValue(object defaultOriginValue, object defaultDestinationValue, AnimationClock animationClock)
+            {
+                double from = (From ?? (GridLength)defaultOriginValue).Value;
+                double to = (To ?? (GridLength)defaultDestinationValue).Value;
+                double progress = animationClock.CurrentProgress ?? 0.0;
+
+                if (EasingFunction != null)
+                {
+                    progress = EasingFunction.Ease(progress);
+                }
+
+                double current = from + ((to - from) * progress);
+                return new GridLength(current, GridUnitType.Pixel);
+            }
+
+            protected override Freezable CreateInstanceCore()
+            {
+                return new GridLengthAnimation();
+            }
         }
     }
 }

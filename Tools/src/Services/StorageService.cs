@@ -18,6 +18,8 @@ namespace BlogTools.Services
         public bool KeepToolboxToolWhenPinned { get; set; } = true;
         public List<string> EditorRibbonToolOrder { get; set; } = new();
         public List<string> EditorSideToolOrder { get; set; } = new();
+        public string EditorViewMode { get; set; } = "Split";
+        public double EditorSplitRatio { get; set; } = 0.5;
     }
 
     public static class StorageService

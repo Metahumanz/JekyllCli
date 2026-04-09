@@ -152,6 +152,43 @@
                         FontWeight="Bold"
                         Margin="0,0,16,0" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <ui:Button x:Name="ViewModeButton"
+                           Click="ViewModeButton_Click"
+                           Appearance="Secondary"
+                           Padding="10,4"
+                           MinWidth="72"
+                           Margin="0,0,12,0"
+                           ToolTip="{DynamicResource EditorViewModeLabel}">
+                    <ui:Button.ContextMenu>
+                        <ContextMenu x:Name="ViewModeContextMenu"
+                                     Placement="Bottom">
+                            <MenuItem x:Name="WriteOnlyMenuItem"
+                                      Tag="WriteOnly"
+                                      Header="{DynamicResource EditorViewModeWriteOnly}"
+                                      IsCheckable="True"
+                                      Click="ViewModeMenuItem_Click" />
+                            <MenuItem x:Name="SplitMenuItem"
+                                      Tag="Split"
+                                      Header="{DynamicResource EditorViewModeSplit}"
+                                      IsCheckable="True"
+                                      Click="ViewModeMenuItem_Click" />
+                            <MenuItem x:Name="PreviewOnlyMenuItem"
+                                      Tag="PreviewOnly"
+                                      Header="{DynamicResource EditorViewModePreviewOnly}"
+                                      IsCheckable="True"
+                                      Click="ViewModeMenuItem_Click" />
+                        </ContextMenu>
+                    </ui:Button.ContextMenu>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="ViewModeButtonText"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="▼"
+                                   VerticalAlignment="Center"
+                                   Margin="6,0,0,0"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </ui:Button>
                 <ui:Button Content="{DynamicResource EditorBtnSaveDraft}" Click="SaveButton_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,8,0" />
                 <ui:Button Content="{DynamicResource EditorBtnPublish}" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Margin="0,0,8,0" />
                 <ui:Button Click="NewPost_Click" Icon="{ui:SymbolIcon Symbol=Delete24}" ToolTip="{DynamicResource EditorBtnClear}" />
@@ -249,14 +286,15 @@
             </Grid>
         </Expander>
 
-        <Grid Grid.Row="3">
+        <Grid x:Name="EditorWorkspaceGrid" Grid.Row="3">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="104" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="EditorColumn" Width="*" />
+                <ColumnDefinition x:Name="SideToolsColumn" Width="104" />
+                <ColumnDefinition x:Name="PreviewColumn" Width="*" />
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0"
+            <Border x:Name="EditorPane"
+                    Grid.Column="0"
                     VerticalAlignment="Stretch"
                     BorderThickness="1"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
@@ -378,12 +416,18 @@
                     Margin="4,0"
                     Padding="6,14"
                     VerticalAlignment="Stretch"
+                    Cursor="SizeWE"
                     BorderThickness="1"
                     BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
                     Background="{DynamicResource ControlFillColorSecondaryBrush}"
                     CornerRadius="16"
                     RenderTransformOrigin="0.5,0.5"
+                    ToolTip="{DynamicResource EditorViewModeDragTip}"
                     AllowDrop="True"
+                    PreviewMouseLeftButtonDown="SideToolsPanel_PreviewMouseLeftButtonDown"
+                    PreviewMouseMove="SideToolsPanel_PreviewMouseMove"
+                    PreviewMouseLeftButtonUp="SideToolsPanel_PreviewMouseLeftButtonUp"
+                    LostMouseCapture="SideToolsPanel_LostMouseCapture"
                     DragOver="SideToolsHost_DragOver"
                     DragLeave="SideToolsHost_DragLeave"
                     Drop="SideToolsHost_Drop">
@@ -435,7 +479,8 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Column="2"
+            <Border x:Name="PreviewPane"
+                    Grid.Column="2"
                     VerticalAlignment="Stretch"
                     BorderThickness="1"
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"

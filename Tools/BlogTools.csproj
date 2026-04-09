@@ -9,7 +9,7 @@
     <UseWPF>true</UseWPF>
     <SelfContained>false</SelfContained>
     <Version>1.6.2</Version>
-    <DefaultItemExcludes>$(DefaultItemExcludes);obj_codex\**;**\*_wpftmp*;**\*.wpftmp*</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**;obj_codex\**;**\*_wpftmp*;**\*.wpftmp*</DefaultItemExcludes>
 
     <!-- 单文件发布配置 -->
     <PublishSingleFile>true</PublishSingleFile>
@@ -39,16 +39,34 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="obj\**\*.cs" />
+    <Compile Remove="bin\**\*.cs" />
     <Compile Remove="obj_codex\**\*.cs" />
     <Compile Remove="**\*_wpftmp*.cs" />
+    <EmbeddedResource Remove="obj\**\*" />
+    <EmbeddedResource Remove="bin\**\*" />
     <EmbeddedResource Remove="obj_codex\**\*" />
     <EmbeddedResource Remove="**\*_wpftmp*" />
+    <Content Remove="obj\**\*" />
+    <Content Remove="bin\**\*" />
+    <Content Remove="obj_codex\**\*" />
+    <Content Remove="**\*_wpftmp*" />
+    <None Remove="obj\**\*" />
+    <None Remove="bin\**\*" />
     <None Remove="obj_codex\**\*" />
     <None Remove="**\*_wpftmp*" />
+    <Page Remove="obj\**\*" />
+    <Page Remove="bin\**\*" />
     <Page Remove="obj_codex\**\*" />
     <Page Remove="**\*_wpftmp*" />
+    <Resource Remove="obj\**\*" />
+    <Resource Remove="bin\**\*" />
     <Resource Remove="obj_codex\**\*" />
     <Resource Remove="**\*_wpftmp*" />
+    <ApplicationDefinition Remove="obj\**\*" />
+    <ApplicationDefinition Remove="bin\**\*" />
+    <ApplicationDefinition Remove="obj_codex\**\*" />
+    <ApplicationDefinition Remove="**\*_wpftmp*" />
   </ItemGroup>
 
   <!-- 应用图标与资源 -->

@@ -78,6 +78,10 @@
     <system:String x:Key="EditorTogglePin">Pin</system:String>
     <system:String x:Key="EditorLabelDescription">Description</system:String>
     <system:String x:Key="EditorDescriptionPlaceholder">A brief summary of the post...</system:String>
+    <system:String x:Key="EditorViewModeLabel">Layout</system:String>
+    <system:String x:Key="EditorViewModeWriteOnly">Write only</system:String>
+    <system:String x:Key="EditorViewModeSplit">Write + Preview</system:String>
+    <system:String x:Key="EditorViewModePreviewOnly">Preview only</system:String>
     <system:String x:Key="EditorBtnInsertLink">Insert Link</system:String>
     <system:String x:Key="EditorDialogLinkTitle">Insert Link</system:String>
     <system:String x:Key="EditorDialogLinkDescription">Fill in the display text and URL, then choose whether the link should open in a new tab.</system:String>
@@ -97,6 +101,7 @@
     <system:String x:Key="EditorToolboxExpand">Expand</system:String>
     <system:String x:Key="EditorToolboxCollapseTip">Collapse the Markdown toolbox. Drag tools to reorder them, drag into the center rail to pin them, and switch the copy behavior in Settings.</system:String>
     <system:String x:Key="EditorToolboxExpandTip">Expand the Markdown toolbox. Drag tools to reorder them, drag into the center rail to pin them, and switch the copy behavior in Settings.</system:String>
+    <system:String x:Key="EditorViewModeDragTip">Drag the center rail empty area to resize the split view. Drag to either edge to switch to a single-pane layout.</system:String>
     <system:String x:Key="EditorToolboxGroupHeadings">Headings</system:String>
     <system:String x:Key="EditorToolboxGroupText">Text Styles</system:String>
     <system:String x:Key="EditorToolboxGroupBlocks">Blocks</system:String>
