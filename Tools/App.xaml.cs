@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.IO;
+using BlogTools.Helpers;
 using BlogTools.Models;
 using BlogTools.Services;
 using Microsoft.Win32;
@@ -28,6 +29,7 @@ namespace BlogTools
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            HoverLiftHelper.Initialize();
 
             // 清理上次更新残留的 .old 文件
             UpdateService.CleanupOldVersion();

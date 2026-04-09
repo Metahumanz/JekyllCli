@@ -59,6 +59,7 @@ namespace BlogTools
             CurrentPathBlock.Text = App.JekyllContext.BlogPath;
             var settings = StorageService.Load();
             RememberMetadataToggle.IsChecked = settings.RememberMetadataExpanded;
+            KeepToolboxToolWhenPinnedToggle.IsChecked = settings.KeepToolboxToolWhenPinned;
             AutoUpdateModifiedTimeToggle.IsChecked = settings.AutoUpdateModifiedTime;
             SilentUpdateToggle.IsChecked = settings.SilentUpdate;
             ThemeToggle.IsChecked = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
@@ -220,6 +221,20 @@ namespace BlogTools
         {
             var settings = StorageService.Load();
             settings.AutoUpdateModifiedTime = false;
+            StorageService.Save(settings);
+        }
+
+        private void KeepToolboxToolWhenPinned_Checked(object sender, RoutedEventArgs e)
+        {
+            var settings = StorageService.Load();
+            settings.KeepToolboxToolWhenPinned = true;
+            StorageService.Save(settings);
+        }
+
+        private void KeepToolboxToolWhenPinned_Unchecked(object sender, RoutedEventArgs e)
+        {
+            var settings = StorageService.Load();
+            settings.KeepToolboxToolWhenPinned = false;
             StorageService.Save(settings);
         }
 

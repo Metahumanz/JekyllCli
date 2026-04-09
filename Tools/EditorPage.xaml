@@ -12,6 +12,29 @@
       Title="{DynamicResource NavEditor}">
 
     <Grid x:Name="RootGrid" Margin="16,16,16,16">
+        <Grid.Resources>
+            <Style x:Key="EditorToolButtonStyle" TargetType="ui:Button">
+                <Setter Property="Appearance" Value="Secondary" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="0,0,8,8" />
+                <Setter Property="Width" Value="44" />
+                <Setter Property="Height" Value="44" />
+                <Setter Property="MinWidth" Value="44" />
+                <Setter Property="MinHeight" Value="44" />
+                <Setter Property="ToolTipService.InitialShowDelay" Value="220" />
+            </Style>
+            <Style x:Key="EditorSideToolButtonStyle" TargetType="ui:Button" BasedOn="{StaticResource EditorToolButtonStyle}">
+                <Setter Property="Margin" Value="0,0,0,10" />
+                <Setter Property="HorizontalAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="EditorToolIconStyle" TargetType="ui:SymbolIcon">
+                <Setter Property="HorizontalAlignment" Value="Center" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                <Setter Property="FontSize" Value="18" />
+            </Style>
+        </Grid.Resources>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -19,15 +42,25 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <ui:InfoBar Grid.Row="0" x:Name="StatusInfo" IsOpen="False" Message="" Severity="Success" Margin="0,0,0,8" Panel.ZIndex="10"/>
+        <ui:InfoBar Grid.Row="0"
+                    x:Name="StatusInfo"
+                    IsOpen="False"
+                    Message=""
+                    Severity="Success"
+                    Margin="0,0,0,8"
+                    Panel.ZIndex="10" />
 
-        <!-- 标题行与操作区 -->
         <Grid Grid.Row="1" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <ui:TextBox Grid.Column="0" x:Name="TitleBox" PlaceholderText="{DynamicResource EditorTitleBoxPlaceholder}" FontSize="18" FontWeight="Bold" Margin="0,0,16,0"/>
+            <ui:TextBox Grid.Column="0"
+                        x:Name="TitleBox"
+                        PlaceholderText="{DynamicResource EditorTitleBoxPlaceholder}"
+                        FontSize="18"
+                        FontWeight="Bold"
+                        Margin="0,0,16,0" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <ui:Button Content="{DynamicResource EditorBtnSaveDraft}" Click="SaveButton_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,8,0" />
                 <ui:Button Content="{DynamicResource EditorBtnPublish}" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Margin="0,0,8,0" />
@@ -35,7 +68,6 @@
             </StackPanel>
         </Grid>
 
-        <!-- 元数据区 -->
         <Expander x:Name="MetadataExpander" Grid.Row="2" Header="{DynamicResource EditorExpanderMetadata}" IsExpanded="False" Margin="0,0,0,8" HorizontalAlignment="Stretch" Expanded="MetadataExpander_Expanded" Collapsed="MetadataExpander_Collapsed">
             <Grid Margin="12,12,12,4">
                 <Grid.RowDefinitions>
@@ -52,7 +84,6 @@
                     <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Row 0 -->
                 <TextBlock Text="{DynamicResource EditorLabelPublishTime}" VerticalAlignment="Center" Grid.Row="0" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <Grid Grid.Row="0" Grid.Column="1" Margin="0,0,0,12">
                     <Grid.ColumnDefinitions>
@@ -71,11 +102,10 @@
 
                 <TextBlock Text="{DynamicResource EditorLabelCategory}" VerticalAlignment="Center" Grid.Row="0" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Grid.Row="0" Grid.Column="4" Orientation="Horizontal" Margin="0,0,0,12">
-                    <ComboBox x:Name="PrimaryCategoryBox" IsEditable="True" Width="100" Margin="0,0,8,0" ToolTip="一级分类" Text="" />
-                    <ComboBox x:Name="SecondaryCategoryBox" IsEditable="True" Width="100" ToolTip="二级分类" Text="" />
+                    <ComboBox x:Name="PrimaryCategoryBox" IsEditable="True" Width="100" Margin="0,0,8,0" Text="" />
+                    <ComboBox x:Name="SecondaryCategoryBox" IsEditable="True" Width="100" Text="" />
                 </StackPanel>
 
-                <!-- Row 1 -->
                 <TextBlock Text="{DynamicResource EditorLabelModifyTime}" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <Grid Grid.Row="1" Grid.Column="1" Margin="0,0,0,12">
                     <Grid.ColumnDefinitions>
@@ -111,14 +141,12 @@
                     </WrapPanel>
                 </Border>
 
-                <!-- Row 2 -->
                 <TextBlock Text="{DynamicResource EditorLabelAuthor}" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <ui:TextBox x:Name="AuthorBox" PlaceholderText="{DynamicResource EditorLabelAuthorPlaceholder}" Grid.Row="2" Grid.Column="1" Margin="0,0,0,12"/>
 
                 <TextBlock Text="{DynamicResource EditorLabelImage}" VerticalAlignment="Center" Grid.Row="2" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <ui:TextBox x:Name="ImageBox" PlaceholderText="/path/to/image.jpg" Grid.Row="2" Grid.Column="4" Margin="0,0,0,12"/>
 
-                <!-- Row 3 -->
                 <TextBlock Text="{DynamicResource EditorLabelQuickFeatures}" VerticalAlignment="Center" Grid.Row="3" Grid.Column="0" Margin="0,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="1" Margin="0,0,0,0" VerticalAlignment="Center">
                     <ui:ToggleSwitch x:Name="MathSwitch" Content="{DynamicResource EditorToggleMath}" Margin="0,0,16,0" />
@@ -128,19 +156,16 @@
 
                 <TextBlock Text="{DynamicResource EditorLabelDescription}" VerticalAlignment="Top" Grid.Row="3" Grid.Column="3" Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <ui:TextBox x:Name="DescriptionBox" PlaceholderText="{DynamicResource EditorDescriptionPlaceholder}" Grid.Row="3" Grid.Column="4" Margin="0,0,0,0" AcceptsReturn="True" MinHeight="40" TextWrapping="Wrap"/>
-
             </Grid>
         </Expander>
 
-        <!-- 编辑区 + 同步按钮 + 预览区 -->
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="104" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- 左侧：WebView2 编辑框 (自带 WebKit 滚动条) -->
             <Border Grid.Column="0"
                     VerticalAlignment="Stretch"
                     BorderThickness="1"
@@ -148,27 +173,180 @@
                     CornerRadius="8"
                     Background="{DynamicResource ControlFillColorDefaultBrush}"
                     ClipToBounds="True">
-                <wv2:WebView2 x:Name="EditorWebView" />
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0"
+                            BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
+                            BorderThickness="0,0,0,1"
+                            Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" Margin="12,10,12,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0"
+                                           Text="{DynamicResource EditorToolboxLabel}"
+                                           VerticalAlignment="Center"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+
+                                <ui:Button x:Name="ToolboxToggleButton"
+                                           Grid.Column="1"
+                                           Click="ToolboxToggleButton_Click"
+                                           Appearance="Secondary"
+                                           Padding="12,4"
+                                           MinWidth="92"
+                                           VerticalAlignment="Center"
+                                           ToolTipService.InitialShowDelay="220"
+                                           ToolTipService.Placement="Bottom">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="ToolboxToggleGlyph"
+                                                   Margin="0,0,6,0"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="11" />
+                                        <TextBlock x:Name="ToolboxToggleText"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </ui:Button>
+                            </Grid>
+
+                            <Border x:Name="ToolboxContentPanel"
+                                    Grid.Row="1"
+                                    BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
+                                    BorderThickness="0,1,0,0"
+                                    Padding="12,10,12,6"
+                                    RenderTransformOrigin="0.5,0.5"
+                                    AllowDrop="True"
+                                    DragOver="RibbonToolsHost_DragOver"
+                                    DragLeave="RibbonToolsHost_DragLeave"
+                                    Drop="RibbonToolsHost_Drop">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="RibbonToolsScaleTransform" ScaleX="1" ScaleY="1" />
+                                </Border.RenderTransform>
+                                <Grid x:Name="RibbonToolsHostGrid">
+                                    <ItemsControl x:Name="RibbonToolsItemsControl">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <ui:Button Click="ToolbarTool_Click"
+                                                           PreviewMouseLeftButtonDown="ToolButton_PreviewMouseLeftButtonDown"
+                                                           PreviewMouseMove="ToolButton_PreviewMouseMove"
+                                                           PreviewMouseLeftButtonUp="ToolButton_PreviewMouseLeftButtonUp"
+                                                           Style="{StaticResource EditorToolButtonStyle}"
+                                                           ToolTip="{Binding ToolTipText}">
+                                                    <ui:SymbolIcon Symbol="{Binding Symbol}"
+                                                                   FontSize="{Binding SymbolFontSize}"
+                                                                   Style="{StaticResource EditorToolIconStyle}" />
+                                                </ui:Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Border x:Name="RibbonDropCue"
+                                            IsHitTestVisible="False"
+                                            Opacity="0"
+                                            CornerRadius="8"
+                                            BorderThickness="1"
+                                            BorderBrush="#660078D4"
+                                            Background="#140078D4" />
+                                    <Canvas IsHitTestVisible="False">
+                                        <Border x:Name="RibbonInsertionIndicator"
+                                                Width="4"
+                                                Height="32"
+                                                Opacity="0"
+                                                CornerRadius="2"
+                                                Background="{DynamicResource AccentTextFillColorPrimaryBrush}">
+                                            <Border.RenderTransform>
+                                                <TranslateTransform x:Name="RibbonInsertionTransform" />
+                                            </Border.RenderTransform>
+                                        </Border>
+                                    </Canvas>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <wv2:WebView2 x:Name="EditorWebView" Grid.Row="1" />
+                </Grid>
             </Border>
 
-            <!-- 中间：同步滚动按钮与图片工具 -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0">
-                <ui:Button x:Name="InsertImageBtn" Click="InsertImage_Click"
-                           ToolTip="上传并插入本地图片 (Alt+I)" Padding="6" Margin="0,0,0,16" Appearance="Primary">
-                    <ui:SymbolIcon Symbol="Image24" FontSize="16"/>
-                </ui:Button>
+            <Border x:Name="SideToolsPanel"
+                    Grid.Column="1"
+                    Margin="4,0"
+                    Padding="6,14"
+                    VerticalAlignment="Stretch"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
+                    Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                    CornerRadius="16"
+                    RenderTransformOrigin="0.5,0.5"
+                    AllowDrop="True"
+                    DragOver="SideToolsHost_DragOver"
+                    DragLeave="SideToolsHost_DragLeave"
+                    Drop="SideToolsHost_Drop">
+                <Border.RenderTransform>
+                    <ScaleTransform x:Name="SideToolsScaleTransform" ScaleX="1" ScaleY="1" />
+                </Border.RenderTransform>
+                <Grid x:Name="SideToolsHostGrid">
+                    <ItemsControl x:Name="SideToolsItemsControl"
+                                  VerticalAlignment="Top"
+                                  HorizontalAlignment="Stretch">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ui:Button Click="ToolbarTool_Click"
+                                           PreviewMouseLeftButtonDown="ToolButton_PreviewMouseLeftButtonDown"
+                                           PreviewMouseMove="ToolButton_PreviewMouseMove"
+                                           PreviewMouseLeftButtonUp="ToolButton_PreviewMouseLeftButtonUp"
+                                           Style="{StaticResource EditorSideToolButtonStyle}"
+                                           ToolTip="{Binding ToolTipText}">
+                                    <ui:SymbolIcon Symbol="{Binding Symbol}"
+                                                   FontSize="{Binding SymbolFontSize}"
+                                                   Style="{StaticResource EditorToolIconStyle}" />
+                                </ui:Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Border x:Name="SideDropCue"
+                            IsHitTestVisible="False"
+                            Opacity="0"
+                            CornerRadius="10"
+                            BorderThickness="1"
+                            BorderBrush="#660078D4"
+                            Background="#140078D4" />
+                    <Canvas IsHitTestVisible="False">
+                        <Border x:Name="SideInsertionIndicator"
+                                Width="42"
+                                Height="4"
+                                Opacity="0"
+                                CornerRadius="2"
+                                Background="{DynamicResource AccentTextFillColorPrimaryBrush}">
+                            <Border.RenderTransform>
+                                <TranslateTransform x:Name="SideInsertionTransform" />
+                            </Border.RenderTransform>
+                        </Border>
+                    </Canvas>
+                </Grid>
+            </Border>
 
-                <ui:Button x:Name="SyncToPreviewBtn" Click="SyncEditorToPreview_Click"
-                           ToolTip="将预览同步到编辑位置" Padding="6" Margin="0,0,0,8">
-                    <ui:SymbolIcon Symbol="ArrowRight24" FontSize="16"/>
-                </ui:Button>
-                <ui:Button x:Name="SyncToEditorBtn" Click="SyncPreviewToEditor_Click"
-                           ToolTip="将编辑同步到预览位置" Padding="6">
-                    <ui:SymbolIcon Symbol="ArrowLeft24" FontSize="16"/>
-                </ui:Button>
-            </StackPanel>
-
-            <!-- 右侧：WebView2 预览 (自带滚动) -->
             <Border Grid.Column="2"
                     VerticalAlignment="Stretch"
                     BorderThickness="1"

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
@@ -13,6 +14,10 @@ namespace BlogTools.Services
         public string AppLanguage { get; set; } = "Auto";
         public bool SilentUpdate { get; set; } = false;
         public bool AutoUpdateModifiedTime { get; set; } = false;
+        public bool EditorToolboxCollapsed { get; set; } = false;
+        public bool KeepToolboxToolWhenPinned { get; set; } = true;
+        public List<string> EditorRibbonToolOrder { get; set; } = new();
+        public List<string> EditorSideToolOrder { get; set; } = new();
     }
 
     public static class StorageService

@@ -70,6 +70,16 @@
                         <ui:ToggleSwitch x:Name="RememberMetadataToggle" Checked="RememberMetadata_Checked" Unchecked="RememberMetadata_Unchecked" />
                     </ui:CardControl>
 
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Document24}">
+                        <ui:CardControl.Header>
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource SettingsLabelKeepToolboxToolWhenPinned}" FontWeight="SemiBold" FontSize="14" />
+                                <TextBlock Text="{DynamicResource SettingsDescKeepToolboxToolWhenPinned}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            </StackPanel>
+                        </ui:CardControl.Header>
+                        <ui:ToggleSwitch x:Name="KeepToolboxToolWhenPinnedToggle" Checked="KeepToolboxToolWhenPinned_Checked" Unchecked="KeepToolboxToolWhenPinned_Unchecked" />
+                    </ui:CardControl>
+
                     <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Clock24}">
                         <ui:CardControl.Header>
                             <StackPanel>
