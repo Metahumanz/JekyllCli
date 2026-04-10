@@ -89,7 +89,7 @@ JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](htt
    ```
 3. **本地编译运行**：
    - 进入 `Tools` 目录执行：
-   ```bash
+   ```powershell
    dotnet run
    ```
 
@@ -142,5 +142,5 @@ dotnet publish
 
 ## 六、开源协议
 
-1. 本套件的整体架构及 WPF `Tools` 辅助程序由原始作者开发，**采用 GPLv3 协议开源**。
+1. 本套件的整体架构及 WPF `Tools` 辅助程序由作者开发，**采用 GPLv3 协议开源**。
 2. 在 `Blog` 文件夹下的[Chirpy 代码](https://github.com/cotes2020/jekyll-theme-chirpy)遵从源项目 **MIT 协议**。

@@ -1,118 +1,126 @@
 # JekyllCli 🚀
 
 English | [简体中文](../README.md) | [Chinese User Guide](USER_GUIDE_ZH.md)
+Also available on [my blog](https://pacil.dpdns.org/posts/JekyllCli-intro)
 
-JekyllCli is a **modern, high-aesthetic Windows desktop management toolset** tailored for Jekyll static blogs (deeply adapted for the [Chirpy theme](https://github.com/cotes2020/jekyll-theme-chirpy)). It combines a Fluent Design interface with a painless configuration experience, making the operation and collaboration of tech blogs as simple as writing local notes.
+JekyllCli is a **modern, polished Windows desktop management toolkit** built for Jekyll static blogs, with deep adaptation for the [Chirpy theme](https://github.com/cotes2020/jekyll-theme-chirpy). It combines a Fluent Design interface with a low-friction setup experience, making blog maintenance and writing feel as easy as working with local notes.
 
-This project offers both a **Full version with built-in templates** and a **Lightweight clean version**, meeting the needs of bloggers at different stages.
+This project provides both a **full package with built-in templates** and a **lightweight clean package**, covering bloggers at different stages.
 
 ---
 
 ## ✨ Features
 
-- 🎨 **Adaptive Icon Switching**: Introduces newly designed, calm, and professional icons, with an adaptive logic for light and dark themes. The window and taskbar icons will switch in real-time according to the application's theme color.
-- 📦 **True Single-File Publishing**: The compiled tool is now a single `JekyllCli.exe`. All managed libraries, native DLLs, and the KaTeX rendering engine are perfectly integrated inside the EXE, enabling true out-of-the-box usage.
-- 🔄 **In-App Hot Update**: Added a self-updating feature based on a "rename collision prevention mechanism". The tool silently checks for the latest GitHub Release upon startup, supports one-click downloading, and completes automatic replacement and restart within the app.
-- 🌊 **Physics-Based Fluid Scrolling**: Enjoy an incredibly smooth UI experience with custom exponential decay (spring-like) physics algorithms powering all document and dropdown scrolling.
+- 🎨 **Adaptive Icon Switching**: Introduces a newly designed calm and professional icon set with automatic light/dark theme switching. The window icon and taskbar icon update in real time with the app theme.
+- 📦 **True Single-File Publishing**: The compiled app is now a single `JekyllCli.exe`. Managed libraries, native DLLs, and the KaTeX rendering engine are bundled into the EXE for true unzip-and-run usage.
+- 🔄 **In-App Hot Update**: Adds a self-update flow based on a rename-based conflict-prevention mechanism. On startup, the app silently checks the latest GitHub Release and supports one-click download, replacement, and restart inside the app.
 
 ---
 
 ## 📖 Table of Contents
 
-- [I. Quick Start (For Beginners)](#i-quick-start-for-beginners)
-- [II. Initial Configuration & Usage](#ii-initial-configuration--usage)
+- [I. Quick Start (Beginner Path)](#i-quick-start-beginner-path)
+- [II. Initial Setup and Usage](#ii-initial-setup-and-usage)
 - [III. Advanced: Modifying the Source Code](#iii-advanced-modifying-the-source-code)
-- [IV. Custom Packaging & Automated Release](#iv-custom-packaging--automated-release)
+- [IV. Custom Packaging and Automated Release](#iv-custom-packaging-and-automated-release)
 - [V. Version Changelog](#v-version-changelog)
 - [VI. Open Source License](#vi-open-source-license)
 
 ---
 
-## I. Quick Start (For Beginners)
+## I. Quick Start (Beginner Path)
 
-If you just want to use this tool to manage your static blog without touching the underlying code, please follow these steps:
+If you just want to use this tool to manage your static blog without touching the underlying code, follow these steps:
 
-1. **Install Dependencies**:
+1. **Install dependencies**:
    - Make sure your Windows PC has the [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/download) installed.
-   - [Git](https://git-scm.com/) must be installed and configured in the command line (the tool uses Git under the hood to synchronize with the cloud).
-2. **Download Guide (MUST READ)**:
-   Go to the repository's **[Releases page](https://github.com/Metahumanz/JekyllCli/releases)** and choose the file based on your needs:
+   - Install and configure [Git](https://git-scm.com/) in the command line, since the app uses Git for cloud synchronization under the hood.
+2. **Download guide**:
+   Go to the repository's **[Releases page](https://github.com/Metahumanz/JekyllCli/releases)** and choose the package that fits your needs:
 
-   | Recommended For | File Name | Contents | Features |
+   | Recommended For | File Name | Contents | Notes |
    | :--- | :--- | :--- | :--- |
-   | **Beginners/Quick Trial** | `JekyllCli-win-x64-bundle.zip` | **Tool + Blog Template** | **Highly Recommended**. Ready to use right after unzipping, comes with a complete blog foundation. |
-   | **Existing Blog/Veterans** | `JekyllCli-win-x64-minimal.zip` | **Tool Only (Single EXE)** | Extremely minimal. Only one EXE, suitable for users who already have a local blog directory. |
+   | **Beginners / Quick Trial** | `JekyllCli-win-x64-bundle.zip` | **Tool + blog template** | **Recommended**. Unzip and start right away, with a complete blog foundation included. |
+   | **Existing blog / advanced users** | `JekyllCli-win-x64-minimal.zip` | **Tool only (single EXE)** | Extremely lightweight. Best for users who already have a local blog directory. |
 
-   > 💡 **Tip**: This tool supports **automatic update checking**. Once a new version is released, you will receive a pop-up notification upon startup, and you can click to complete a seamless upgrade.
+   > 💡 **Tip**: The app supports **automatic update checking**. When a new release is available, you will get a startup prompt and can complete the upgrade directly from there.
 
-3. **Run the Tool**:
-   - Unzip the package and double-click `JekyllCli.exe` to start.
+3. **Run the tool**:
+   - Unzip the package and double-click `JekyllCli.exe`.
 
-## II. Initial Configuration & Usage
+## II. Initial Setup and Usage
 
-If this is your **first time starting the tool**, how do you complete the blog configuration?
+If this is your **first time launching the app**, here is how to finish the initial blog setup.
 
-### 1. Link Blog Data Source
-Opening JekyllCli for the first time will bring up an **auto-height-adapting initial welcome wizard**:
-- **Select Blog Directory**:
-    - **Existing Blog**: Directly specify the local folder containing `_config.yml`.
-    - **Start from Scratch**: If you downloaded the `bundle` version, click "Use built-in template" for a one-click initialization.
-- **Select Language and Time Zone**: Choose your language from the dropdown menu in the second step of the wizard. The system will automatically write your time zone and language settings.
+### 1. Link the blog data source
 
-### 2. Core Features
-- **Dashboard Overview**: Read local Markdown statistics in real-time.
-- **Fluent Writing Editor**:
-  - **Formula Support**: Built-in KaTeX math formula engine, supporting offline rendering.
-  - **Synchronized Scrolling**: Two-way positioning between preview and editing.
-- **Modern Settings Panel**:
-  - **Update Center**: One-click detection and silent in-app upgrade execution.
-  - **Static Resource Upload**: Supports batch uploading of website Favicons and blog illustrations.
+The first launch of JekyllCli opens an **auto-height welcome wizard**:
+
+- **Choose a blog directory**:
+  - **Existing blog**: directly select the local folder that contains `_config.yml`.
+  - **Start from scratch**: if you downloaded the `bundle` package, click `Use built-in template` to initialize in one step.
+- **Choose language and time zone**:
+  Select your language in the second step of the wizard. The app will help write the language and time zone settings automatically.
+
+### 2. Core interface features
+
+- **Dashboard overview**: read local Markdown statistics in real time.
+- **Fluent writing editor**:
+  - **Formula support**: built-in KaTeX math rendering with offline support.
+  - **Synchronized scrolling**: two-way positioning between editing and preview.
+- **Modern settings panel**:
+  - **Update center**: one-click detection and silent in-app upgrades.
+  - **Static resource upload**: supports batch importing website favicons and blog illustrations.
 
 ---
 
 ## III. Advanced: Modifying the Source Code
 
-The desktop client of this project is written in **C# 10 + WPF + WPF UI (.NET 10)**.
+The desktop app is written in **C# 10 + WPF + WPF UI (.NET 10)**.
 
-1. **Environment Preparation**:
-   - **Visual Studio 2022** / **Rider** or other IDEs, equipped with the `.NET Desktop Development` workload.
-2. **Understanding Directory Structure**:
+1. **Environment preparation**:
+   - Use **Visual Studio 2022**, **Rider**, or another IDE with the `.NET Desktop Development` workload installed.
+2. **Understand the directory structure**:
    ```text
    JekyllCli/
-   ├── Blog/           // Clean Chirpy Starter blog files
+   ├── Blog/           // Official clean Chirpy Starter blog files
    ├── Tools/          // WPF local client project root
    │   ├── src/        // Pages, windows, services, models, and language resources
-   │   ├── Assets/     // Application icons & KaTeX embedded resources
-   │   └── App.xaml    // Entry point configuration
+   │   ├── Assets/     // App icons and KaTeX embedded resources
+   │   └── App.xaml    // Entry configuration
    ├── .github/
    └── README.md
    ```
-3. **Run Locally**:
-   - Enter the `Tools` directory and execute:
-   ```bash
+3. **Build and run locally**:
+   - Enter the `Tools` directory and run:
+   ```powershell
    dotnet run
    ```
 
 ---
 
-## IV. Custom Packaging & Automated Release
+## IV. Custom Packaging and Automated Release
 
-If you add private features in `Tools` and want to publish it yourself:
+If you add private features under `Tools` and want to publish your own build:
 
-### Method 1: Single File Publishing
-Navigate to `Tools/` in your command line and run the following command to generate a single `.exe` file:
+### Method 1: Single-file publishing
+
+Open a terminal in `Tools/` and run:
+
 ```powershell
 dotnet publish
 ```
 
-### Method 2: GitHub Actions Automation (Recommended)
-This project has built-in **GitHub Actions release workflows** (`.github/workflows/release.yml`):
-- Simply push a Tag starting with **`v`** (e.g., v1.0.0) locally:
+### Method 2: GitHub Actions automation (recommended)
+
+This project already includes a **GitHub Actions release workflow** in `.github/workflows/release.yml`:
+
+- Push a tag that starts with **`v`** locally, for example:
   ```bash
   git tag v1.0.0
   git push origin v1.0.0
   ```
-- GitHub will automatically compile, compress, and publish to the Release page in the cloud.
+- GitHub will automatically build, compress, and publish the release package in the cloud.
 
 ---
 
@@ -136,11 +144,11 @@ This project has built-in **GitHub Actions release workflows** (`.github/workflo
 - **v1.3.0**: Comprehensively refactored the build chain to achieve true single-file publishing; introduced an in-app self-hot-update mechanism based on "executable file renaming".
 - **v1.2.0**: Optimized the logic for generating a single EXE, stripped out redundant XML documents, and reduced the release package size.
 - **v1.1.0**: Supported quick upload of article illustrations, WebView2 synchronous scrolling, and visual configuration of Bilibili social links.
-- **v1.0.0**: JekyllCli official release, supporting blog directory binding and basic management features.
+- **v1.0.0**: Official JekyllCli release with blog directory binding and basic management features.
 
 ---
 
 ## VI. Open Source License
 
-1. The overall architecture and the WPF `Tools` auxiliary program are developed by the author and are open-sourced under the **GPLv3 License**.
-2. The [Chirpy code](https://github.com/cotes2020/jekyll-theme-chirpy) under the `Blog` folder complies with the original **MIT License**.
+1. The overall architecture and the WPF `Tools` companion application are developed by the author and released under the **GPLv3 License**.
+2. The [Chirpy code](https://github.com/cotes2020/jekyll-theme-chirpy) in the `Blog` folder follows the original **MIT License**.
