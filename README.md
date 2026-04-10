@@ -1,6 +1,6 @@
 # JekyllCli 🚀
 
-[English](docs/README_EN.md) | 简体中文 | [中文使用说明](docs/USER_GUIDE_ZH.md)
+[English](docs/README_EN.md) | 简体中文 | [中文使用说明](docs/USER_GUIDE_ZH.md) | [English User Guide](docs/USER_GUIDE_EN.md)
 也可查看于[我的博客](https://pacil.dpdns.org/posts/JekyllCli-intro)
 
 JekyllCli 是一款专为 Jekyll 静态博客（深度适配 [Chirpy 主题](https://github.com/cotes2020/jekyll-theme-chirpy)）打造的**现代化、高颜值 Windows 桌面管理工具集**。它结合了 Fluent Design 界面与无痛配置体验，让技术博客的运营和协作跟写本地笔记一样简单。

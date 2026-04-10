@@ -1,6 +1,6 @@
 # JekyllCli 🚀
 
-English | [简体中文](../README.md) | [Chinese User Guide](USER_GUIDE_ZH.md)
+English | [简体中文](../README.md) | [Chinese User Guide](USER_GUIDE_ZH.md) | [English User Guide](USER_GUIDE_EN.md)
 Also available on [my blog](https://pacil.dpdns.org/posts/JekyllCli-intro)
 
 JekyllCli is a **modern, polished Windows desktop management toolkit** built for Jekyll static blogs, with deep adaptation for the [Chirpy theme](https://github.com/cotes2020/jekyll-theme-chirpy). It combines a Fluent Design interface with a low-friction setup experience, making blog maintenance and writing feel as easy as working with local notes.

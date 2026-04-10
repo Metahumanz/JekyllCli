@@ -1,5 +1,7 @@
 # JekyllCli 中文使用说明
 
+简体中文 | [English](USER_GUIDE_EN.md) | [项目 README](../README.md) | [English README](README_EN.md)
+
 这是一份面向最终用户的桌面端使用说明，适用于 [JekyllCli](https://github.com/Metahumanz/JekyllCli) Windows 版。文中的页面名称、按钮名称和操作流程，均以当前版本的实际界面为准。
 
 ![JekyllCli 仪表盘](./images/real/dashboard-real.png)
