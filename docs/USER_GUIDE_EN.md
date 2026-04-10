@@ -348,7 +348,7 @@ If you often write long articles, enabling automatic modified time updates usual
 
 You can adjust:
 
-- Light or dark mode
+- `Follow System` / `Dark` / `Light` theme mode
 - App language
 - Global font
 
