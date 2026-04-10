@@ -63,6 +63,7 @@ namespace BlogTools
         private static readonly Duration ToolboxAnimationDuration = new(TimeSpan.FromMilliseconds(220));
         private static readonly Duration DropCueAnimationDuration = new(TimeSpan.FromMilliseconds(170));
         private static readonly Duration ViewModeAnimationDuration = new(TimeSpan.FromMilliseconds(240));
+        private static readonly Duration FindReplaceAnimationDuration = new(TimeSpan.FromMilliseconds(190));
         private static readonly IEasingFunction PanelEase = new CubicEase { EasingMode = EasingMode.EaseOut };
         private static readonly IEasingFunction ViewModeEase = new QuinticEase { EasingMode = EasingMode.EaseInOut };
         private const double ActiveDropScale = 1.015;
@@ -75,15 +76,19 @@ namespace BlogTools
         private const double MaximumEditorSplitRatio = 0.9;
         private const double SplitAutoSwitchThreshold = 96.0;
         private const double SplitRailDragActivationThreshold = 12.0;
+        private const double FindReplaceHiddenScale = 0.97;
+        private const double FindReplaceHiddenOffset = -18.0;
 
         private readonly record struct ToolDropPlacement(int Index, Point Position, double Length);
         private readonly record struct EditorViewModeWidths(double Editor, double Side, double Preview);
+        private readonly record struct EditorFindResult(bool Found, int Count, int Index, int Length, int ReplacedCount);
 
         private MarkdownPipeline _pipeline;
         private bool _isWebViewReady = false;
         private bool _isToolboxCollapsed = false;
         private string _currentContent = "";
         private string _originalState = "";
+        private string _currentImageFolderSlug = "";
         private ScrollViewer? _parentSv;
         private readonly ObservableCollection<string> _tagsList = new();
         private readonly ObservableCollection<EditorToolViewItem> _ribbonTools = new();
@@ -104,6 +109,8 @@ namespace BlogTools
         private Point _layoutDragStartPoint;
         private double _layoutDragStartEditorWidth;
         private double _layoutDragAvailableWidth;
+        private bool _isFindReplaceOpen;
+        private bool _suppressFindQueryRefresh;
 
         public EditorPage()
         {
@@ -247,6 +254,381 @@ namespace BlogTools
                 Duration = ToolboxAnimationDuration,
                 EasingFunction = PanelEase
             };
+        }
+
+        private static string BuildImageFolderSlug(string? title)
+        {
+            var safeDirName = System.Text.RegularExpressions.Regex.Replace(title ?? string.Empty, @"[\\/:*?""<>|]+", "-").Trim('-', ' ');
+            safeDirName = System.Text.RegularExpressions.Regex.Replace(safeDirName, @"\s+", "-").ToLowerInvariant();
+            return string.IsNullOrWhiteSpace(safeDirName) ? "untitled" : safeDirName;
+        }
+
+        private static string BuildImageRelativeDirectory(string slug)
+        {
+            return $"assets/img/inposts/{slug}";
+        }
+
+        private static string BuildImageReferencePrefix(string slug, bool withLeadingSlash)
+        {
+            return $"{(withLeadingSlash ? "/" : string.Empty)}assets/img/inposts/{slug}/";
+        }
+
+        private static string? DetectImageFolderSlug(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+
+            var normalized = text.Replace('\\', '/');
+            const string marker = "assets/img/inposts/";
+            var markerIndex = normalized.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (markerIndex < 0)
+            {
+                return null;
+            }
+
+            var slugStart = markerIndex + marker.Length;
+            var slugEnd = normalized.IndexOf('/', slugStart);
+            if (slugEnd <= slugStart)
+            {
+                return null;
+            }
+
+            return normalized.Substring(slugStart, slugEnd - slugStart);
+        }
+
+        private string? ResolveTrackedImageFolderSlug()
+        {
+            if (!string.IsNullOrWhiteSpace(_currentImageFolderSlug))
+            {
+                return _currentImageFolderSlug;
+            }
+
+            var detected = DetectImageFolderSlug(ImageBox?.Text) ?? DetectImageFolderSlug(_currentContent);
+            if (!string.IsNullOrWhiteSpace(detected))
+            {
+                _currentImageFolderSlug = detected;
+                return detected;
+            }
+
+            if (App.CurrentEditPost != null)
+            {
+                var fallback = BuildImageFolderSlug(App.CurrentEditPost.Title);
+                var fallbackDirectory = GetImageDirectoryPath(fallback);
+                if (System.IO.Directory.Exists(fallbackDirectory))
+                {
+                    _currentImageFolderSlug = fallback;
+                    return fallback;
+                }
+            }
+
+            return null;
+        }
+
+        private string GetImageDirectoryPath(string slug)
+        {
+            var relativeDirectory = BuildImageRelativeDirectory(slug);
+            return System.IO.Path.Combine(App.JekyllContext.BlogPath, relativeDirectory.Replace("/", "\\"));
+        }
+
+        private static string GetUniqueFilePath(string targetPath)
+        {
+            var directory = System.IO.Path.GetDirectoryName(targetPath) ?? string.Empty;
+            var name = System.IO.Path.GetFileNameWithoutExtension(targetPath);
+            var extension = System.IO.Path.GetExtension(targetPath);
+            var counter = 1;
+            var candidate = targetPath;
+
+            while (System.IO.File.Exists(candidate))
+            {
+                candidate = System.IO.Path.Combine(directory, $"{name}-{counter}{extension}");
+                counter++;
+            }
+
+            return candidate;
+        }
+
+        private static void DeleteEmptyDirectoryTree(string directoryPath)
+        {
+            if (!System.IO.Directory.Exists(directoryPath))
+            {
+                return;
+            }
+
+            foreach (var subDirectory in System.IO.Directory.GetDirectories(directoryPath))
+            {
+                DeleteEmptyDirectoryTree(subDirectory);
+            }
+
+            if (!System.IO.Directory.EnumerateFileSystemEntries(directoryPath).Any())
+            {
+                System.IO.Directory.Delete(directoryPath, false);
+            }
+        }
+
+        private static string ApplyOrderedReplacements(string input, IEnumerable<(string OldValue, string NewValue)> replacements)
+        {
+            var result = input ?? string.Empty;
+
+            foreach (var replacement in replacements.OrderByDescending(item => item.OldValue.Length))
+            {
+                if (string.IsNullOrEmpty(replacement.OldValue) || replacement.OldValue == replacement.NewValue)
+                {
+                    continue;
+                }
+
+                result = result.Replace(replacement.OldValue, replacement.NewValue, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return result;
+        }
+
+        private void SyncEditorAndPreviewContent()
+        {
+            if (EditorWebView?.CoreWebView2 != null)
+            {
+                EditorWebView.CoreWebView2.PostWebMessageAsString(_currentContent);
+            }
+
+            UpdateWebViewContent();
+        }
+
+        private async System.Threading.Tasks.Task SyncArticleImagePathsWithCurrentTitleAsync()
+        {
+            if (string.IsNullOrWhiteSpace(TitleBox.Text) || string.IsNullOrWhiteSpace(App.JekyllContext.BlogPath))
+            {
+                return;
+            }
+
+            var trackedSlug = ResolveTrackedImageFolderSlug();
+            if (string.IsNullOrWhiteSpace(trackedSlug))
+            {
+                return;
+            }
+
+            var desiredSlug = BuildImageFolderSlug(TitleBox.Text);
+            if (string.Equals(trackedSlug, desiredSlug, StringComparison.OrdinalIgnoreCase))
+            {
+                _currentImageFolderSlug = desiredSlug;
+                return;
+            }
+
+            var oldDirectory = GetImageDirectoryPath(trackedSlug);
+            var newDirectory = GetImageDirectoryPath(desiredSlug);
+            var replacements = new List<(string OldValue, string NewValue)>();
+            var oldPrefix = BuildImageReferencePrefix(trackedSlug, withLeadingSlash: true);
+            var newPrefix = BuildImageReferencePrefix(desiredSlug, withLeadingSlash: true);
+            var oldPrefixWithoutSlash = BuildImageReferencePrefix(trackedSlug, withLeadingSlash: false);
+            var newPrefixWithoutSlash = BuildImageReferencePrefix(desiredSlug, withLeadingSlash: false);
+
+            if (System.IO.Directory.Exists(oldDirectory))
+            {
+                var newParent = System.IO.Path.GetDirectoryName(newDirectory);
+                if (!string.IsNullOrWhiteSpace(newParent))
+                {
+                    System.IO.Directory.CreateDirectory(newParent);
+                }
+
+                if (!System.IO.Directory.Exists(newDirectory))
+                {
+                    System.IO.Directory.Move(oldDirectory, newDirectory);
+                }
+                else
+                {
+                    foreach (var sourceFile in System.IO.Directory.GetFiles(oldDirectory, "*", System.IO.SearchOption.AllDirectories))
+                    {
+                        var oldRelativePath = System.IO.Path.GetRelativePath(oldDirectory, sourceFile).Replace("\\", "/");
+                        var targetFilePath = System.IO.Path.Combine(newDirectory, oldRelativePath.Replace("/", "\\"));
+                        var targetDirectory = System.IO.Path.GetDirectoryName(targetFilePath);
+                        if (!string.IsNullOrWhiteSpace(targetDirectory))
+                        {
+                            System.IO.Directory.CreateDirectory(targetDirectory);
+                        }
+
+                        if (System.IO.File.Exists(targetFilePath))
+                        {
+                            targetFilePath = GetUniqueFilePath(targetFilePath);
+                        }
+
+                        System.IO.File.Move(sourceFile, targetFilePath);
+
+                        var targetRelativePath = System.IO.Path.GetRelativePath(newDirectory, targetFilePath).Replace("\\", "/");
+                        replacements.Add(($"{oldPrefix}{oldRelativePath}", $"{newPrefix}{targetRelativePath}"));
+                        replacements.Add(($"{oldPrefixWithoutSlash}{oldRelativePath}", $"{newPrefixWithoutSlash}{targetRelativePath}"));
+                    }
+
+                    DeleteEmptyDirectoryTree(oldDirectory);
+                }
+            }
+
+            replacements.Add((oldPrefix, newPrefix));
+            replacements.Add((oldPrefixWithoutSlash, newPrefixWithoutSlash));
+
+            var updatedContent = ApplyOrderedReplacements(_currentContent, replacements);
+            var updatedImage = ApplyOrderedReplacements(ImageBox.Text ?? string.Empty, replacements);
+            var contentChanged = !string.Equals(updatedContent, _currentContent, StringComparison.Ordinal);
+            var imageChanged = !string.Equals(updatedImage, ImageBox.Text ?? string.Empty, StringComparison.Ordinal);
+
+            if (contentChanged)
+            {
+                _currentContent = updatedContent;
+                SyncEditorAndPreviewContent();
+            }
+
+            if (imageChanged)
+            {
+                ImageBox.Text = updatedImage;
+            }
+
+            _currentImageFolderSlug = desiredSlug;
+
+            if (_isFindReplaceOpen)
+            {
+                await RefreshFindReplaceStatusAsync();
+            }
+        }
+
+        private void SetFindReplaceStatus(string resourceKey, params object[] args)
+        {
+            if (FindStatusText == null)
+            {
+                return;
+            }
+
+            var template = Application.Current.FindResource(resourceKey).ToString() ?? string.Empty;
+            FindStatusText.Text = args.Length > 0 ? string.Format(template, args) : template;
+        }
+
+        private void AnimateFindReplacePopup(bool show)
+        {
+            if (FindReplacePopupHost == null || FindReplacePopup == null || FindReplaceScaleTransform == null || FindReplaceTranslateTransform == null)
+            {
+                return;
+            }
+
+            FindReplacePopup.BeginAnimation(UIElement.OpacityProperty, null);
+            FindReplaceScaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            FindReplaceScaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            FindReplaceTranslateTransform.BeginAnimation(TranslateTransform.YProperty, null);
+
+            if (show)
+            {
+                UpdateFindReplacePopupPosition();
+                FindReplacePopupHost.IsOpen = true;
+                FindReplacePopup.Opacity = 0.0;
+                FindReplaceScaleTransform.ScaleX = FindReplaceHiddenScale;
+                FindReplaceScaleTransform.ScaleY = FindReplaceHiddenScale;
+                FindReplaceTranslateTransform.Y = FindReplaceHiddenOffset;
+
+                FindReplacePopup.BeginAnimation(
+                    UIElement.OpacityProperty,
+                    new DoubleAnimation(1.0, FindReplaceAnimationDuration) { EasingFunction = PanelEase });
+
+                FindReplaceScaleTransform.BeginAnimation(
+                    ScaleTransform.ScaleXProperty,
+                    new DoubleAnimation(1.0, FindReplaceAnimationDuration) { EasingFunction = PanelEase });
+
+                FindReplaceScaleTransform.BeginAnimation(
+                    ScaleTransform.ScaleYProperty,
+                    new DoubleAnimation(1.0, FindReplaceAnimationDuration) { EasingFunction = PanelEase });
+
+                FindReplaceTranslateTransform.BeginAnimation(
+                    TranslateTransform.YProperty,
+                    new DoubleAnimation(0.0, FindReplaceAnimationDuration) { EasingFunction = PanelEase });
+            }
+            else
+            {
+                var fadeOut = new DoubleAnimation(0.0, FindReplaceAnimationDuration) { EasingFunction = PanelEase };
+                fadeOut.Completed += (_, _) =>
+                {
+                    if (!_isFindReplaceOpen && FindReplacePopupHost != null)
+                    {
+                        FindReplacePopupHost.IsOpen = false;
+                    }
+                };
+
+                FindReplacePopup.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+
+                FindReplaceScaleTransform.BeginAnimation(
+                    ScaleTransform.ScaleXProperty,
+                    new DoubleAnimation(FindReplaceHiddenScale, FindReplaceAnimationDuration) { EasingFunction = PanelEase });
+
+                FindReplaceScaleTransform.BeginAnimation(
+                    ScaleTransform.ScaleYProperty,
+                    new DoubleAnimation(FindReplaceHiddenScale, FindReplaceAnimationDuration) { EasingFunction = PanelEase });
+
+                FindReplaceTranslateTransform.BeginAnimation(
+                    TranslateTransform.YProperty,
+                    new DoubleAnimation(FindReplaceHiddenOffset, FindReplaceAnimationDuration) { EasingFunction = PanelEase });
+            }
+        }
+
+        private void UpdateFindReplacePopupPosition()
+        {
+            if (FindReplacePopupHost == null || EditorWorkspaceGrid == null)
+            {
+                return;
+            }
+
+            var popupWidth = FindReplacePopup?.ActualWidth > 0
+                ? FindReplacePopup.ActualWidth
+                : FindReplacePopup?.Width > 0
+                    ? FindReplacePopup.Width
+                    : 404.0;
+
+            var availableWidth = Math.Max(EditorWorkspaceGrid.ActualWidth, popupWidth + 32.0);
+            FindReplacePopupHost.HorizontalOffset = Math.Max(16.0, availableWidth - popupWidth - 16.0);
+            FindReplacePopupHost.VerticalOffset = 16.0;
+        }
+
+        private async System.Threading.Tasks.Task OpenFindReplacePopupAsync(bool populateFromSelection = true)
+        {
+            if (!_isFindReplaceOpen)
+            {
+                _isFindReplaceOpen = true;
+                AnimateFindReplacePopup(show: true);
+            }
+
+            if (populateFromSelection)
+            {
+                var selectedText = await GetEditorSelectedTextAsync();
+                if (!string.IsNullOrWhiteSpace(selectedText) &&
+                    !selectedText.Contains('\r') &&
+                    !selectedText.Contains('\n'))
+                {
+                    _suppressFindQueryRefresh = true;
+                    FindQueryBox.Text = selectedText;
+                    _suppressFindQueryRefresh = false;
+                }
+            }
+
+            SetFindReplaceStatus("EditorFindEnterQuery");
+            await RefreshFindReplaceStatusAsync();
+
+            _ = Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    FindQueryBox.Focus();
+                    FindQueryBox.SelectAll();
+                }),
+                System.Windows.Threading.DispatcherPriority.Input);
+        }
+
+        private void CloseFindReplacePopup(bool returnFocusToEditor)
+        {
+            if (!_isFindReplaceOpen && FindReplacePopupHost?.IsOpen != true)
+            {
+                return;
+            }
+
+            _isFindReplaceOpen = false;
+            AnimateFindReplacePopup(show: false);
+
+            if (returnFocusToEditor)
+            {
+                _ = FocusEditorAsync();
+            }
         }
 
         private void InitializeEditorTools()
@@ -1604,6 +1986,9 @@ namespace BlogTools
                     window.chrome.webview.postMessage('CONTENT:' + el.value);
                 };
 
+                const normalizeSearchValue = (value, caseSensitive) =>
+                    caseSensitive ? value : value.toLocaleLowerCase();
+
                 const replaceRange = (start, end, replacement, selectionStart, selectionEnd) => {
                     const current = el.value || '';
                     el.focus();
@@ -1624,6 +2009,65 @@ namespace BlogTools
 
                     return { lineStart, lineEnd };
                 };
+
+                const getSearchMatches = (query, caseSensitive) => {
+                    if (!query) {
+                        return [];
+                    }
+
+                    const value = el.value || '';
+                    const source = normalizeSearchValue(value, caseSensitive);
+                    const needle = normalizeSearchValue(query, caseSensitive);
+                    const matches = [];
+                    let fromIndex = 0;
+
+                    while (fromIndex <= source.length - needle.length) {
+                        const matchIndex = source.indexOf(needle, fromIndex);
+                        if (matchIndex < 0) {
+                            break;
+                        }
+
+                        matches.push(matchIndex);
+                        fromIndex = matchIndex + Math.max(needle.length, 1);
+                    }
+
+                    return matches;
+                };
+
+                const isSelectionMatch = (query, caseSensitive) => {
+                    if (!query) {
+                        return false;
+                    }
+
+                    const selectionStart = typeof el.selectionStart === 'number' ? el.selectionStart : 0;
+                    const selectionEnd = typeof el.selectionEnd === 'number' ? el.selectionEnd : 0;
+                    if (selectionStart === selectionEnd) {
+                        return false;
+                    }
+
+                    const selected = (el.value || '').slice(selectionStart, selectionEnd);
+                    return normalizeSearchValue(selected, caseSensitive) === normalizeSearchValue(query, caseSensitive);
+                };
+
+                const revealSelection = (start, length) => {
+                    el.focus();
+                    el.selectionStart = start;
+                    el.selectionEnd = start + length;
+
+                    const lineHeight = parseFloat(window.getComputedStyle(el).lineHeight || '24') || 24;
+                    const prefix = (el.value || '').slice(0, start);
+                    const lineIndex = prefix.split('\n').length - 1;
+                    const targetTop = Math.max(0, (lineIndex * lineHeight) - (el.clientHeight / 3));
+                    el.scrollTop = targetTop;
+                };
+
+                const buildSearchResult = (matches, foundIndex, length, replacedCount) => ({
+                    found: foundIndex >= 0,
+                    count: matches.length,
+                    index: foundIndex,
+                    length,
+                    replacedCount
+                });
 
                 window.editorTools = {
                     wrapSelection(prefix, suffix, placeholder) {
@@ -1721,10 +2165,151 @@ namespace BlogTools
                         }
 
                         replaceRange(start, end, replacement, start + replacement.length, start + replacement.length);
+                    },
+
+                    getSelectedText() {
+                        const start = typeof el.selectionStart === 'number' ? el.selectionStart : 0;
+                        const end = typeof el.selectionEnd === 'number' ? el.selectionEnd : 0;
+                        return (el.value || '').slice(start, end);
+                    },
+
+                    focus() {
+                        el.focus();
+                    },
+
+                    countMatches(query, caseSensitive) {
+                        const matches = getSearchMatches(query, caseSensitive);
+                        return buildSearchResult(matches, -1, query ? query.length : 0, 0);
+                    },
+
+                    find(query, caseSensitive, forward, restart) {
+                        const matches = getSearchMatches(query, caseSensitive);
+                        if (matches.length === 0 || !query) {
+                            return buildSearchResult(matches, -1, query ? query.length : 0, 0);
+                        }
+
+                        const selectionStart = typeof el.selectionStart === 'number' ? el.selectionStart : 0;
+                        const selectionEnd = typeof el.selectionEnd === 'number' ? el.selectionEnd : 0;
+                        const selectionMatches = isSelectionMatch(query, caseSensitive);
+                        let targetIndex = -1;
+
+                        if (forward) {
+                            if (restart) {
+                                targetIndex = matches[0];
+                            } else {
+                                const anchor = selectionMatches ? selectionEnd : selectionStart;
+                                targetIndex = matches.find(match => match >= anchor);
+                                if (typeof targetIndex === 'undefined') {
+                                    targetIndex = matches[0];
+                                }
+                            }
+                        } else {
+                            if (restart) {
+                                targetIndex = matches[matches.length - 1];
+                            } else {
+                                const anchor = selectionMatches ? selectionStart - 1 : selectionStart - 1;
+                                for (let i = matches.length - 1; i >= 0; i--) {
+                                    if (matches[i] <= anchor) {
+                                        targetIndex = matches[i];
+                                        break;
+                                    }
+                                }
+
+                                if (targetIndex < 0) {
+                                    targetIndex = matches[matches.length - 1];
+                                }
+                            }
+                        }
+
+                        revealSelection(targetIndex, query.length);
+                        return buildSearchResult(matches, targetIndex, query.length, 0);
+                    },
+
+                    replaceCurrent(query, replacement, caseSensitive) {
+                        if (!query) {
+                            return buildSearchResult([], -1, 0, 0);
+                        }
+
+                        if (!isSelectionMatch(query, caseSensitive)) {
+                            const searched = this.find(query, caseSensitive, true, false);
+                            if (!searched.found) {
+                                return searched;
+                            }
+                        }
+
+                        const selectionStart = typeof el.selectionStart === 'number' ? el.selectionStart : 0;
+                        const selectionEnd = typeof el.selectionEnd === 'number' ? el.selectionEnd : 0;
+                        replaceRange(
+                            selectionStart,
+                            selectionEnd,
+                            replacement,
+                            selectionStart + replacement.length,
+                            selectionStart + replacement.length);
+
+                        const matches = getSearchMatches(query, caseSensitive);
+                        if (matches.length > 0) {
+                            const caret = selectionStart + replacement.length;
+                            let nextIndex = matches.find(match => match >= caret);
+                            if (typeof nextIndex === 'undefined') {
+                                nextIndex = matches[0];
+                            }
+
+                            revealSelection(nextIndex, query.length);
+                            return buildSearchResult(matches, nextIndex, query.length, 1);
+                        }
+
+                        return buildSearchResult(matches, -1, query.length, 1);
+                    },
+
+                    replaceAll(query, replacement, caseSensitive) {
+                        if (!query) {
+                            return buildSearchResult([], -1, 0, 0);
+                        }
+
+                        const current = el.value || '';
+                        const matches = getSearchMatches(query, caseSensitive);
+                        if (matches.length === 0) {
+                            return buildSearchResult(matches, -1, query.length, 0);
+                        }
+
+                        let rebuilt = '';
+                        let cursor = 0;
+
+                        matches.forEach(matchIndex => {
+                            rebuilt += current.slice(cursor, matchIndex) + replacement;
+                            cursor = matchIndex + query.length;
+                        });
+
+                        rebuilt += current.slice(cursor);
+                        el.focus();
+                        el.value = rebuilt;
+                        el.selectionStart = rebuilt.length;
+                        el.selectionEnd = rebuilt.length;
+                        const inputEvent = new Event('input', { bubbles: true });
+                        el.dispatchEvent(inputEvent);
+
+                        const remainingMatches = getSearchMatches(query, caseSensitive);
+                        if (remainingMatches.length > 0) {
+                            revealSelection(remainingMatches[0], query.length);
+                            return buildSearchResult(remainingMatches, remainingMatches[0], query.length, matches.length);
+                        }
+
+                        return buildSearchResult(remainingMatches, -1, query.length, matches.length);
                     }
                 };
 
                 el.addEventListener('input', notifyContent);
+                el.addEventListener('keydown', function(e) {
+                    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'f') {
+                        e.preventDefault();
+                        window.chrome.webview.postMessage('ACTION:openFindReplace');
+                        return;
+                    }
+
+                    if (e.key === 'Escape') {
+                        window.chrome.webview.postMessage('ACTION:editorEscape');
+                    }
+                });
                 window.chrome.webview.addEventListener('message', event => {
                     if (el.value !== event.data) {
                         el.value = event.data;
@@ -1767,6 +2352,14 @@ namespace BlogTools
             {
                 _ = HandlePastedImageAsync();
             }
+            else if (msg == "ACTION:openFindReplace")
+            {
+                _ = OpenFindReplacePopupAsync();
+            }
+            else if (msg == "ACTION:editorEscape" && _isFindReplaceOpen)
+            {
+                CloseFindReplacePopup(returnFocusToEditor: true);
+            }
         }
 
         private async System.Threading.Tasks.Task HandlePastedImageAsync()
@@ -1806,11 +2399,11 @@ namespace BlogTools
 
                 if (pastedFiles.Length == 0 && pastedImage == null) return;
 
-                var safeDirName = System.Text.RegularExpressions.Regex.Replace(TitleBox.Text, @"[\\/:*?""<>|]+", "-").Trim('-', ' ');
-                safeDirName = System.Text.RegularExpressions.Regex.Replace(safeDirName, @"\s+", "-").ToLowerInvariant();
-                if (string.IsNullOrWhiteSpace(safeDirName)) safeDirName = "untitled";
+                await SyncArticleImagePathsWithCurrentTitleAsync();
 
-                var relativeDir = $"assets/img/inposts/{safeDirName}";
+                var safeDirName = BuildImageFolderSlug(TitleBox.Text);
+
+                var relativeDir = BuildImageRelativeDirectory(safeDirName);
                 var absPathDir = System.IO.Path.Combine(App.JekyllContext.BlogPath, relativeDir.Replace("/", "\\"));
                 
                 if (!System.IO.Directory.Exists(absPathDir))
@@ -1850,6 +2443,7 @@ namespace BlogTools
 
                 injectedMd = injectedMd.TrimEnd('\n');
 
+                _currentImageFolderSlug = safeDirName;
                 await InsertTextIntoEditorAsync(injectedMd);
             }
             catch (Exception ex)
@@ -2023,12 +2617,14 @@ namespace BlogTools
                 ImageBox.Text = post.Image;
 
                 _currentContent = post.Content ?? "";
+                _currentImageFolderSlug = DetectImageFolderSlug(post.Image) ?? DetectImageFolderSlug(post.Content) ?? BuildImageFolderSlug(post.Title);
             }
             else
             {
                 SetPublishNow_Click(null, null);
                 TocSwitch.IsChecked = true;
                 _currentContent = "";
+                _currentImageFolderSlug = "";
             }
             
             if (EditorWebView.CoreWebView2 != null)
@@ -2110,9 +2706,12 @@ namespace BlogTools
             ImageBox.Clear();
             
             _currentContent = "";
+            _currentImageFolderSlug = "";
             if (EditorWebView.CoreWebView2 != null)
                 EditorWebView.CoreWebView2.PostWebMessageAsString("");
-                
+
+            CloseFindReplacePopup(returnFocusToEditor: false);
+                 
             UpdateOriginalState();
             ShowInfo(Application.Current.FindResource("EditorMsgReset").ToString()!, InfoBarSeverity.Informational);
         }
@@ -2131,6 +2730,11 @@ namespace BlogTools
             ModifyMinuteBox.SelectedItem = DateTime.Now.Minute.ToString("D2");
         }
 
+        private async void TitleBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            await SyncArticleImagePathsWithCurrentTitleAsync();
+        }
+
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             await SavePostAsync();
@@ -2144,6 +2748,7 @@ namespace BlogTools
                 return false;
             }
 
+            await SyncArticleImagePathsWithCurrentTitleAsync();
             var post = GeneratePostObject();
 
             if (App.CurrentEditPost != null && CheckIsDirty())
@@ -2178,6 +2783,7 @@ namespace BlogTools
 
             App.JekyllContext.SavePost(post);
             App.CurrentEditPost = post;
+            _currentImageFolderSlug = DetectImageFolderSlug(post.Image) ?? DetectImageFolderSlug(post.Content) ?? BuildImageFolderSlug(post.Title);
 
             UpdateOriginalState();
             ShowInfo(string.Format(Application.Current.FindResource("EditorMsgSavedLocal").ToString()!, post.FileName), InfoBarSeverity.Success);
@@ -2324,6 +2930,197 @@ namespace BlogTools
             ";
 
             await EditorWebView.ExecuteScriptAsync(script);
+        }
+
+        private async System.Threading.Tasks.Task<string> ExecuteEditorScriptWithResultAsync(string invocationScript)
+        {
+            if (EditorWebView.CoreWebView2 == null)
+            {
+                return "null";
+            }
+
+            var script = $@"
+                (function() {{
+                    if (!window.editorTools) {{
+                        return null;
+                    }}
+
+                    return {invocationScript};
+                }})();
+            ";
+
+            return await EditorWebView.ExecuteScriptAsync(script);
+        }
+
+        private static string ParseEditorStringResult(string rawResult)
+        {
+            if (string.IsNullOrWhiteSpace(rawResult) || rawResult == "null")
+            {
+                return string.Empty;
+            }
+
+            return System.Text.Json.JsonSerializer.Deserialize<string>(rawResult) ?? string.Empty;
+        }
+
+        private static EditorFindResult ParseEditorFindResult(string rawResult)
+        {
+            if (string.IsNullOrWhiteSpace(rawResult) || rawResult == "null")
+            {
+                return default;
+            }
+
+            using var document = System.Text.Json.JsonDocument.Parse(rawResult);
+            var root = document.RootElement;
+            if (root.ValueKind != System.Text.Json.JsonValueKind.Object)
+            {
+                return default;
+            }
+
+            return new EditorFindResult(
+                root.TryGetProperty("found", out var found) && found.GetBoolean(),
+                root.TryGetProperty("count", out var count) ? count.GetInt32() : 0,
+                root.TryGetProperty("index", out var index) ? index.GetInt32() : -1,
+                root.TryGetProperty("length", out var length) ? length.GetInt32() : 0,
+                root.TryGetProperty("replacedCount", out var replacedCount) ? replacedCount.GetInt32() : 0);
+        }
+
+        private async System.Threading.Tasks.Task<string> GetEditorSelectedTextAsync()
+        {
+            var result = await ExecuteEditorScriptWithResultAsync("window.editorTools.getSelectedText()");
+            return ParseEditorStringResult(result);
+        }
+
+        private async System.Threading.Tasks.Task FocusEditorAsync()
+        {
+            await ExecuteEditorToolAsync("window.editorTools.focus();");
+        }
+
+        private async System.Threading.Tasks.Task<EditorFindResult> CountEditorMatchesAsync(string query, bool matchCase)
+        {
+            var result = await ExecuteEditorScriptWithResultAsync(
+                $"window.editorTools.countMatches({JsString(query)}, {(matchCase ? "true" : "false")})");
+
+            return ParseEditorFindResult(result);
+        }
+
+        private async System.Threading.Tasks.Task<EditorFindResult> FindInEditorAsync(string query, bool matchCase, bool forward, bool restart)
+        {
+            var result = await ExecuteEditorScriptWithResultAsync(
+                $"window.editorTools.find({JsString(query)}, {(matchCase ? "true" : "false")}, {(forward ? "true" : "false")}, {(restart ? "true" : "false")})");
+
+            return ParseEditorFindResult(result);
+        }
+
+        private async System.Threading.Tasks.Task<EditorFindResult> ReplaceCurrentInEditorAsync(string query, string replacement, bool matchCase)
+        {
+            var result = await ExecuteEditorScriptWithResultAsync(
+                $"window.editorTools.replaceCurrent({JsString(query)}, {JsString(replacement)}, {(matchCase ? "true" : "false")})");
+
+            return ParseEditorFindResult(result);
+        }
+
+        private async System.Threading.Tasks.Task<EditorFindResult> ReplaceAllInEditorAsync(string query, string replacement, bool matchCase)
+        {
+            var result = await ExecuteEditorScriptWithResultAsync(
+                $"window.editorTools.replaceAll({JsString(query)}, {JsString(replacement)}, {(matchCase ? "true" : "false")})");
+
+            return ParseEditorFindResult(result);
+        }
+
+        private async System.Threading.Tasks.Task RefreshFindReplaceStatusAsync()
+        {
+            if (!_isFindReplaceOpen)
+            {
+                return;
+            }
+
+            var query = FindQueryBox.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                SetFindReplaceStatus("EditorFindEnterQuery");
+                return;
+            }
+
+            var result = await CountEditorMatchesAsync(query, FindMatchCaseCheckBox.IsChecked == true);
+            if (result.Count <= 0)
+            {
+                SetFindReplaceStatus("EditorFindNoMatch");
+            }
+            else
+            {
+                SetFindReplaceStatus("EditorFindMatches", result.Count);
+            }
+        }
+
+        private async System.Threading.Tasks.Task FindNextMatchAsync(bool forward, bool restart = false)
+        {
+            var query = FindQueryBox.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                SetFindReplaceStatus("EditorFindEnterQuery");
+                return;
+            }
+
+            var result = await FindInEditorAsync(query, FindMatchCaseCheckBox.IsChecked == true, forward, restart);
+            if (result.Count <= 0 || !result.Found)
+            {
+                SetFindReplaceStatus("EditorFindNoMatch");
+                return;
+            }
+
+            SetFindReplaceStatus("EditorFindMatches", result.Count);
+        }
+
+        private async System.Threading.Tasks.Task ReplaceCurrentMatchAsync()
+        {
+            var query = FindQueryBox.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                SetFindReplaceStatus("EditorFindEnterQuery");
+                return;
+            }
+
+            var result = await ReplaceCurrentInEditorAsync(query, ReplaceQueryBox.Text ?? string.Empty, FindMatchCaseCheckBox.IsChecked == true);
+            if (result.ReplacedCount <= 0 && result.Count <= 0)
+            {
+                SetFindReplaceStatus("EditorFindNoMatch");
+                return;
+            }
+
+            if (result.Count <= 0)
+            {
+                SetFindReplaceStatus("EditorFindNoMatch");
+            }
+            else
+            {
+                SetFindReplaceStatus("EditorFindMatches", result.Count);
+            }
+        }
+
+        private async System.Threading.Tasks.Task ReplaceAllMatchesAsync()
+        {
+            var query = FindQueryBox.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                SetFindReplaceStatus("EditorFindEnterQuery");
+                return;
+            }
+
+            var result = await ReplaceAllInEditorAsync(query, ReplaceQueryBox.Text ?? string.Empty, FindMatchCaseCheckBox.IsChecked == true);
+            if (result.ReplacedCount <= 0)
+            {
+                SetFindReplaceStatus("EditorFindNoMatch");
+                return;
+            }
+
+            if (result.Count <= 0)
+            {
+                SetFindReplaceStatus("EditorFindNoMatch");
+            }
+            else
+            {
+                SetFindReplaceStatus("EditorFindMatches", result.Count);
+            }
         }
 
         private async System.Threading.Tasks.Task WrapEditorSelectionAsync(string prefix, string suffix, string placeholderResourceKey)
@@ -2504,12 +3301,12 @@ namespace BlogTools
             {
                 try
                 {
-                    // 1. Determine safe directory name based on article title or filename
-                    var safeDirName = System.Text.RegularExpressions.Regex.Replace(TitleBox.Text, @"[\\/:*?""<>|]+", "-").Trim('-', ' ');
-                    safeDirName = System.Text.RegularExpressions.Regex.Replace(safeDirName, @"\s+", "-").ToLowerInvariant();
-                    if (string.IsNullOrWhiteSpace(safeDirName)) safeDirName = "untitled";
+                    await SyncArticleImagePathsWithCurrentTitleAsync();
 
-                    var relativeDir = $"assets/img/inposts/{safeDirName}";
+                    // 1. Determine safe directory name based on article title or filename
+                    var safeDirName = BuildImageFolderSlug(TitleBox.Text);
+
+                    var relativeDir = BuildImageRelativeDirectory(safeDirName);
                     var absPathDir = System.IO.Path.Combine(App.JekyllContext.BlogPath, relativeDir.Replace("/", "\\"));
                     
                     if (!System.IO.Directory.Exists(absPathDir))
@@ -2536,6 +3333,7 @@ namespace BlogTools
 
                     // 3. Inject MD into Editor at cursor
                     var mdSyntax = $"![{System.IO.Path.GetFileNameWithoutExtension(fileName)}](/{relativeDir}/{fileName})";
+                    _currentImageFolderSlug = safeDirName;
                     await InsertTextIntoEditorAsync(mdSyntax);
                 }
                 catch (Exception ex)
@@ -2554,6 +3352,134 @@ namespace BlogTools
         private async void InsertImage_Click(object sender, RoutedEventArgs e)
         {
             await InsertImageAsync();
+        }
+
+        private async void OpenFindReplaceButton_Click(object sender, RoutedEventArgs e)
+        {
+            await OpenFindReplacePopupAsync();
+        }
+
+        private void CloseFindReplaceButton_Click(object sender, RoutedEventArgs e)
+        {
+            CloseFindReplacePopup(returnFocusToEditor: true);
+        }
+
+        private async void FindQueryBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_suppressFindQueryRefresh)
+            {
+                return;
+            }
+
+            await RefreshFindReplaceStatusAsync();
+        }
+
+        private async void FindMatchCaseCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            await RefreshFindReplaceStatusAsync();
+        }
+
+        private async void FindPreviousButton_Click(object sender, RoutedEventArgs e)
+        {
+            await FindNextMatchAsync(forward: false);
+        }
+
+        private async void FindNextButton_Click(object sender, RoutedEventArgs e)
+        {
+            await FindNextMatchAsync(forward: true);
+        }
+
+        private async void ReplaceButton_Click(object sender, RoutedEventArgs e)
+        {
+            await ReplaceCurrentMatchAsync();
+        }
+
+        private async void ReplaceAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            await ReplaceAllMatchesAsync();
+        }
+
+        private async void FindQueryBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                await FindNextMatchAsync(forward: (Keyboard.Modifiers & ModifierKeys.Shift) == 0);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Escape)
+            {
+                CloseFindReplacePopup(returnFocusToEditor: true);
+                e.Handled = true;
+            }
+        }
+
+        private async void ReplaceQueryBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+                {
+                    await ReplaceAllMatchesAsync();
+                }
+                else
+                {
+                    await ReplaceCurrentMatchAsync();
+                }
+
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.Escape)
+            {
+                CloseFindReplacePopup(returnFocusToEditor: true);
+                e.Handled = true;
+            }
+        }
+
+        private async void RootGrid_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control &&
+                (Keyboard.Modifiers & ModifierKeys.Alt) == 0 &&
+                e.Key == Key.F)
+            {
+                await OpenFindReplacePopupAsync(populateFromSelection: true);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key != Key.Escape)
+            {
+                return;
+            }
+
+            if (_isFindReplaceOpen)
+            {
+                CloseFindReplacePopup(returnFocusToEditor: true);
+                e.Handled = true;
+                return;
+            }
+
+            if (ReferenceEquals(e.OriginalSource, TagInputBox) || IsDescendantOf(TagInputBox, e.OriginalSource as DependencyObject))
+            {
+                return;
+            }
+
+            if (IsMetadataInputElement(e.OriginalSource as DependencyObject))
+            {
+                DismissMetadataInputFocus(e.OriginalSource as DependencyObject);
+                e.Handled = true;
+            }
+        }
+
+        private void EditorWorkspaceGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (_isFindReplaceOpen || FindReplacePopupHost?.IsOpen == true)
+            {
+                UpdateFindReplacePopupPosition();
+            }
         }
 
         private async System.Threading.Tasks.Task SyncEditorToPreviewAsync()
@@ -2636,6 +3562,91 @@ namespace BlogTools
             if (parentObject is T parent) return parent;
             return FindVisualParent<T>(parentObject);
         }
+
+        private static T? FindSelfOrVisualParent<T>(DependencyObject? child) where T : DependencyObject
+        {
+            if (child is T self)
+            {
+                return self;
+            }
+
+            return child == null ? null : FindVisualParent<T>(child);
+        }
+
+        private static bool IsDescendantOf(DependencyObject? ancestor, DependencyObject? child)
+        {
+            if (ancestor == null || child == null)
+            {
+                return false;
+            }
+
+            var current = child;
+            while (current != null)
+            {
+                if (ReferenceEquals(current, ancestor))
+                {
+                    return true;
+                }
+
+                try
+                {
+                    current = System.Windows.Media.VisualTreeHelper.GetParent(current);
+                }
+                catch
+                {
+                    current = null;
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsMetadataInputElement(DependencyObject? source)
+        {
+            if (MetadataContentGrid == null || source == null || !IsDescendantOf(MetadataContentGrid, source))
+            {
+                return false;
+            }
+
+            return FindSelfOrVisualParent<System.Windows.Controls.TextBox>(source) != null ||
+                   FindSelfOrVisualParent<ComboBox>(source) != null ||
+                   FindSelfOrVisualParent<DatePicker>(source) != null;
+        }
+
+        private void DismissMetadataInputFocus(DependencyObject? source)
+        {
+            var comboBox = FindSelfOrVisualParent<ComboBox>(source);
+            if (comboBox != null)
+            {
+                comboBox.IsDropDownOpen = false;
+            }
+
+            var datePicker = FindSelfOrVisualParent<DatePicker>(source);
+            if (datePicker != null)
+            {
+                datePicker.IsDropDownOpen = false;
+            }
+
+            DismissFocusToRoot();
+        }
+
+        private void DismissFocusToRoot()
+        {
+            if (RootGrid == null)
+            {
+                Keyboard.ClearFocus();
+                return;
+            }
+
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    FocusManager.SetFocusedElement(FocusManager.GetFocusScope(RootGrid), RootGrid);
+                    Keyboard.Focus(RootGrid);
+                }),
+                System.Windows.Threading.DispatcherPriority.Input);
+        }
+
         private void ParseTagsInput()
         {
             var text = TagInputBox.Text;
@@ -2674,19 +3685,7 @@ namespace BlogTools
 
         private void DismissTagInput()
         {
-            if (RootGrid == null)
-            {
-                Keyboard.ClearFocus();
-                return;
-            }
-
-            Dispatcher.BeginInvoke(
-                new Action(() =>
-                {
-                    FocusManager.SetFocusedElement(FocusManager.GetFocusScope(RootGrid), RootGrid);
-                    Keyboard.Focus(RootGrid);
-                }),
-                System.Windows.Threading.DispatcherPriority.Input);
+            DismissFocusToRoot();
         }
 
         private void TagInputBox_LostFocus(object sender, RoutedEventArgs e)

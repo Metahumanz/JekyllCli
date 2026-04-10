@@ -87,6 +87,17 @@
     <system:String x:Key="EditorViewModeSplit">边写边预览</system:String>
     <system:String x:Key="EditorViewModePreviewOnly">仅预览</system:String>
     <system:String x:Key="EditorBtnInsertLink">插入链接</system:String>
+    <system:String x:Key="EditorFindTitle">查找与替换</system:String>
+    <system:String x:Key="EditorFindSearchPlaceholder">查找内容</system:String>
+    <system:String x:Key="EditorFindReplacePlaceholder">替换为</system:String>
+    <system:String x:Key="EditorFindMatchCase">区分大小写</system:String>
+    <system:String x:Key="EditorFindPrev">上一个</system:String>
+    <system:String x:Key="EditorFindNext">下一个</system:String>
+    <system:String x:Key="EditorFindReplace">替换</system:String>
+    <system:String x:Key="EditorFindReplaceAll">全部替换</system:String>
+    <system:String x:Key="EditorFindEnterQuery">输入内容开始查找</system:String>
+    <system:String x:Key="EditorFindNoMatch">没有找到匹配项</system:String>
+    <system:String x:Key="EditorFindMatches">共找到 {0} 个匹配项</system:String>
     <system:String x:Key="EditorDialogLinkTitle">插入链接</system:String>
     <system:String x:Key="EditorDialogLinkDescription">填写显示内容和链接地址，再选择是否新标签页打开即可。</system:String>
     <system:String x:Key="EditorDialogLinkTextLabel">显示内容</system:String>
@@ -98,6 +109,7 @@
 
     <system:String x:Key="EditorTipInsertImage">上传并插入本地图片（Alt+I）</system:String>
     <system:String x:Key="EditorTipInsertLink">插入链接，可选本页或新标签页打开</system:String>
+    <system:String x:Key="EditorTipFindReplace">查找与替换（Ctrl+F）</system:String>
     <system:String x:Key="EditorTipSyncToPreview">按当前编辑位置同步预览</system:String>
     <system:String x:Key="EditorTipSyncToEditor">按当前预览位置同步编辑</system:String>
     <system:String x:Key="EditorToolboxLabel">Markdown 工具箱</system:String>

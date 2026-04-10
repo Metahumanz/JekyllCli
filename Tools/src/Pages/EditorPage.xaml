@@ -13,7 +13,8 @@
 
     <Grid x:Name="RootGrid"
           Margin="16,16,16,16"
-          Focusable="True">
+          Focusable="True"
+          PreviewKeyDown="RootGrid_PreviewKeyDown">
         <Grid.Resources>
             <Style x:Key="EditorToolButtonStyle" TargetType="Button" BasedOn="{StaticResource LiftedButtonStyle}">
                 <Setter Property="Padding" Value="0" />
@@ -143,6 +144,24 @@
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="Margin" Value="0" />
             </Style>
+            <Style x:Key="FindPopupActionButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderActionButtonStyle}">
+                <Setter Property="Height" Value="36" />
+                <Setter Property="MinHeight" Value="36" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="Margin" Value="0,0,8,0" />
+            </Style>
+            <Style x:Key="FindPopupPrimaryActionButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderPrimaryActionButtonStyle}">
+                <Setter Property="Height" Value="36" />
+                <Setter Property="MinHeight" Value="36" />
+                <Setter Property="Padding" Value="12,0" />
+                <Setter Property="Margin" Value="0" />
+            </Style>
+            <Style x:Key="FindPopupIconButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderIconButtonStyle}">
+                <Setter Property="Width" Value="36" />
+                <Setter Property="MinWidth" Value="36" />
+                <Setter Property="Height" Value="36" />
+                <Setter Property="MinHeight" Value="36" />
+            </Style>
             <DataTemplate x:Key="EditorToolGlyphTemplate">
                 <Grid Width="24" Height="24">
                     <ui:SymbolIcon x:Name="ToolSymbol"
@@ -228,6 +247,7 @@
                         PlaceholderText="{DynamicResource EditorTitleBoxPlaceholder}"
                         FontSize="18"
                         FontWeight="Bold"
+                        LostFocus="TitleBox_LostFocus"
                         Margin="0,0,16,0" />
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
@@ -269,6 +289,14 @@
                                    Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                     </StackPanel>
                 </Button>
+                <Button Style="{StaticResource HeaderIconButtonStyle}"
+                        Click="OpenFindReplaceButton_Click"
+                        Margin="0,0,8,0"
+                        ToolTip="{DynamicResource EditorTipFindReplace}">
+                    <ui:SymbolIcon Symbol="Search24"
+                                   FontSize="16"
+                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                </Button>
                 <Button Style="{StaticResource HeaderActionButtonStyle}"
                         Click="SaveButton_Click">
                     <StackPanel Orientation="Horizontal">
@@ -306,7 +334,7 @@
         </Grid>
 
         <Expander x:Name="MetadataExpander" Grid.Row="2" Header="{DynamicResource EditorExpanderMetadata}" IsExpanded="False" Margin="0,0,0,8" HorizontalAlignment="Stretch" Expanded="MetadataExpander_Expanded" Collapsed="MetadataExpander_Collapsed">
-            <Grid Margin="12,12,12,4">
+            <Grid x:Name="MetadataContentGrid" Margin="12,12,12,4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -396,7 +424,9 @@
             </Grid>
         </Expander>
 
-        <Grid x:Name="EditorWorkspaceGrid" Grid.Row="3">
+        <Grid x:Name="EditorWorkspaceGrid"
+              Grid.Row="3"
+              SizeChanged="EditorWorkspaceGrid_SizeChanged">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="EditorColumn" Width="*" />
                 <ColumnDefinition x:Name="SideToolsColumn" Width="88" />
@@ -599,6 +629,162 @@
                     ClipToBounds="True">
                 <wv2:WebView2 x:Name="PreviewWebView" />
             </Border>
+
         </Grid>
+
+        <Popup x:Name="FindReplacePopupHost"
+               PlacementTarget="{Binding ElementName=EditorWorkspaceGrid}"
+               Placement="Relative"
+               AllowsTransparency="True"
+               StaysOpen="True"
+               PopupAnimation="None">
+            <Border x:Name="FindReplacePopup"
+                    Width="404"
+                    Opacity="0"
+                    CornerRadius="18"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
+                    Background="{DynamicResource ControlFillColorDefaultBrush}">
+                <Border.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="FindReplaceScaleTransform"
+                                        ScaleX="0.97"
+                                        ScaleY="0.97" />
+                        <TranslateTransform x:Name="FindReplaceTranslateTransform"
+                                            Y="-18" />
+                    </TransformGroup>
+                </Border.RenderTransform>
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <ui:SymbolIcon Symbol="Search24"
+                                           FontSize="16"
+                                           Margin="0,0,8,0"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="{DynamicResource EditorFindTitle}"
+                                       VerticalAlignment="Center"
+                                       FontSize="15"
+                                       FontWeight="SemiBold" />
+                        </StackPanel>
+
+                        <Border Grid.Column="1"
+                                Margin="0,0,12,0"
+                                Padding="8,4"
+                                CornerRadius="8"
+                                BorderThickness="1"
+                                BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
+                                Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                            <TextBlock Text="Ctrl+F"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </Border>
+
+                        <Button Grid.Column="2"
+                                Style="{StaticResource FindPopupIconButtonStyle}"
+                                Click="CloseFindReplaceButton_Click">
+                            <ui:SymbolIcon Symbol="Dismiss24"
+                                           FontSize="14"
+                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                        </Button>
+                    </Grid>
+
+                    <ui:TextBox x:Name="FindQueryBox"
+                                Grid.Row="1"
+                                Margin="0,0,0,10"
+                                PlaceholderText="{DynamicResource EditorFindSearchPlaceholder}"
+                                TextChanged="FindQueryBox_TextChanged"
+                                KeyDown="FindQueryBox_KeyDown" />
+
+                    <ui:TextBox x:Name="ReplaceQueryBox"
+                                Grid.Row="2"
+                                Margin="0,0,0,12"
+                                PlaceholderText="{DynamicResource EditorFindReplacePlaceholder}"
+                                KeyDown="ReplaceQueryBox_KeyDown" />
+
+                    <Grid Grid.Row="3" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <CheckBox x:Name="FindMatchCaseCheckBox"
+                                  Grid.Column="0"
+                                  VerticalAlignment="Center"
+                                  Content="{DynamicResource EditorFindMatchCase}"
+                                  Click="FindMatchCaseCheckBox_Click" />
+
+                        <TextBlock x:Name="FindStatusText"
+                                   Grid.Column="1"
+                                   Margin="12,0,0,0"
+                                   VerticalAlignment="Center"
+                                   TextAlignment="Right"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="{DynamicResource EditorFindEnterQuery}" />
+                    </Grid>
+
+                    <Grid Grid.Row="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button Grid.Column="0"
+                                Style="{StaticResource FindPopupActionButtonStyle}"
+                                Click="FindPreviousButton_Click">
+                            <TextBlock Text="{DynamicResource EditorFindPrev}"
+                                       VerticalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                        </Button>
+
+                        <Button Grid.Column="1"
+                                Style="{StaticResource FindPopupActionButtonStyle}"
+                                Click="FindNextButton_Click">
+                            <TextBlock Text="{DynamicResource EditorFindNext}"
+                                       VerticalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                        </Button>
+
+                        <Button Grid.Column="3"
+                                Style="{StaticResource FindPopupActionButtonStyle}"
+                                Click="ReplaceButton_Click">
+                            <TextBlock Text="{DynamicResource EditorFindReplace}"
+                                       VerticalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                        </Button>
+
+                        <Button Grid.Column="4"
+                                Style="{StaticResource FindPopupPrimaryActionButtonStyle}"
+                                Click="ReplaceAllButton_Click">
+                            <TextBlock Text="{DynamicResource EditorFindReplaceAll}"
+                                       VerticalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Popup>
     </Grid>
 </Page>

@@ -84,6 +84,17 @@
     <system:String x:Key="EditorViewModeSplit">Write + Preview</system:String>
     <system:String x:Key="EditorViewModePreviewOnly">Preview only</system:String>
     <system:String x:Key="EditorBtnInsertLink">Insert Link</system:String>
+    <system:String x:Key="EditorFindTitle">Find &amp; Replace</system:String>
+    <system:String x:Key="EditorFindSearchPlaceholder">Find text</system:String>
+    <system:String x:Key="EditorFindReplacePlaceholder">Replace with</system:String>
+    <system:String x:Key="EditorFindMatchCase">Match case</system:String>
+    <system:String x:Key="EditorFindPrev">Previous</system:String>
+    <system:String x:Key="EditorFindNext">Next</system:String>
+    <system:String x:Key="EditorFindReplace">Replace</system:String>
+    <system:String x:Key="EditorFindReplaceAll">Replace all</system:String>
+    <system:String x:Key="EditorFindEnterQuery">Enter text to start searching</system:String>
+    <system:String x:Key="EditorFindNoMatch">No matches found</system:String>
+    <system:String x:Key="EditorFindMatches">{0} matches found</system:String>
     <system:String x:Key="EditorDialogLinkTitle">Insert Link</system:String>
     <system:String x:Key="EditorDialogLinkDescription">Fill in the display text and URL, then choose whether the link should open in a new tab.</system:String>
     <system:String x:Key="EditorDialogLinkTextLabel">Display Text</system:String>
@@ -95,6 +106,7 @@
 
     <system:String x:Key="EditorTipInsertImage">Upload and insert a local image (Alt+I)</system:String>
     <system:String x:Key="EditorTipInsertLink">Insert a link and choose same tab or new tab</system:String>
+    <system:String x:Key="EditorTipFindReplace">Find and replace (Ctrl+F)</system:String>
     <system:String x:Key="EditorTipSyncToPreview">Sync the preview to the current editor position</system:String>
     <system:String x:Key="EditorTipSyncToEditor">Sync the editor to the current preview position</system:String>
     <system:String x:Key="EditorToolboxLabel">Markdown Toolbox</system:String>
