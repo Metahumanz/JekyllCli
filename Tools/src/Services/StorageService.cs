@@ -12,6 +12,7 @@ namespace BlogTools.Services
         public bool IsMetadataExpanded { get; set; } = false;
         public string AppFontFamily { get; set; } = string.Empty;
         public string AppLanguage { get; set; } = "Auto";
+        public string ThemeMode { get; set; } = "Auto";
         public bool SilentUpdate { get; set; } = false;
         public bool AutoUpdateModifiedTime { get; set; } = false;
         public bool EditorToolboxCollapsed { get; set; } = false;

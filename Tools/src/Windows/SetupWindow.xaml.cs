@@ -15,7 +15,7 @@ namespace BlogTools
         public SetupWindow()
         {
             InitializeComponent();
-            Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
+            App.ConfigureThemeWindow(this);
             
             // Search for adjacent "Blog" directory by default
             string defaultPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Blog"));

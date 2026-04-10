@@ -14,8 +14,7 @@ namespace BlogTools
         public InsertLinkDialog()
         {
             InitializeComponent();
-            SystemThemeWatcher.Watch(this);
-            App.ApplyThemeIcon(this);
+            App.ConfigureThemeWindow(this);
             Loaded += InsertLinkDialog_Loaded;
         }
 

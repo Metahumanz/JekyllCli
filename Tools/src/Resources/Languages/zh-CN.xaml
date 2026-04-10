@@ -186,8 +186,11 @@
     <system:String x:Key="SettingsDescAutoUpdateMod">自动将已修改文章的 last_modified_at 更新为当前时间，不再弹窗体验更流畅。</system:String>
 
     <system:String x:Key="SettingsSecAppearance">外观</system:String>
-    <system:String x:Key="SettingsLabelDarkMode">深色模式</system:String>
-    <system:String x:Key="SettingsDescDarkMode">在夜间与日间模式间切换</system:String>
+    <system:String x:Key="SettingsLabelDarkMode">主题模式</system:String>
+    <system:String x:Key="SettingsDescDarkMode">选择跟随系统、深色或浅色主题</system:String>
+    <system:String x:Key="SettingsThemeModeAuto">跟随系统</system:String>
+    <system:String x:Key="SettingsThemeModeDark">深色</system:String>
+    <system:String x:Key="SettingsThemeModeLight">浅色</system:String>
     <system:String x:Key="SettingsLabelLanguage">软件语言 (Language)</system:String>
     <system:String x:Key="SettingsDescLanguage">切换界面显示语言，实时生效</system:String>
     <system:String x:Key="SettingsLabelFont">系统字体</system:String>

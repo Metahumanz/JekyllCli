@@ -183,8 +183,11 @@
     <system:String x:Key="SettingsDescAutoUpdateMod">Automatically update the last_modified_at of modified posts to the current time for a smoother experience.</system:String>
 
     <system:String x:Key="SettingsSecAppearance">Appearance</system:String>
-    <system:String x:Key="SettingsLabelDarkMode">Dark Mode</system:String>
-    <system:String x:Key="SettingsDescDarkMode">Switch between dark and light themes</system:String>
+    <system:String x:Key="SettingsLabelDarkMode">Theme Mode</system:String>
+    <system:String x:Key="SettingsDescDarkMode">Choose follow system, dark, or light theme</system:String>
+    <system:String x:Key="SettingsThemeModeAuto">Follow System</system:String>
+    <system:String x:Key="SettingsThemeModeDark">Dark</system:String>
+    <system:String x:Key="SettingsThemeModeLight">Light</system:String>
     <system:String x:Key="SettingsLabelLanguage">Language</system:String>
     <system:String x:Key="SettingsDescLanguage">Switch the interface display language, effective in real-time</system:String>
     <system:String x:Key="SettingsLabelFont">System Font</system:String>

@@ -16,10 +16,15 @@ namespace BlogTools
 {
     public partial class App : Application
     {
+        public const string ThemeModeAuto = "Auto";
+        public const string ThemeModeDark = "Dark";
+        public const string ThemeModeLight = "Light";
+
         public static JekyllService JekyllContext { get; internal set; } = null!;
         public static GitService GitContext { get; internal set; } = null!;
         public static BlogPost? CurrentEditPost { get; set; } = null;
         private static FileWatcherService? _fileWatcher;
+        private static string _themeMode = ThemeModeAuto;
 
         /// <summary>
         /// Fired when _posts/*.md or _config.yml changes on disk.
@@ -45,6 +50,7 @@ namespace BlogTools
 
             // Apply Language
             ApplyLanguage(isDocCaptureMode ? "zh-CN" : settings.AppLanguage);
+            ApplyThemeMode(isDocCaptureMode ? ThemeModeLight : settings.ThemeMode);
 
             if (string.IsNullOrEmpty(blogPath) || !Directory.Exists(blogPath) || !File.Exists(Path.Combine(blogPath, "_config.yml")))
             {
@@ -179,6 +185,55 @@ namespace BlogTools
             window.Icon = new System.Windows.Media.Imaging.BitmapImage(iconUri);
         }
 
+        public static string NormalizeThemeMode(string? themeMode)
+        {
+            if (string.Equals(themeMode, ThemeModeDark, StringComparison.OrdinalIgnoreCase))
+            {
+                return ThemeModeDark;
+            }
+
+            if (string.Equals(themeMode, ThemeModeLight, StringComparison.OrdinalIgnoreCase))
+            {
+                return ThemeModeLight;
+            }
+
+            return ThemeModeAuto;
+        }
+
+        public static void ApplyThemeMode(string? themeMode)
+        {
+            _themeMode = NormalizeThemeMode(themeMode);
+            ApplicationThemeManager.Apply(ResolveApplicationTheme(_themeMode));
+
+            if (Current == null)
+            {
+                return;
+            }
+
+            foreach (Window window in Current.Windows)
+            {
+                ConfigureThemeWindow(window);
+            }
+        }
+
+        public static void ConfigureThemeWindow(Window window)
+        {
+            try
+            {
+                SystemThemeWatcher.UnWatch(window);
+            }
+            catch
+            {
+            }
+
+            if (_themeMode == ThemeModeAuto)
+            {
+                SystemThemeWatcher.Watch(window);
+            }
+
+            ApplyThemeIcon(window);
+        }
+
         /// <summary>
         /// 当应用主题改变时，更新所有已打开窗口的图标。
         /// </summary>
@@ -191,6 +246,28 @@ namespace BlogTools
                     ApplyThemeIcon(window);
                 }
             });
+        }
+
+        private static ApplicationTheme ResolveApplicationTheme(string themeMode)
+        {
+            return NormalizeThemeMode(themeMode) switch
+            {
+                ThemeModeDark => ApplicationTheme.Dark,
+                ThemeModeLight => ApplicationTheme.Light,
+                _ => ResolveSystemApplicationTheme()
+            };
+        }
+
+        private static ApplicationTheme ResolveSystemApplicationTheme()
+        {
+            if (ApplicationThemeManager.IsSystemHighContrast())
+            {
+                return ApplicationTheme.HighContrast;
+            }
+
+            return ApplicationThemeManager.GetSystemTheme() == SystemTheme.Dark
+                ? ApplicationTheme.Dark
+                : ApplicationTheme.Light;
         }
 
         public static void ApplyLanguage(string languageCode)

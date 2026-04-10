@@ -100,7 +100,11 @@
                                 <TextBlock Text="{DynamicResource SettingsDescDarkMode}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                             </StackPanel>
                         </ui:CardControl.Header>
-                        <ui:ToggleSwitch x:Name="ThemeToggle" Checked="ThemeToggle_Checked" Unchecked="ThemeToggle_Unchecked" />
+                        <ComboBox x:Name="ThemeModeComboBox" Width="200" SelectionChanged="ThemeModeComboBox_SelectionChanged">
+                            <ComboBoxItem Content="{DynamicResource SettingsThemeModeAuto}" Tag="Auto"/>
+                            <ComboBoxItem Content="{DynamicResource SettingsThemeModeDark}" Tag="Dark"/>
+                            <ComboBoxItem Content="{DynamicResource SettingsThemeModeLight}" Tag="Light"/>
+                        </ComboBox>
                     </ui:CardControl>
 
                     <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Globe24}">

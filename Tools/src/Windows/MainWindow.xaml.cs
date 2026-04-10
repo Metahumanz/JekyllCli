@@ -10,7 +10,7 @@ namespace BlogTools
         public MainWindow()
         {
             InitializeComponent();
-            Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this);
+            App.ConfigureThemeWindow(this);
             RefreshShellFromCurrentBlogConfig();
             Loaded += MainWindow_Loaded;
         }

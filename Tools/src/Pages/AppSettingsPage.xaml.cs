@@ -57,7 +57,20 @@ namespace BlogTools
             KeepToolboxToolWhenPinnedToggle.IsChecked = settings.KeepToolboxToolWhenPinned;
             AutoUpdateModifiedTimeToggle.IsChecked = settings.AutoUpdateModifiedTime;
             SilentUpdateToggle.IsChecked = settings.SilentUpdate;
-            ThemeToggle.IsChecked = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
+
+            foreach (ComboBoxItem item in ThemeModeComboBox.Items)
+            {
+                if (item.Tag?.ToString() == App.NormalizeThemeMode(settings.ThemeMode))
+                {
+                    ThemeModeComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+
+            if (ThemeModeComboBox.SelectedItem == null)
+            {
+                ThemeModeComboBox.SelectedIndex = 0;
+            }
 
             foreach (ComboBoxItem item in LanguageComboBox.Items)
             {
@@ -167,24 +180,23 @@ namespace BlogTools
         private void SilentUpdate_Checked(object sender, RoutedEventArgs e) => SaveBoolSetting(s => s.SilentUpdate = true);
         private void SilentUpdate_Unchecked(object sender, RoutedEventArgs e) => SaveBoolSetting(s => s.SilentUpdate = false);
 
-        private void ThemeToggle_Checked(object sender, RoutedEventArgs e)
+        private void ThemeModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isLoading)
             {
                 return;
             }
 
-            ApplicationThemeManager.Apply(ApplicationTheme.Dark);
-        }
-
-        private void ThemeToggle_Unchecked(object sender, RoutedEventArgs e)
-        {
-            if (_isLoading)
+            var selectedTag = (ThemeModeComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            if (string.IsNullOrWhiteSpace(selectedTag))
             {
                 return;
             }
 
-            ApplicationThemeManager.Apply(ApplicationTheme.Light);
+            var settings = StorageService.Load();
+            settings.ThemeMode = App.NormalizeThemeMode(selectedTag);
+            StorageService.Save(settings);
+            App.ApplyThemeMode(settings.ThemeMode);
         }
 
         private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

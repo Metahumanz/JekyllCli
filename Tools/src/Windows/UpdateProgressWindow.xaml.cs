@@ -12,7 +12,7 @@ namespace BlogTools
             InitializeComponent();
             Owner = owner;
             WindowStartupLocation = owner == null ? WindowStartupLocation.CenterScreen : WindowStartupLocation.CenterOwner;
-            App.ApplyThemeIcon(this);
+            App.ConfigureThemeWindow(this);
         }
 
         protected override void OnClosing(CancelEventArgs e)
