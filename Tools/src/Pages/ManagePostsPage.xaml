@@ -116,12 +116,14 @@
             <Border Padding="10,8">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <ui:Button Icon="{ui:SymbolIcon Symbol=Edit24}"
+                               Style="{StaticResource RoundedUiButtonBaseStyle}"
                                Background="Transparent"
                                BorderThickness="0"
                                Padding="8"
                                ToolTip="{DynamicResource ManagePostsTipEdit}"
                                Click="EditPost_Click" />
                     <ui:Button Icon="{ui:SymbolIcon Symbol=Delete24}"
+                               Style="{StaticResource RoundedUiButtonBaseStyle}"
                                Background="Transparent"
                                BorderThickness="0"
                                Padding="8"
@@ -160,7 +162,7 @@
                 Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="1"
-                CornerRadius="10">
+                CornerRadius="{StaticResource AppCardCornerRadius}">
             <DataGrid x:Name="PostsDataGrid"
                       Style="{StaticResource ManagePostsDataGridStyle}"
                       RowStyle="{StaticResource ManagePostsDataGridRowStyle}"

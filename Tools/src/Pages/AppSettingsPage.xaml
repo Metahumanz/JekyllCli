@@ -46,7 +46,7 @@
             <StackPanel Background="Transparent" Margin="0,0,16,0">
                 <TextBlock Text="{DynamicResource SettingsSecWorkspace}" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <ui:CardControl Margin="0,0,0,24" Icon="{ui:SymbolIcon Symbol=FolderOpen24}">
+                <ui:CardControl Margin="0,0,0,24" Icon="{ui:SymbolIcon Symbol=FolderOpen24}" Style="{StaticResource RoundedCardControlStyle}">
                     <ui:CardControl.Header>
                         <StackPanel>
                             <TextBlock Text="{DynamicResource SettingsLabelBlogPath}" FontWeight="SemiBold" FontSize="14" />
@@ -59,7 +59,7 @@
                 <TextBlock Text="{DynamicResource SettingsSecDrafting}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Margin="0,0,0,24">
-                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Document24}">
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Document24}" Style="{StaticResource RoundedCardControlStyle}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource SettingsLabelRememberMetadata}" FontWeight="SemiBold" FontSize="14" />
@@ -69,7 +69,7 @@
                         <ui:ToggleSwitch x:Name="RememberMetadataToggle" Checked="RememberMetadata_Checked" Unchecked="RememberMetadata_Unchecked" />
                     </ui:CardControl>
 
-                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Document24}">
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Document24}" Style="{StaticResource RoundedCardControlStyle}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource SettingsLabelKeepToolboxToolWhenPinned}" FontWeight="SemiBold" FontSize="14" />
@@ -79,7 +79,7 @@
                         <ui:ToggleSwitch x:Name="KeepToolboxToolWhenPinnedToggle" Checked="KeepToolboxToolWhenPinned_Checked" Unchecked="KeepToolboxToolWhenPinned_Unchecked" />
                     </ui:CardControl>
 
-                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Clock24}">
+                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Clock24}" Style="{StaticResource RoundedCardControlStyle}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource SettingsLabelAutoUpdateMod}" FontWeight="SemiBold" FontSize="14" />
@@ -93,7 +93,7 @@
                 <TextBlock Text="{DynamicResource SettingsSecAppearance}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Margin="0,0,0,24">
-                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=WeatherMoon24}">
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=WeatherMoon24}" Style="{StaticResource RoundedCardControlStyle}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource SettingsLabelDarkMode}" FontWeight="SemiBold" FontSize="14" />
@@ -107,7 +107,7 @@
                         </ComboBox>
                     </ui:CardControl>
 
-                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Globe24}">
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Globe24}" Style="{StaticResource RoundedCardControlStyle}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource SettingsLabelLanguage}" FontWeight="SemiBold" FontSize="14" />
@@ -121,7 +121,7 @@
                         </ComboBox>
                     </ui:CardControl>
 
-                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=TextFont24}">
+                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=TextFont24}" Style="{StaticResource RoundedCardControlStyle}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource SettingsLabelFont}" FontWeight="SemiBold" FontSize="14" />
@@ -141,7 +141,7 @@
                 <TextBlock Text="{DynamicResource SettingsSecUpdates}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <StackPanel Margin="0,0,0,24">
-                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowDownload24}">
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowDownload24}" Style="{StaticResource RoundedCardControlStyle}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource SettingsLabelCheckUpdate}" FontWeight="SemiBold" FontSize="14" />
@@ -151,7 +151,7 @@
                         <ui:Button x:Name="CheckUpdateButton" Style="{StaticResource LiftedUiButtonStyle}" Content="{DynamicResource SettingsBtnCheckUpdate}" Click="CheckUpdate_Click" />
                     </ui:CardControl>
 
-                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowSync24}">
+                    <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=ArrowSync24}" Style="{StaticResource RoundedCardControlStyle}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource SettingsLabelSilentUpdate}" FontWeight="SemiBold" FontSize="14" />
@@ -171,7 +171,7 @@
                     <Border x:Name="ProgressPanel" Visibility="Collapsed"
                             Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,4,0,0">
+                            BorderThickness="1" CornerRadius="{StaticResource AppCardCornerRadius}" Padding="16" Margin="0,4,0,0">
                         <StackPanel>
                             <TextBlock x:Name="ProgressText" Text="{DynamicResource SettingsMsgProgressPreparing}" FontSize="12"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" />

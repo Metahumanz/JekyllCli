@@ -29,7 +29,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <ui:TextBox x:Name="BlogPathBox" IsReadOnly="True" Margin="0,0,10,0" PlaceholderText="..."/>
-                    <ui:Button Grid.Column="1" Content="{DynamicResource SetupBtnSelectFolder}" Click="Browse_Click" Appearance="Secondary"/>
+                    <ui:Button Grid.Column="1" Content="{DynamicResource SetupBtnSelectFolder}" Style="{StaticResource RoundedUiButtonBaseStyle}" Click="Browse_Click" Appearance="Secondary"/>
                 </Grid>
 
                 <!-- 零基础开始区块 -->
@@ -42,8 +42,8 @@
                                 <ColumnDefinition Width="8" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <ui:Button x:Name="UseBundleBtn" Grid.Column="0" Content="{DynamicResource SetupBtnUseBundle}" Click="UseBundle_Click" HorizontalAlignment="Stretch" Padding="0,8"/>
-                            <ui:Button x:Name="CloneRemoteBtn" Grid.Column="2" Content="{DynamicResource SetupBtnFromGithub}" Click="CloneRemote_Click" HorizontalAlignment="Stretch" Padding="0,8"/>
+                            <ui:Button x:Name="UseBundleBtn" Grid.Column="0" Content="{DynamicResource SetupBtnUseBundle}" Style="{StaticResource RoundedUiButtonBaseStyle}" Click="UseBundle_Click" HorizontalAlignment="Stretch" Padding="0,8"/>
+                            <ui:Button x:Name="CloneRemoteBtn" Grid.Column="2" Content="{DynamicResource SetupBtnFromGithub}" Style="{StaticResource RoundedUiButtonBaseStyle}" Click="CloneRemote_Click" HorizontalAlignment="Stretch" Padding="0,8"/>
                         </Grid>
                         <ProgressBar x:Name="InitProgressBar" IsIndeterminate="True" Visibility="Collapsed" Margin="0,10,0,0" />
                         <TextBlock x:Name="InitStatusText" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,5,0,0" Visibility="Collapsed" FontSize="12" />
@@ -62,8 +62,8 @@
 
         <Border Grid.Row="2" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Padding="20">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <ui:Button Content="{DynamicResource SetupBtnCancel}" Click="Cancel_Click" Margin="0,0,10,0" Appearance="Transparent"/>
-                <ui:Button x:Name="FinishBtn" Content="{DynamicResource SetupBtnComplete}" Click="Finish_Click" Appearance="Primary"/>
+                <ui:Button Content="{DynamicResource SetupBtnCancel}" Style="{StaticResource RoundedUiButtonBaseStyle}" Click="Cancel_Click" Margin="0,0,10,0" Appearance="Transparent"/>
+                <ui:Button x:Name="FinishBtn" Style="{StaticResource RoundedUiButtonBaseStyle}" Content="{DynamicResource SetupBtnComplete}" Click="Finish_Click" Appearance="Primary"/>
             </StackPanel>
         </Border>
     </Grid>

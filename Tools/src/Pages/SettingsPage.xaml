@@ -48,7 +48,7 @@
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                        BorderThickness="1" CornerRadius="{StaticResource AppCardCornerRadius}" Padding="20" Margin="0,0,0,24">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -90,7 +90,7 @@
                 <!-- removed InfoBar -->
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,24">
+                        BorderThickness="1" CornerRadius="{StaticResource AppCardCornerRadius}" Padding="20" Margin="0,0,0,24">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -136,7 +136,7 @@
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                 <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                         BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                        BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,24">
+                        BorderThickness="1" CornerRadius="{StaticResource AppCardCornerRadius}" Padding="16" Margin="0,0,0,24">
                     <StackPanel>
                         <Expander Header="{DynamicResource SettingsLabelAbout}" Margin="0,0,0,10">
                             <StackPanel Margin="10">
@@ -211,7 +211,7 @@
                         </StackPanel>
                     </ui:CardAction>
 
-                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Image24}">
+                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Image24}" Style="{StaticResource RoundedCardControlStyle}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource SettingsLabelFaviconUpload}" FontWeight="SemiBold" FontSize="14" />

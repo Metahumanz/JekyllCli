@@ -368,7 +368,7 @@
                         <ComboBox x:Name="PublishHourBox" Width="75" Margin="0,0,4,0"/>
                         <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <ComboBox x:Name="PublishMinuteBox" Width="75" Margin="0,0,4,0"/>
-                        <ui:Button Icon="{ui:SymbolIcon Symbol=Clock24}" Click="SetPublishNow_Click" ToolTip="{DynamicResource EditorBtnSetNow}"/>
+                        <ui:Button Icon="{ui:SymbolIcon Symbol=Clock24}" Style="{StaticResource RoundedUiButtonBaseStyle}" Click="SetPublishNow_Click" ToolTip="{DynamicResource EditorBtnSetNow}"/>
                     </StackPanel>
                 </Grid>
 
@@ -390,12 +390,12 @@
                         <ComboBox x:Name="ModifyHourBox" Width="75" Margin="0,0,4,0"/>
                         <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <ComboBox x:Name="ModifyMinuteBox" Width="75" Margin="0,0,4,0"/>
-                        <ui:Button Icon="{ui:SymbolIcon Symbol=Clock24}" Click="SetModifyNow_Click" ToolTip="{DynamicResource EditorBtnSetNow}"/>
+                        <ui:Button Icon="{ui:SymbolIcon Symbol=Clock24}" Style="{StaticResource RoundedUiButtonBaseStyle}" Click="SetModifyNow_Click" ToolTip="{DynamicResource EditorBtnSetNow}"/>
                     </StackPanel>
                 </Grid>
 
                 <TextBlock Text="{DynamicResource EditorLabelTags}" VerticalAlignment="Center" Grid.Row="1" Grid.Column="3" Margin="0,0,0,12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                <Border Grid.Row="1" Grid.Column="4" Margin="0,0,0,12" Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="4,4,4,0" MinHeight="32" Cursor="IBeam" MouseDown="TagsBorder_MouseDown">
+                <Border Grid.Row="1" Grid.Column="4" Margin="0,0,0,12" Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="{StaticResource AppCompactCardCornerRadius}" Padding="4,4,4,0" MinHeight="32" Cursor="IBeam" MouseDown="TagsBorder_MouseDown">
                     <WrapPanel VerticalAlignment="Center">
                         <ItemsControl x:Name="TagsItemsControl" Focusable="False">
                             <ItemsControl.ItemsPanel>
@@ -405,7 +405,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <ui:Button Content="{Binding}" Icon="{ui:SymbolIcon Symbol=Dismiss12}" Margin="0,0,4,4" Appearance="Secondary" FontSize="12" Padding="8,2" MinHeight="24" Click="RemoveTag_Click" Tag="{Binding}"/>
+                                    <ui:Button Content="{Binding}" Icon="{ui:SymbolIcon Symbol=Dismiss12}" Style="{StaticResource RoundedUiButtonBaseStyle}" Margin="0,0,4,4" Appearance="Secondary" FontSize="12" Padding="8,2" MinHeight="24" Click="RemoveTag_Click" Tag="{Binding}"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -541,6 +541,7 @@
 
                                 <ui:Button x:Name="ToolboxToggleButton"
                                            Grid.Column="1"
+                                           Style="{StaticResource RoundedUiButtonBaseStyle}"
                                            Click="ToolboxToggleButton_Click"
                                            Appearance="Secondary"
                                            Padding="12,4"

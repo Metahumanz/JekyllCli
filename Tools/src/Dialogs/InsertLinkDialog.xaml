@@ -51,10 +51,12 @@
                 Padding="20">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <ui:Button Content="{DynamicResource CommonCancel}"
+                           Style="{StaticResource RoundedUiButtonBaseStyle}"
                            Appearance="Transparent"
                            Margin="0,0,10,0"
                            Click="Cancel_Click"/>
                 <ui:Button x:Name="InsertButton"
+                           Style="{StaticResource RoundedUiButtonBaseStyle}"
                            Content="{DynamicResource EditorDialogLinkInsert}"
                            Appearance="Primary"
                            IsEnabled="False"

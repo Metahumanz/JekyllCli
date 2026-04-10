@@ -11,7 +11,23 @@
                 <ResourceDictionary Source="pack://application:,,,/src/Resources/Languages/zh-CN.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <Style x:Key="LiftedUiButtonStyle" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource {x:Type ui:Button}}">
+            <CornerRadius x:Key="AppButtonCornerRadius">10</CornerRadius>
+            <CornerRadius x:Key="AppCardCornerRadius">14</CornerRadius>
+            <CornerRadius x:Key="AppCompactCardCornerRadius">12</CornerRadius>
+
+            <Style x:Key="RoundedUiButtonBaseStyle" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource {x:Type ui:Button}}">
+                <Setter Property="CornerRadius" Value="{StaticResource AppButtonCornerRadius}" />
+            </Style>
+
+            <Style x:Key="RoundedCardControlStyle" TargetType="{x:Type ui:CardControl}" BasedOn="{StaticResource {x:Type ui:CardControl}}">
+                <Setter Property="CornerRadius" Value="{StaticResource AppCardCornerRadius}" />
+            </Style>
+
+            <Style x:Key="RoundedCardExpanderStyle" TargetType="{x:Type ui:CardExpander}" BasedOn="{StaticResource {x:Type ui:CardExpander}}">
+                <Setter Property="CornerRadius" Value="{StaticResource AppCardCornerRadius}" />
+            </Style>
+
+            <Style x:Key="LiftedUiButtonStyle" TargetType="{x:Type ui:Button}" BasedOn="{StaticResource RoundedUiButtonBaseStyle}">
                 <Setter Property="Cursor" Value="Hand" />
                 <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
                 <Setter Property="RenderTransform">
