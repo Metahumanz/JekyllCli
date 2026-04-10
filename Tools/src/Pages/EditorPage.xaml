@@ -162,6 +162,13 @@
                 <Setter Property="Height" Value="36" />
                 <Setter Property="MinHeight" Value="36" />
             </Style>
+            <Style x:Key="PreviewChromeIconButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderIconButtonStyle}">
+                <Setter Property="Width" Value="34" />
+                <Setter Property="MinWidth" Value="34" />
+                <Setter Property="Height" Value="34" />
+                <Setter Property="MinHeight" Value="34" />
+                <Setter Property="Margin" Value="0,0,8,0" />
+            </Style>
             <DataTemplate x:Key="EditorToolGlyphTemplate">
                 <Grid Width="24" Height="24">
                     <ui:SymbolIcon x:Name="ToolSymbol"
@@ -441,6 +448,69 @@
                     CornerRadius="8"
                     Background="{DynamicResource ControlFillColorDefaultBrush}"
                     ClipToBounds="True">
+                <Border.ContextMenu>
+                    <ContextMenu x:Name="EditorContextMenu">
+                        <MenuItem x:Name="EditorUndoMenuItem"
+                                  Header="{DynamicResource EditorContextUndo}"
+                                  InputGestureText="Ctrl+Z"
+                                  Tag="undo"
+                                  Click="EditorContextMenuItem_Click" />
+                        <MenuItem x:Name="EditorRedoMenuItem"
+                                  Header="{DynamicResource EditorContextRedo}"
+                                  InputGestureText="Ctrl+Y"
+                                  Tag="redo"
+                                  Click="EditorContextMenuItem_Click" />
+                        <Separator />
+                        <MenuItem x:Name="EditorCutMenuItem"
+                                  Header="{DynamicResource EditorContextCut}"
+                                  InputGestureText="Ctrl+X"
+                                  Tag="cut"
+                                  Click="EditorContextMenuItem_Click" />
+                        <MenuItem x:Name="EditorCopyMenuItem"
+                                  Header="{DynamicResource EditorContextCopy}"
+                                  InputGestureText="Ctrl+C"
+                                  Tag="copy"
+                                  Click="EditorContextMenuItem_Click" />
+                        <MenuItem x:Name="EditorPasteMenuItem"
+                                  Header="{DynamicResource EditorContextPaste}"
+                                  InputGestureText="Ctrl+V"
+                                  Tag="paste"
+                                  Click="EditorContextMenuItem_Click" />
+                        <MenuItem x:Name="EditorDeleteMenuItem"
+                                  Header="{DynamicResource EditorContextDelete}"
+                                  Tag="delete"
+                                  Click="EditorContextMenuItem_Click" />
+                        <Separator />
+                        <MenuItem x:Name="EditorBoldMenuItem"
+                                  Header="{DynamicResource EditorContextBold}"
+                                  Tag="bold"
+                                  Click="EditorContextMenuItem_Click" />
+                        <MenuItem x:Name="EditorItalicMenuItem"
+                                  Header="{DynamicResource EditorContextItalic}"
+                                  Tag="italic"
+                                  Click="EditorContextMenuItem_Click" />
+                        <Separator />
+                        <MenuItem x:Name="EditorInsertLinkMenuItem"
+                                  Header="{DynamicResource EditorContextInsertLink}"
+                                  Tag="insert-link"
+                                  Click="EditorContextMenuItem_Click" />
+                        <MenuItem x:Name="EditorInsertImageMenuItem"
+                                  Header="{DynamicResource EditorContextInsertImage}"
+                                  Tag="insert-image"
+                                  Click="EditorContextMenuItem_Click" />
+                        <Separator />
+                        <MenuItem x:Name="EditorFindReplaceMenuItem"
+                                  Header="{DynamicResource EditorContextFindReplace}"
+                                  InputGestureText="Ctrl+F"
+                                  Tag="find-replace"
+                                  Click="EditorContextMenuItem_Click" />
+                        <MenuItem x:Name="EditorSelectAllMenuItem"
+                                  Header="{DynamicResource EditorContextSelectAll}"
+                                  InputGestureText="Ctrl+A"
+                                  Tag="select-all"
+                                  Click="EditorContextMenuItem_Click" />
+                    </ContextMenu>
+                </Border.ContextMenu>
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -627,7 +697,57 @@
                     CornerRadius="8"
                     Background="{DynamicResource ControlFillColorDefaultBrush}"
                     ClipToBounds="True">
-                <wv2:WebView2 x:Name="PreviewWebView" />
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border x:Name="PreviewNavigationChrome"
+                            Grid.Row="0"
+                            Padding="10,8"
+                            Opacity="0"
+                            BorderThickness="0,0,0,1"
+                            BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
+                            Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                        <Border.RenderTransform>
+                            <TranslateTransform x:Name="PreviewNavigationTranslateTransform" Y="-10" />
+                        </Border.RenderTransform>
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right">
+                                <Button x:Name="PreviewBackButton"
+                                        Style="{StaticResource PreviewChromeIconButtonStyle}"
+                                        IsEnabled="False"
+                                        Margin="0,0,8,0"
+                                        Click="PreviewBackButton_Click"
+                                        ToolTip="{DynamicResource EditorPreviewBackTip}">
+                                    <ui:SymbolIcon Symbol="ArrowLeft24"
+                                                   FontSize="16"
+                                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                                </Button>
+                                <Button x:Name="PreviewForwardButton"
+                                        Style="{StaticResource PreviewChromeIconButtonStyle}"
+                                        IsEnabled="False"
+                                        Margin="0,0,8,0"
+                                        Click="PreviewForwardButton_Click"
+                                        ToolTip="{DynamicResource EditorPreviewForwardTip}">
+                                    <ui:SymbolIcon Symbol="ArrowRight24"
+                                                   FontSize="16"
+                                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                                </Button>
+                                <Button x:Name="PreviewHomeButton"
+                                        Style="{StaticResource PreviewChromeIconButtonStyle}"
+                                        IsEnabled="False"
+                                        Margin="0"
+                                        Click="PreviewHomeButton_Click"
+                                        ToolTip="{DynamicResource EditorPreviewResetTip}">
+                                    <ui:SymbolIcon Symbol="Home24"
+                                                   FontSize="16"
+                                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                                </Button>
+                            </StackPanel>
+                    </Border>
+                    <wv2:WebView2 x:Name="PreviewWebView" Grid.Row="1" />
+                </Grid>
             </Border>
 
         </Grid>
@@ -643,8 +763,8 @@
                     Opacity="0"
                     CornerRadius="18"
                     BorderThickness="1"
-                    BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}"
-                    Background="{DynamicResource ControlFillColorDefaultBrush}">
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
                 <Border.RenderTransform>
                     <TransformGroup>
                         <ScaleTransform x:Name="FindReplaceScaleTransform"

@@ -112,6 +112,9 @@
     <system:String x:Key="EditorTipFindReplace">查找与替换（Ctrl+F）</system:String>
     <system:String x:Key="EditorTipSyncToPreview">按当前编辑位置同步预览</system:String>
     <system:String x:Key="EditorTipSyncToEditor">按当前预览位置同步编辑</system:String>
+    <system:String x:Key="EditorPreviewBackTip">返回上一页</system:String>
+    <system:String x:Key="EditorPreviewForwardTip">前进到下一页</system:String>
+    <system:String x:Key="EditorPreviewResetTip">返回 Markdown 预览</system:String>
     <system:String x:Key="EditorToolboxLabel">Markdown 工具箱</system:String>
     <system:String x:Key="EditorToolboxCollapse">收起</system:String>
     <system:String x:Key="EditorToolboxExpand">展开</system:String>
@@ -278,6 +281,19 @@
     <system:String x:Key="EditorMsgPublishError">推送失败: {0}</system:String>
     <system:String x:Key="EditorMsgInsertImage">插入本地图片</system:String>
     <system:String x:Key="EditorMsgInsertImageError">处理图片时出错:&#10;{0}</system:String>
+    <system:String x:Key="EditorMsgWebViewRecovering">编辑器内核刚刚出现异常，程序已阻止直接闪退并尝试恢复。当前内容仍可保存；若预览没有恢复，请重新打开撰写页。</system:String>
+    <system:String x:Key="EditorContextUndo">撤销</system:String>
+    <system:String x:Key="EditorContextRedo">重做</system:String>
+    <system:String x:Key="EditorContextCut">剪切</system:String>
+    <system:String x:Key="EditorContextCopy">复制</system:String>
+    <system:String x:Key="EditorContextPaste">粘贴</system:String>
+    <system:String x:Key="EditorContextDelete">删除</system:String>
+    <system:String x:Key="EditorContextSelectAll">全选</system:String>
+    <system:String x:Key="EditorContextBold">加粗</system:String>
+    <system:String x:Key="EditorContextItalic">斜体</system:String>
+    <system:String x:Key="EditorContextInsertLink">插入链接</system:String>
+    <system:String x:Key="EditorContextInsertImage">插入图片</system:String>
+    <system:String x:Key="EditorContextFindReplace">查找与替换</system:String>
 
     <system:String x:Key="CommonPrompt">提示</system:String>
     <system:String x:Key="CommonConfirmLeave">确定离开</system:String>

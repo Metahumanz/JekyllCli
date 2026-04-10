@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -12,6 +14,7 @@ using System.Windows.Media.Animation;
 using BlogTools.Models;
 using BlogTools.Services;
 using Markdig;
+using Microsoft.Web.WebView2.Core;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using Microsoft.Win32;
@@ -64,8 +67,13 @@ namespace BlogTools
         private static readonly Duration DropCueAnimationDuration = new(TimeSpan.FromMilliseconds(170));
         private static readonly Duration ViewModeAnimationDuration = new(TimeSpan.FromMilliseconds(240));
         private static readonly Duration FindReplaceAnimationDuration = new(TimeSpan.FromMilliseconds(190));
+        private static readonly Duration PreviewChromeAnimationDuration = new(TimeSpan.FromMilliseconds(180));
         private static readonly IEasingFunction PanelEase = new CubicEase { EasingMode = EasingMode.EaseOut };
         private static readonly IEasingFunction ViewModeEase = new QuinticEase { EasingMode = EasingMode.EaseInOut };
+        private static readonly FieldInfo? WebView2BaseField =
+            typeof(Microsoft.Web.WebView2.Wpf.WebView2).GetField("m_webview2Base", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly PropertyInfo? CoreWebView2ControllerProperty =
+            WebView2BaseField?.FieldType.GetProperty("CoreWebView2Controller", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         private const double ActiveDropScale = 1.015;
         private const double RibbonInsertionThickness = 4.0;
         private const double SideInsertionThickness = 4.0;
@@ -78,10 +86,12 @@ namespace BlogTools
         private const double SplitRailDragActivationThreshold = 12.0;
         private const double FindReplaceHiddenScale = 0.97;
         private const double FindReplaceHiddenOffset = -18.0;
+        private const double PreviewChromeHiddenOffset = -10.0;
 
         private readonly record struct ToolDropPlacement(int Index, Point Position, double Length);
         private readonly record struct EditorViewModeWidths(double Editor, double Side, double Preview);
         private readonly record struct EditorFindResult(bool Found, int Count, int Index, int Length, int ReplacedCount);
+        private readonly record struct EditorSelectionState(bool HasSelection, bool HasText, int Start, int End);
 
         private MarkdownPipeline _pipeline;
         private bool _isWebViewReady = false;
@@ -111,6 +121,16 @@ namespace BlogTools
         private double _layoutDragAvailableWidth;
         private bool _isFindReplaceOpen;
         private bool _suppressFindQueryRefresh;
+        private bool _isPageActive;
+        private bool _isWebViewInitializing;
+        private bool _isRecoveringWebViews;
+        private bool _hasWebViewFaulted;
+        private bool _pendingEditorContentSync;
+        private bool _pendingPreviewRefresh;
+        private bool _isPreviewBrowsing;
+        private bool _previewChromeAnimatedIn;
+        private string _previewShellHtml = string.Empty;
+        private CoreWebView2Controller? _editorWebViewController;
 
         public EditorPage()
         {
@@ -130,7 +150,7 @@ namespace BlogTools
             LoadEditorViewPreferences();
             UpdateToolboxVisualState(animate: false);
             ApplyEditorViewMode(persist: false);
-            InitializeWebViewsAsync();
+            _ = InitializeWebViewsAsync();
         }
 
         private void ToolboxToggleButton_Click(object sender, RoutedEventArgs e)
@@ -386,12 +406,464 @@ namespace BlogTools
 
         private void SyncEditorAndPreviewContent()
         {
-            if (EditorWebView?.CoreWebView2 != null)
+            TryPostEditorContent(_currentContent);
+            _ = UpdateWebViewContentAsync();
+        }
+
+        private void AttachWebViewHandlers()
+        {
+            PreviewWebView.NavigationStarting -= PreviewWebView_NavigationStarting;
+            PreviewWebView.NavigationStarting += PreviewWebView_NavigationStarting;
+            PreviewWebView.NavigationCompleted -= PreviewWebView_NavigationCompleted;
+            PreviewWebView.NavigationCompleted += PreviewWebView_NavigationCompleted;
+
+            EditorWebView.PreviewKeyDown -= EditorWebView_PreviewKeyDown;
+            AttachEditorAcceleratorKeyHandler();
+            if (_editorWebViewController == null)
             {
-                EditorWebView.CoreWebView2.PostWebMessageAsString(_currentContent);
+                EditorWebView.PreviewKeyDown += EditorWebView_PreviewKeyDown;
+            }
+            EditorWebView.NavigationCompleted -= EditorWebView_NavigationCompleted;
+            EditorWebView.NavigationCompleted += EditorWebView_NavigationCompleted;
+
+            EditorWebView.WebMessageReceived -= EditorWebView_WebMessageReceived;
+            EditorWebView.WebMessageReceived += EditorWebView_WebMessageReceived;
+
+            if (PreviewWebView.CoreWebView2 != null)
+            {
+                PreviewWebView.CoreWebView2.ProcessFailed -= WebView_ProcessFailed;
+                PreviewWebView.CoreWebView2.ProcessFailed += WebView_ProcessFailed;
+                PreviewWebView.CoreWebView2.HistoryChanged -= PreviewWebView_HistoryChanged;
+                PreviewWebView.CoreWebView2.HistoryChanged += PreviewWebView_HistoryChanged;
+                PreviewWebView.CoreWebView2.NewWindowRequested -= PreviewWebView_NewWindowRequested;
+                PreviewWebView.CoreWebView2.NewWindowRequested += PreviewWebView_NewWindowRequested;
             }
 
-            UpdateWebViewContent();
+            if (EditorWebView.CoreWebView2 != null)
+            {
+                EditorWebView.CoreWebView2.ProcessFailed -= WebView_ProcessFailed;
+                EditorWebView.CoreWebView2.ProcessFailed += WebView_ProcessFailed;
+            }
+        }
+
+        private void DetachWebViewHandlers()
+        {
+            PreviewWebView.NavigationStarting -= PreviewWebView_NavigationStarting;
+            PreviewWebView.NavigationCompleted -= PreviewWebView_NavigationCompleted;
+            EditorWebView.PreviewKeyDown -= EditorWebView_PreviewKeyDown;
+            DetachEditorAcceleratorKeyHandler();
+            EditorWebView.NavigationCompleted -= EditorWebView_NavigationCompleted;
+            EditorWebView.WebMessageReceived -= EditorWebView_WebMessageReceived;
+
+            if (PreviewWebView.CoreWebView2 != null)
+            {
+                PreviewWebView.CoreWebView2.ProcessFailed -= WebView_ProcessFailed;
+                PreviewWebView.CoreWebView2.HistoryChanged -= PreviewWebView_HistoryChanged;
+                PreviewWebView.CoreWebView2.NewWindowRequested -= PreviewWebView_NewWindowRequested;
+            }
+
+            if (EditorWebView.CoreWebView2 != null)
+            {
+                EditorWebView.CoreWebView2.ProcessFailed -= WebView_ProcessFailed;
+            }
+        }
+
+        private void PreviewWebView_NavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(e.Uri) &&
+                !string.Equals(e.Uri, "about:blank", StringComparison.OrdinalIgnoreCase))
+            {
+                _isPreviewBrowsing = true;
+                UpdatePreviewNavigationUi();
+            }
+        }
+
+        private async void PreviewWebView_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+        {
+            if (!e.IsSuccess)
+            {
+                HandleRecoverableWebViewException(
+                    new InvalidOperationException($"Preview navigation failed: {e.WebErrorStatus}."),
+                    "preview navigation");
+                return;
+            }
+
+            _isWebViewReady = PreviewWebView.CoreWebView2 != null;
+            _hasWebViewFaulted = false;
+            await UpdatePreviewNavigationStateAsync();
+
+            if (!_isPreviewBrowsing && (_pendingPreviewRefresh || !string.IsNullOrEmpty(_currentContent)))
+            {
+                _ = UpdateWebViewContentAsync();
+            }
+        }
+
+        private void EditorWebView_NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+        {
+            if (!e.IsSuccess)
+            {
+                HandleRecoverableWebViewException(
+                    new InvalidOperationException($"Editor navigation failed: {e.WebErrorStatus}."),
+                    "editor navigation");
+                return;
+            }
+
+            _hasWebViewFaulted = false;
+
+            if (_pendingEditorContentSync || !string.IsNullOrEmpty(_currentContent))
+            {
+                TryPostEditorContent(_currentContent);
+            }
+        }
+
+        private void AttachEditorAcceleratorKeyHandler()
+        {
+            DetachEditorAcceleratorKeyHandler();
+
+            var controller = GetWebViewController(EditorWebView);
+            if (controller == null)
+            {
+                return;
+            }
+
+            controller.AcceleratorKeyPressed -= EditorWebView_AcceleratorKeyPressed;
+            controller.AcceleratorKeyPressed += EditorWebView_AcceleratorKeyPressed;
+            _editorWebViewController = controller;
+        }
+
+        private void DetachEditorAcceleratorKeyHandler()
+        {
+            if (_editorWebViewController == null)
+            {
+                return;
+            }
+
+            _editorWebViewController.AcceleratorKeyPressed -= EditorWebView_AcceleratorKeyPressed;
+            _editorWebViewController = null;
+        }
+
+        private static CoreWebView2Controller? GetWebViewController(Microsoft.Web.WebView2.Wpf.WebView2? webView)
+        {
+            if (webView == null || WebView2BaseField == null || CoreWebView2ControllerProperty == null)
+            {
+                return null;
+            }
+
+            var webViewBase = WebView2BaseField.GetValue(webView);
+            if (webViewBase == null)
+            {
+                return null;
+            }
+
+            return CoreWebView2ControllerProperty.GetValue(webViewBase) as CoreWebView2Controller;
+        }
+
+        private void EditorWebView_AcceleratorKeyPressed(object? sender, CoreWebView2AcceleratorKeyPressedEventArgs e)
+        {
+            if (_isFindReplaceOpen ||
+                (e.KeyEventKind != CoreWebView2KeyEventKind.KeyDown && e.KeyEventKind != CoreWebView2KeyEventKind.SystemKeyDown))
+            {
+                return;
+            }
+
+            var modifiers = GetCurrentEditorModifierKeys();
+            if ((modifiers & (ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Windows)) != 0)
+            {
+                return;
+            }
+
+            int? horizontalDelta = e.VirtualKey switch
+            {
+                0x25 => -1,
+                0x27 => 1,
+                _ => null
+            };
+
+            int? verticalDelta = e.VirtualKey switch
+            {
+                0x26 => -1,
+                0x28 => 1,
+                _ => null
+            };
+
+            if (horizontalDelta is null && verticalDelta is null)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            ScheduleEditorDirectionalMove(horizontalDelta, verticalDelta, (modifiers & ModifierKeys.Shift) == ModifierKeys.Shift);
+        }
+
+        private void EditorWebView_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (sender is not Microsoft.Web.WebView2.Wpf.WebView2 || _isFindReplaceOpen)
+            {
+                return;
+            }
+
+            var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            var modifiers = Keyboard.Modifiers;
+
+            if ((modifiers & ModifierKeys.Control) != 0 ||
+                (modifiers & ModifierKeys.Alt) != 0 ||
+                (modifiers & ModifierKeys.Windows) != 0)
+            {
+                return;
+            }
+
+            int? horizontalDelta = key switch
+            {
+                Key.Left => -1,
+                Key.Right => 1,
+                _ => null
+            };
+
+            int? verticalDelta = key switch
+            {
+                Key.Up => -1,
+                Key.Down => 1,
+                _ => null
+            };
+
+            if (horizontalDelta is null && verticalDelta is null)
+            {
+                return;
+            }
+
+            bool extendSelection = (modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
+            e.Handled = true;
+            ScheduleEditorDirectionalMove(horizontalDelta, verticalDelta, extendSelection);
+        }
+
+        private void ScheduleEditorDirectionalMove(int? horizontalDelta, int? verticalDelta, bool extendSelection)
+        {
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    if (horizontalDelta is int dx)
+                    {
+                        _ = MoveEditorCaretHorizontalAsync(dx, extendSelection);
+                        return;
+                    }
+
+                    if (verticalDelta is int dy)
+                    {
+                        _ = MoveEditorCaretVerticalAsync(dy, extendSelection);
+                    }
+                }),
+                System.Windows.Threading.DispatcherPriority.Input);
+        }
+
+        private static ModifierKeys GetCurrentEditorModifierKeys()
+        {
+            ModifierKeys modifiers = ModifierKeys.None;
+
+            if (IsVirtualKeyPressed(0x10))
+            {
+                modifiers |= ModifierKeys.Shift;
+            }
+
+            if (IsVirtualKeyPressed(0x11))
+            {
+                modifiers |= ModifierKeys.Control;
+            }
+
+            if (IsVirtualKeyPressed(0x12))
+            {
+                modifiers |= ModifierKeys.Alt;
+            }
+
+            if (IsVirtualKeyPressed(0x5B) || IsVirtualKeyPressed(0x5C))
+            {
+                modifiers |= ModifierKeys.Windows;
+            }
+
+            return modifiers;
+        }
+
+        private static bool IsVirtualKeyPressed(int virtualKey)
+        {
+            return (GetKeyState(virtualKey) & 0x8000) != 0;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern short GetKeyState(int virtualKey);
+
+        private void WebView_ProcessFailed(object? sender, CoreWebView2ProcessFailedEventArgs e)
+        {
+            HandleRecoverableWebViewException(
+                new InvalidOperationException($"WebView2 process failed: {e.ProcessFailedKind}."),
+                "webview process");
+        }
+
+        private void PreviewWebView_HistoryChanged(object? sender, object e)
+        {
+            UpdatePreviewNavigationUi();
+        }
+
+        private void PreviewWebView_NewWindowRequested(object? sender, CoreWebView2NewWindowRequestedEventArgs e)
+        {
+            e.Handled = true;
+            if (PreviewWebView.CoreWebView2 != null && !string.IsNullOrWhiteSpace(e.Uri))
+            {
+                _isPreviewBrowsing = true;
+                PreviewWebView.CoreWebView2.Navigate(e.Uri);
+                UpdatePreviewNavigationUi();
+            }
+        }
+
+        private void HandleRecoverableWebViewException(Exception ex, string operation)
+        {
+            _isWebViewReady = false;
+            _pendingEditorContentSync = true;
+            _pendingPreviewRefresh = true;
+            System.Diagnostics.Debug.WriteLine($"[EditorPage] {operation} failed: {ex}");
+
+            if (!_hasWebViewFaulted && IsLoaded)
+            {
+                _hasWebViewFaulted = true;
+                ShowInfo(GetEditorResourceText("EditorMsgWebViewRecovering"), InfoBarSeverity.Warning);
+            }
+
+            if (_isPageActive && !_isRecoveringWebViews)
+            {
+                _ = RecoverWebViewsAsync();
+            }
+        }
+
+        private async System.Threading.Tasks.Task RecoverWebViewsAsync()
+        {
+            if (_isRecoveringWebViews)
+            {
+                return;
+            }
+
+            _isRecoveringWebViews = true;
+
+            try
+            {
+                await System.Threading.Tasks.Task.Delay(250);
+                if (_isPageActive)
+                {
+                    await InitializeWebViewsAsync();
+                }
+            }
+            finally
+            {
+                _isRecoveringWebViews = false;
+            }
+        }
+
+        private bool TryPostEditorContent(string content)
+        {
+            _pendingEditorContentSync = true;
+
+            if (EditorWebView?.CoreWebView2 == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                EditorWebView.CoreWebView2.PostWebMessageAsString(content);
+                _pendingEditorContentSync = false;
+                _hasWebViewFaulted = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                HandleRecoverableWebViewException(ex, "editor content sync");
+                return false;
+            }
+        }
+
+        private async System.Threading.Tasks.Task<bool> TryExecuteEditorScriptAsync(string script, string operation)
+        {
+            if (EditorWebView.CoreWebView2 == null)
+            {
+                _pendingEditorContentSync = true;
+                return false;
+            }
+
+            try
+            {
+                await EditorWebView.ExecuteScriptAsync(script);
+                _hasWebViewFaulted = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                HandleRecoverableWebViewException(ex, operation);
+                return false;
+            }
+        }
+
+        private async System.Threading.Tasks.Task<string> TryExecuteEditorScriptWithResultAsync(string script, string operation)
+        {
+            if (EditorWebView.CoreWebView2 == null)
+            {
+                _pendingEditorContentSync = true;
+                return "null";
+            }
+
+            try
+            {
+                var result = await EditorWebView.ExecuteScriptAsync(script);
+                _hasWebViewFaulted = false;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                HandleRecoverableWebViewException(ex, operation);
+                return "null";
+            }
+        }
+
+        private async System.Threading.Tasks.Task<bool> TryExecutePreviewScriptAsync(string script, string operation)
+        {
+            _pendingPreviewRefresh = true;
+
+            if (!_isWebViewReady || PreviewWebView.CoreWebView2 == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                await PreviewWebView.ExecuteScriptAsync(script);
+                _pendingPreviewRefresh = false;
+                _hasWebViewFaulted = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                HandleRecoverableWebViewException(ex, operation);
+                return false;
+            }
+        }
+
+        private async System.Threading.Tasks.Task<string> TryExecutePreviewScriptWithResultAsync(string script, string operation)
+        {
+            _pendingPreviewRefresh = true;
+
+            if (!_isWebViewReady || PreviewWebView.CoreWebView2 == null)
+            {
+                return "null";
+            }
+
+            try
+            {
+                var result = await PreviewWebView.ExecuteScriptAsync(script);
+                _pendingPreviewRefresh = false;
+                _hasWebViewFaulted = false;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                HandleRecoverableWebViewException(ex, operation);
+                return "null";
+            }
         }
 
         private async System.Threading.Tasks.Task SyncArticleImagePathsWithCurrentTitleAsync()
@@ -498,6 +970,235 @@ namespace BlogTools
 
             var template = Application.Current.FindResource(resourceKey).ToString() ?? string.Empty;
             FindStatusText.Text = args.Length > 0 ? string.Format(template, args) : template;
+        }
+
+        private async System.Threading.Tasks.Task UpdatePreviewNavigationStateAsync()
+        {
+            if (!_isWebViewReady || PreviewWebView.CoreWebView2 == null)
+            {
+                return;
+            }
+
+            var result = await TryExecutePreviewScriptWithResultAsync(
+                "(function(){ return document.documentElement && document.documentElement.getAttribute('data-blogtools-preview') === 'true'; })();",
+                "detect preview shell");
+
+            _isPreviewBrowsing = !string.Equals(result, "true", StringComparison.OrdinalIgnoreCase);
+            UpdatePreviewNavigationUi();
+        }
+
+        private void UpdatePreviewNavigationUi()
+        {
+            if (PreviewBackButton != null)
+            {
+                PreviewBackButton.IsEnabled = PreviewWebView?.CoreWebView2?.CanGoBack == true;
+            }
+
+            if (PreviewForwardButton != null)
+            {
+                PreviewForwardButton.IsEnabled = PreviewWebView?.CoreWebView2?.CanGoForward == true;
+            }
+
+            if (PreviewHomeButton != null)
+            {
+                PreviewHomeButton.IsEnabled = _isPreviewBrowsing || _pendingPreviewRefresh;
+            }
+
+            AnimatePreviewNavigationChrome(show: true);
+        }
+
+        private void AnimatePreviewNavigationChrome(bool show)
+        {
+            if (PreviewNavigationChrome == null || PreviewNavigationTranslateTransform == null)
+            {
+                return;
+            }
+
+            PreviewNavigationChrome.BeginAnimation(UIElement.OpacityProperty, null);
+            PreviewNavigationTranslateTransform.BeginAnimation(TranslateTransform.YProperty, null);
+
+            if (show)
+            {
+                if (!_previewChromeAnimatedIn)
+                {
+                    PreviewNavigationChrome.Opacity = 0.0;
+                    PreviewNavigationTranslateTransform.Y = PreviewChromeHiddenOffset;
+                    PreviewNavigationChrome.BeginAnimation(
+                        UIElement.OpacityProperty,
+                        new DoubleAnimation(1.0, PreviewChromeAnimationDuration) { EasingFunction = PanelEase });
+                    PreviewNavigationTranslateTransform.BeginAnimation(
+                        TranslateTransform.YProperty,
+                        new DoubleAnimation(0.0, PreviewChromeAnimationDuration) { EasingFunction = PanelEase });
+                    _previewChromeAnimatedIn = true;
+                    return;
+                }
+
+                PreviewNavigationChrome.Opacity = 1.0;
+                PreviewNavigationTranslateTransform.Y = 0.0;
+                return;
+            }
+
+            _previewChromeAnimatedIn = false;
+            PreviewNavigationChrome.BeginAnimation(
+                UIElement.OpacityProperty,
+                new DoubleAnimation(0.0, PreviewChromeAnimationDuration) { EasingFunction = PanelEase });
+            PreviewNavigationTranslateTransform.BeginAnimation(
+                TranslateTransform.YProperty,
+                new DoubleAnimation(PreviewChromeHiddenOffset, PreviewChromeAnimationDuration) { EasingFunction = PanelEase });
+        }
+
+        private async System.Threading.Tasks.Task ShowEditorContextMenuAsync(double x, double y)
+        {
+            if (EditorContextMenu == null || EditorWebView == null)
+            {
+                return;
+            }
+
+            var selectionState = await GetEditorSelectionStateAsync();
+            UpdateEditorContextMenuState(selectionState);
+
+            EditorContextMenu.IsOpen = false;
+            EditorContextMenu.PlacementTarget = EditorWebView;
+            EditorContextMenu.Placement = PlacementMode.RelativePoint;
+            EditorContextMenu.HorizontalOffset = Math.Max(0.0, x);
+            EditorContextMenu.VerticalOffset = Math.Max(0.0, y);
+            EditorContextMenu.IsOpen = true;
+        }
+
+        private void UpdateEditorContextMenuState(EditorSelectionState selectionState)
+        {
+            bool hasClipboardContent =
+                System.Windows.Clipboard.ContainsText() ||
+                System.Windows.Clipboard.ContainsImage() ||
+                System.Windows.Clipboard.ContainsFileDropList();
+
+            if (EditorUndoMenuItem != null)
+            {
+                EditorUndoMenuItem.IsEnabled = true;
+            }
+
+            if (EditorRedoMenuItem != null)
+            {
+                EditorRedoMenuItem.IsEnabled = true;
+            }
+
+            if (EditorCutMenuItem != null)
+            {
+                EditorCutMenuItem.IsEnabled = selectionState.HasSelection;
+            }
+
+            if (EditorCopyMenuItem != null)
+            {
+                EditorCopyMenuItem.IsEnabled = selectionState.HasSelection;
+            }
+
+            if (EditorPasteMenuItem != null)
+            {
+                EditorPasteMenuItem.IsEnabled = hasClipboardContent;
+            }
+
+            if (EditorDeleteMenuItem != null)
+            {
+                EditorDeleteMenuItem.IsEnabled = selectionState.HasSelection;
+            }
+
+            if (EditorSelectAllMenuItem != null)
+            {
+                EditorSelectAllMenuItem.IsEnabled = selectionState.HasText;
+            }
+        }
+
+        private async void EditorContextMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.MenuItem { Tag: string command })
+            {
+                return;
+            }
+
+            bool returnFocusToEditor = true;
+
+            switch (command)
+            {
+                case "undo":
+                    await UndoEditorAsync();
+                    break;
+                case "redo":
+                    await RedoEditorAsync();
+                    break;
+                case "cut":
+                    await CutSelectedEditorTextAsync();
+                    break;
+                case "copy":
+                    await CopySelectedEditorTextAsync();
+                    break;
+                case "paste":
+                    await PasteIntoEditorAsync();
+                    break;
+                case "delete":
+                    await DeleteEditorSelectionAsync();
+                    break;
+                case "select-all":
+                    await SelectAllEditorAsync();
+                    break;
+                case "bold":
+                case "italic":
+                    await ExecuteToolbarCommandAsync(command);
+                    break;
+                case "insert-link":
+                    returnFocusToEditor = false;
+                    await InsertLinkAsync();
+                    break;
+                case "insert-image":
+                    returnFocusToEditor = false;
+                    await InsertImageAsync();
+                    break;
+                case "find-replace":
+                    returnFocusToEditor = false;
+                    await OpenFindReplacePopupAsync(populateFromSelection: true);
+                    break;
+                default:
+                    return;
+            }
+
+            if (returnFocusToEditor)
+            {
+                await FocusEditorAsync();
+            }
+        }
+
+        private async System.Threading.Tasks.Task RestoreRenderedPreviewAsync()
+        {
+            if (string.IsNullOrWhiteSpace(_previewShellHtml))
+            {
+                return;
+            }
+
+            _isPreviewBrowsing = false;
+            _pendingPreviewRefresh = true;
+            PreviewWebView.NavigateToString(_previewShellHtml);
+            UpdatePreviewNavigationUi();
+            await System.Threading.Tasks.Task.CompletedTask;
+        }
+
+        private void PreviewBackButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (PreviewWebView.CoreWebView2?.CanGoBack == true)
+            {
+                PreviewWebView.CoreWebView2.GoBack();
+            }
+        }
+
+        private void PreviewForwardButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (PreviewWebView.CoreWebView2?.CanGoForward == true)
+            {
+                PreviewWebView.CoreWebView2.GoForward();
+            }
+        }
+
+        private async void PreviewHomeButton_Click(object sender, RoutedEventArgs e)
+        {
+            await RestoreRenderedPreviewAsync();
         }
 
         private void AnimateFindReplacePopup(bool show)
@@ -1871,50 +2572,72 @@ namespace BlogTools
             ModifyMinuteBox.ItemsSource = minutes;
         }
 
-        private async void InitializeWebViewsAsync()
+        private async System.Threading.Tasks.Task InitializeWebViewsAsync()
         {
-            var webViewDataDir = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "BlogTools",
-                "WebView2");
-            System.IO.Directory.CreateDirectory(webViewDataDir);
-
-            var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, webViewDataDir);
-            
-            await PreviewWebView.EnsureCoreWebView2Async(env);
-            await EditorWebView.EnsureCoreWebView2Async(env);
-
-            // 从嵌入式资源提取 KaTeX 到临时目录
-            var katexFolder = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "BlogTools", "katex");
-            ExtractKatexResources(katexFolder);
-
-            PreviewWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                "localassets", katexFolder,
-                Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
-
-            if (!string.IsNullOrEmpty(App.JekyllContext.BlogPath))
+            if (_isWebViewInitializing)
             {
-                PreviewWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                    "bloglocal", App.JekyllContext.BlogPath,
-                    Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
+                return;
             }
 
-            var isDark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
-            var darkCss = isDark ? "body { background-color: #1e1e1e; color: #d4d4d4; }" : "body { background-color: #ffffff; color: #000000; }";
+            _isWebViewInitializing = true;
+            _pendingEditorContentSync = true;
+            _pendingPreviewRefresh = true;
+            _isWebViewReady = false;
 
-            var katexCss = "";
-            var katexJs = "";
             try
             {
-                katexCss = System.IO.File.ReadAllText(System.IO.Path.Combine(katexFolder, "katex.min.css"));
-                katexJs = System.IO.File.ReadAllText(System.IO.Path.Combine(katexFolder, "katex.min.js"));
-                katexCss = katexCss.Replace("fonts/", "https://localassets/fonts/");
-            }
-            catch { }
+                var webViewDataDir = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "BlogTools",
+                    "WebView2");
+                System.IO.Directory.CreateDirectory(webViewDataDir);
 
-            var renderScript = @"
+                var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, webViewDataDir);
+
+                await PreviewWebView.EnsureCoreWebView2Async(env);
+                await EditorWebView.EnsureCoreWebView2Async(env);
+
+                PreviewWebView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
+                PreviewWebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+                EditorWebView.CoreWebView2.Settings.AreBrowserAcceleratorKeysEnabled = false;
+                EditorWebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+
+                DetachWebViewHandlers();
+                AttachWebViewHandlers();
+
+                // 从嵌入式资源提取 KaTeX 到临时目录
+                var katexFolder = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "BlogTools", "katex");
+                ExtractKatexResources(katexFolder);
+
+                PreviewWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                    "localassets", katexFolder,
+                    Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
+
+                if (!string.IsNullOrEmpty(App.JekyllContext.BlogPath))
+                {
+                    PreviewWebView.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                        "bloglocal", App.JekyllContext.BlogPath,
+                        Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
+                }
+
+                var isDark = ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
+                var darkCss = isDark ? "body { background-color: #1e1e1e; color: #d4d4d4; }" : "body { background-color: #ffffff; color: #000000; }";
+
+                var katexCss = "";
+                var katexJs = "";
+                try
+                {
+                    katexCss = System.IO.File.ReadAllText(System.IO.Path.Combine(katexFolder, "katex.min.css"));
+                    katexJs = System.IO.File.ReadAllText(System.IO.Path.Combine(katexFolder, "katex.min.js"));
+                    katexCss = katexCss.Replace("fonts/", "https://localassets/fonts/");
+                }
+                catch
+                {
+                }
+
+                var renderScript = @"
       function renderMathInElement(el) {
         if (!window.katex) return;
         var mathEls = el.querySelectorAll('.math');
@@ -1935,11 +2658,11 @@ namespace BlogTools
         });
       }
 ";
-            string trackColor = "transparent";
-            string thumbColor = isDark ? "#666" : "#aaa";
-            string thumbHover = isDark ? "#888" : "#888";
-            string bga = isDark ? "#1e1e1e" : "#fafafa";
-            string scrollbarCss = $@"
+                string trackColor = "transparent";
+                string thumbColor = isDark ? "#666" : "#aaa";
+                string thumbHover = isDark ? "#888" : "#888";
+                string bga = isDark ? "#1e1e1e" : "#fafafa";
+                string scrollbarCss = $@"
                 ::-webkit-scrollbar {{ width: 14px; height: 14px; }}
                 ::-webkit-scrollbar-track {{ background: {trackColor}; }}
                 ::-webkit-scrollbar-thumb {{ background: {thumbColor}; border-radius: 7px; border: 3px solid {bga}; }}
@@ -1947,14 +2670,14 @@ namespace BlogTools
                 ::-webkit-scrollbar-corner {{ background: transparent; }}
             ";
 
-            var initialHtml = "<!DOCTYPE html><html><head><meta charset='utf-8' />"
-                + "<base href='https://bloglocal/' />"
-                + "<style>" + katexCss + "</style>"
-                + "<script>" + katexJs + "</script>"
-                + "<style>"
-                + darkCss
-                + scrollbarCss
-                +  $@"
+                var initialHtml = "<!DOCTYPE html><html data-blogtools-preview='true'><head><meta charset='utf-8' />"
+                    + "<base href='https://bloglocal/' />"
+                    + "<style>" + katexCss + "</style>"
+                    + "<script>" + katexJs + "</script>"
+                    + "<style>"
+                    + darkCss
+                    + scrollbarCss
+                    +  $@"
         html, body {{ margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; box-sizing: border-box; }}
         #content {{ font-family: -apple-system, 'Microsoft YaHei UI', Helvetica, Arial, sans-serif; padding: 20px; line-height: 1.6; word-wrap: break-word; box-sizing: border-box; height: 100%; overflow-y: auto; overflow-x: hidden; }}
         img {{ max-width: 100%; height: auto; border-radius: 6px; }}
@@ -1967,20 +2690,13 @@ namespace BlogTools
         .katex {{ font-size: 1.1em; }}
         .katex-display {{ overflow-x: auto; overflow-y: hidden; padding: 4px 0; }}
 "
-                + "</style>"
-                + "<script>" + renderScript + "</script>"
-                + "</head><body><div id='content'></div></body></html>";
+                    + "</style>"
+                    + "<script>" + renderScript + "</script>"
+                    + "</head><body><div id='content'></div></body></html>";
+                _previewShellHtml = initialHtml;
 
-            PreviewWebView.NavigateToString(initialHtml);
-
-            PreviewWebView.NavigationCompleted += (s, e) =>
-            {
-                _isWebViewReady = true;
-                UpdateWebViewContent();
-            };
-
-            var placeholder = Application.Current.FindResource("EditorPlaceholder").ToString();
-            var editorScript = """
+                var placeholder = Application.Current.FindResource("EditorPlaceholder").ToString();
+                var editorScript = """
                 const el = document.getElementById('editor');
                 const notifyContent = () => {
                     window.chrome.webview.postMessage('CONTENT:' + el.value);
@@ -2069,7 +2785,142 @@ namespace BlogTools
                     replacedCount
                 });
 
+                const getSelectionSnapshot = () => {
+                    const start = typeof el.selectionStart === 'number' ? el.selectionStart : 0;
+                    const end = typeof el.selectionEnd === 'number' ? el.selectionEnd : 0;
+                    const direction = el.selectionDirection === 'backward'
+                        ? 'backward'
+                        : start === end
+                            ? 'none'
+                            : 'forward';
+                    const anchor = direction === 'backward' ? end : start;
+                    const focus = direction === 'backward' ? start : end;
+                    return { start, end, anchor, focus, direction };
+                };
+
+                const getLineInfo = (value, index) => {
+                    const safeIndex = Math.max(0, Math.min((value || '').length, index));
+                    const start = (value || '').lastIndexOf('\n', Math.max(0, safeIndex - 1)) + 1;
+                    let end = (value || '').indexOf('\n', safeIndex);
+                    if (end === -1) {
+                        end = (value || '').length;
+                    }
+
+                    return { start, end };
+                };
+
+                const getPreviousLineInfo = (value, currentLineStart) => {
+                    if (currentLineStart <= 0) {
+                        return null;
+                    }
+
+                    const previousLineEnd = currentLineStart - 1;
+                    const previousLineStart = value.lastIndexOf('\n', Math.max(0, previousLineEnd - 1)) + 1;
+                    return { start: previousLineStart, end: previousLineEnd };
+                };
+
+                const getNextLineInfo = (value, currentLineEnd) => {
+                    if (currentLineEnd >= value.length) {
+                        return null;
+                    }
+
+                    const nextLineStart = currentLineEnd + 1;
+                    let nextLineEnd = value.indexOf('\n', nextLineStart);
+                    if (nextLineEnd === -1) {
+                        nextLineEnd = value.length;
+                    }
+
+                    return { start: nextLineStart, end: nextLineEnd };
+                };
+
+                const scrollCaretIntoView = index => {
+                    const lineHeight = parseFloat(window.getComputedStyle(el).lineHeight || '24') || 24;
+                    const prefix = (el.value || '').slice(0, index);
+                    const lineIndex = prefix.split('\n').length - 1;
+                    const targetTop = Math.max(0, (lineIndex * lineHeight) - (el.clientHeight / 3));
+                    el.scrollTop = targetTop;
+                };
+
+                const setSelectionFromAnchorFocus = (anchor, focus) => {
+                    const value = el.value || '';
+                    const boundedAnchor = Math.max(0, Math.min(value.length, anchor));
+                    const boundedFocus = Math.max(0, Math.min(value.length, focus));
+
+                    el.focus();
+
+                    if (boundedAnchor === boundedFocus) {
+                        el.setSelectionRange(boundedFocus, boundedFocus, 'none');
+                        scrollCaretIntoView(boundedFocus);
+                        return;
+                    }
+
+                    if (boundedFocus < boundedAnchor) {
+                        el.setSelectionRange(boundedFocus, boundedAnchor, 'backward');
+                    } else {
+                        el.setSelectionRange(boundedAnchor, boundedFocus, 'forward');
+                    }
+
+                    scrollCaretIntoView(boundedFocus);
+                };
+
+                const resetVerticalNavigation = () => {
+                    window.editorNavigationDesiredColumn = null;
+                    window.editorNavigationLastVerticalDirection = 0;
+                };
+
+                const moveCaretHorizontal = (delta, extendSelection) => {
+                    const value = el.value || '';
+                    const { start, end, anchor, focus } = getSelectionSnapshot();
+
+                    if (!extendSelection && start !== end) {
+                        const collapsed = delta < 0 ? start : end;
+                        setSelectionFromAnchorFocus(collapsed, collapsed);
+                        resetVerticalNavigation();
+                        return;
+                    }
+
+                    const nextFocus = Math.max(0, Math.min(value.length, focus + delta));
+                    const nextAnchor = extendSelection ? anchor : nextFocus;
+                    setSelectionFromAnchorFocus(nextAnchor, nextFocus);
+                    resetVerticalNavigation();
+                };
+
+                const moveCaretVertical = (delta, extendSelection) => {
+                    const value = el.value || '';
+                    const { anchor, focus } = getSelectionSnapshot();
+                    const currentLine = getLineInfo(value, focus);
+
+                    if (typeof window.editorNavigationDesiredColumn !== 'number' ||
+                        window.editorNavigationLastVerticalDirection !== delta) {
+                        window.editorNavigationDesiredColumn = focus - currentLine.start;
+                    }
+
+                    const desiredColumn = window.editorNavigationDesiredColumn;
+                    const targetLine = delta < 0
+                        ? getPreviousLineInfo(value, currentLine.start)
+                        : getNextLineInfo(value, currentLine.end);
+
+                    if (!targetLine) {
+                        setSelectionFromAnchorFocus(extendSelection ? anchor : focus, focus);
+                        window.editorNavigationLastVerticalDirection = delta;
+                        return;
+                    }
+
+                    const nextFocus = Math.min(targetLine.end, targetLine.start + desiredColumn);
+                    const nextAnchor = extendSelection ? anchor : nextFocus;
+                    setSelectionFromAnchorFocus(nextAnchor, nextFocus);
+                    window.editorNavigationLastVerticalDirection = delta;
+                };
+
                 window.editorTools = {
+                    moveCaretHorizontal(delta, extendSelection) {
+                        moveCaretHorizontal(delta, !!extendSelection);
+                    },
+
+                    moveCaretVertical(delta, extendSelection) {
+                        moveCaretVertical(delta, !!extendSelection);
+                    },
+
                     wrapSelection(prefix, suffix, placeholder) {
                         const start = typeof el.selectionStart === 'number' ? el.selectionStart : el.value.length;
                         const end = typeof el.selectionEnd === 'number' ? el.selectionEnd : el.value.length;
@@ -2173,8 +3024,47 @@ namespace BlogTools
                         return (el.value || '').slice(start, end);
                     },
 
+                    getSelectionState() {
+                        const value = el.value || '';
+                        const start = typeof el.selectionStart === 'number' ? el.selectionStart : 0;
+                        const end = typeof el.selectionEnd === 'number' ? el.selectionEnd : 0;
+                        return {
+                            hasSelection: start !== end,
+                            hasText: value.length > 0,
+                            start,
+                            end
+                        };
+                    },
+
                     focus() {
                         el.focus();
+                    },
+
+                    deleteSelection() {
+                        const start = typeof el.selectionStart === 'number' ? el.selectionStart : 0;
+                        const end = typeof el.selectionEnd === 'number' ? el.selectionEnd : 0;
+                        if (start === end) {
+                            return;
+                        }
+
+                        replaceRange(start, end, '', start, start);
+                    },
+
+                    selectAll() {
+                        const value = el.value || '';
+                        el.focus();
+                        el.setSelectionRange(0, value.length, value.length > 0 ? 'forward' : 'none');
+                        scrollCaretIntoView(0);
+                    },
+
+                    undo() {
+                        el.focus();
+                        document.execCommand('undo');
+                    },
+
+                    redo() {
+                        el.focus();
+                        document.execCommand('redo');
                     },
 
                     countMatches(query, caseSensitive) {
@@ -2298,17 +3188,65 @@ namespace BlogTools
                     }
                 };
 
-                el.addEventListener('input', notifyContent);
-                el.addEventListener('keydown', function(e) {
+                const handleEditorKeyDown = e => {
                     if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'f') {
                         e.preventDefault();
                         window.chrome.webview.postMessage('ACTION:openFindReplace');
                         return;
                     }
 
+                    if (!e.altKey && !e.ctrlKey && !e.metaKey) {
+                        switch (e.key || e.code) {
+                            case 'ArrowLeft':
+                            case 'Left':
+                                e.preventDefault();
+                                moveCaretHorizontal(-1, e.shiftKey);
+                                return;
+                            case 'ArrowRight':
+                            case 'Right':
+                                e.preventDefault();
+                                moveCaretHorizontal(1, e.shiftKey);
+                                return;
+                            case 'ArrowUp':
+                            case 'Up':
+                                e.preventDefault();
+                                moveCaretVertical(-1, e.shiftKey);
+                                return;
+                            case 'ArrowDown':
+                            case 'Down':
+                                e.preventDefault();
+                                moveCaretVertical(1, e.shiftKey);
+                                return;
+                        }
+                    }
+
                     if (e.key === 'Escape') {
                         window.chrome.webview.postMessage('ACTION:editorEscape');
                     }
+
+                    if (e.key !== 'Shift') {
+                        resetVerticalNavigation();
+                    }
+                };
+
+                const handleEditorContextMenu = e => {
+                    e.preventDefault();
+                    el.focus();
+                    resetVerticalNavigation();
+                    window.chrome.webview.postMessage(`ACTION:editorContextMenu:${e.clientX}:${e.clientY}`);
+                };
+
+                el.addEventListener('input', notifyContent);
+                document.addEventListener('keydown', handleEditorKeyDown, true);
+                document.addEventListener('contextmenu', handleEditorContextMenu, true);
+                el.addEventListener('mousedown', function() {
+                    resetVerticalNavigation();
+                });
+                el.addEventListener('mouseup', function() {
+                    resetVerticalNavigation();
+                });
+                el.addEventListener('click', function() {
+                    el.focus();
                 });
                 window.chrome.webview.addEventListener('message', event => {
                     if (el.value !== event.data) {
@@ -2327,16 +3265,25 @@ namespace BlogTools
                     }
                 });
                 """;
-            var editorHtml = $"<!DOCTYPE html><html><head><meta charset='utf-8' /><style>{darkCss} {scrollbarCss} " +
-            "html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; box-sizing: border-box; } " +
-            "textarea { width: 100%; height: 100%; box-sizing: border-box; padding: 20px; border: none; outline: none; resize: none; " +
-            "font-family: Consolas, monospace; font-size: 15px; background-color: transparent; color: inherit; line-height: 1.6; } " +
-            "</style></head><body>" +
-            $"<textarea id='editor' spellcheck='false' placeholder='{placeholder}'></textarea>" +
-            "<script>" + editorScript + "</script></body></html>";
+                var editorHtml = $"<!DOCTYPE html><html><head><meta charset='utf-8' /><style>{darkCss} {scrollbarCss} " +
+                "html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; box-sizing: border-box; } " +
+                "textarea { width: 100%; height: 100%; box-sizing: border-box; padding: 20px; border: none; outline: none; resize: none; " +
+                "font-family: Consolas, monospace; font-size: 15px; background-color: transparent; color: inherit; line-height: 1.6; } " +
+                "</style></head><body>" +
+                $"<textarea id='editor' spellcheck='false' placeholder='{placeholder}'></textarea>" +
+                "<script>" + editorScript + "</script></body></html>";
 
-            EditorWebView.NavigateToString(editorHtml);
-            EditorWebView.WebMessageReceived += EditorWebView_WebMessageReceived;
+                PreviewWebView.NavigateToString(initialHtml);
+                EditorWebView.NavigateToString(editorHtml);
+            }
+            catch (Exception ex)
+            {
+                HandleRecoverableWebViewException(ex, "webview initialization");
+            }
+            finally
+            {
+                _isWebViewInitializing = false;
+            }
         }
 
         private void EditorWebView_WebMessageReceived(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
@@ -2345,7 +3292,7 @@ namespace BlogTools
             if (msg.StartsWith("CONTENT:"))
             {
                 _currentContent = msg.Substring(8);
-                UpdateWebViewContent();
+                _ = UpdateWebViewContentAsync();
                 SmartDetectMath();
             }
             else if (msg == "ACTION:pasteImage")
@@ -2355,6 +3302,17 @@ namespace BlogTools
             else if (msg == "ACTION:openFindReplace")
             {
                 _ = OpenFindReplacePopupAsync();
+            }
+            else if (msg.StartsWith("ACTION:editorContextMenu:", StringComparison.Ordinal))
+            {
+                var payload = msg["ACTION:editorContextMenu:".Length..];
+                var parts = payload.Split(':');
+                if (parts.Length == 2 &&
+                    double.TryParse(parts[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x) &&
+                    double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var y))
+                {
+                    _ = ShowEditorContextMenuAsync(x, y);
+                }
             }
             else if (msg == "ACTION:editorEscape" && _isFindReplaceOpen)
             {
@@ -2527,9 +3485,12 @@ namespace BlogTools
 
         private void EditorPage_Unloaded(object sender, RoutedEventArgs e)
         {
+            _isPageActive = false;
             if (_parentSv != null) _parentSv.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
             EndLayoutDrag(commitPreference: true);
             ClearDropCues();
+            DetachWebViewHandlers();
+            _isWebViewReady = false;
             
             var nav = (Application.Current.MainWindow as MainWindow)?.RootNavigation;
             if (nav != null) nav.Navigating -= Nav_Navigating;
@@ -2558,6 +3519,8 @@ namespace BlogTools
 
         private void EditorPage_Loaded(object sender, RoutedEventArgs e)
         {
+            _isPageActive = true;
+
             // Disable global parent scroll to ensure page fits viewport perfectly
             _parentSv = FindVisualParent<ScrollViewer>(this);
             if (_parentSv != null) _parentSv.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
@@ -2627,20 +3590,12 @@ namespace BlogTools
                 _currentImageFolderSlug = "";
             }
             
-            if (EditorWebView.CoreWebView2 != null)
+            if (!TryPostEditorContent(_currentContent) && !_isWebViewInitializing)
             {
-                EditorWebView.CoreWebView2.PostWebMessageAsString(_currentContent);
+                _ = InitializeWebViewsAsync();
             }
-            else
-            {
-                EditorWebView.NavigationCompleted += (s, ev) => 
-                {
-                    if (EditorWebView.CoreWebView2 != null)
-                    {
-                        EditorWebView.CoreWebView2.PostWebMessageAsString(_currentContent);
-                    }
-                };
-            }
+
+            _ = UpdateWebViewContentAsync();
             
             UpdateOriginalState();
         }
@@ -2659,14 +3614,28 @@ namespace BlogTools
             }
         }
 
-        private async void UpdateWebViewContent()
+        private async System.Threading.Tasks.Task UpdateWebViewContentAsync()
         {
-            if (!_isWebViewReady || PreviewWebView.CoreWebView2 == null) return;
+            _pendingPreviewRefresh = true;
 
-            var htmlContent = Markdown.ToHtml(_currentContent, _pipeline);
-            var base64Html = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(htmlContent));
+            if (!_isWebViewReady || PreviewWebView.CoreWebView2 == null)
+            {
+                UpdatePreviewNavigationUi();
+                return;
+            }
 
-            var script = $@"
+            if (_isPreviewBrowsing)
+            {
+                UpdatePreviewNavigationUi();
+                return;
+            }
+
+            try
+            {
+                var htmlContent = Markdown.ToHtml(_currentContent, _pipeline);
+                var base64Html = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(htmlContent));
+
+                var script = $@"
                 try {{
                     const b64 = '{base64Html}';
                     const bin = window.atob(b64);
@@ -2683,7 +3652,16 @@ namespace BlogTools
                 }}
             ";
 
-            await PreviewWebView.ExecuteScriptAsync(script);
+                await TryExecutePreviewScriptAsync(script, "preview render");
+            }
+            catch (Exception ex)
+            {
+                HandleRecoverableWebViewException(ex, "preview content update");
+            }
+            finally
+            {
+                UpdatePreviewNavigationUi();
+            }
         }
 
         private void NewPost_Click(object sender, RoutedEventArgs e)
@@ -2707,8 +3685,7 @@ namespace BlogTools
             
             _currentContent = "";
             _currentImageFolderSlug = "";
-            if (EditorWebView.CoreWebView2 != null)
-                EditorWebView.CoreWebView2.PostWebMessageAsString("");
+            TryPostEditorContent(string.Empty);
 
             CloseFindReplacePopup(returnFocusToEditor: false);
                  
@@ -2869,11 +3846,6 @@ namespace BlogTools
         
         private async System.Threading.Tasks.Task InsertTextIntoEditorAsync(string textToInsert)
         {
-            if (EditorWebView.CoreWebView2 == null)
-            {
-                return;
-            }
-
             var script = $@"
                 (function() {{
                     var el = document.getElementById('editor');
@@ -2899,7 +3871,7 @@ namespace BlogTools
                 }})();
             ";
 
-            await EditorWebView.ExecuteScriptAsync(script);
+            await TryExecuteEditorScriptAsync(script, "insert text into editor");
         }
 
         private static string GetEditorResourceText(string resourceKey)
@@ -2914,11 +3886,6 @@ namespace BlogTools
 
         private async System.Threading.Tasks.Task ExecuteEditorToolAsync(string invocationScript)
         {
-            if (EditorWebView.CoreWebView2 == null)
-            {
-                return;
-            }
-
             var script = $@"
                 (function() {{
                     if (!window.editorTools) {{
@@ -2929,16 +3896,11 @@ namespace BlogTools
                 }})();
             ";
 
-            await EditorWebView.ExecuteScriptAsync(script);
+            await TryExecuteEditorScriptAsync(script, "execute editor tool");
         }
 
         private async System.Threading.Tasks.Task<string> ExecuteEditorScriptWithResultAsync(string invocationScript)
         {
-            if (EditorWebView.CoreWebView2 == null)
-            {
-                return "null";
-            }
-
             var script = $@"
                 (function() {{
                     if (!window.editorTools) {{
@@ -2949,7 +3911,7 @@ namespace BlogTools
                 }})();
             ";
 
-            return await EditorWebView.ExecuteScriptAsync(script);
+            return await TryExecuteEditorScriptWithResultAsync(script, "execute editor query");
         }
 
         private static string ParseEditorStringResult(string rawResult)
@@ -2960,6 +3922,27 @@ namespace BlogTools
             }
 
             return System.Text.Json.JsonSerializer.Deserialize<string>(rawResult) ?? string.Empty;
+        }
+
+        private static EditorSelectionState ParseEditorSelectionState(string rawResult)
+        {
+            if (string.IsNullOrWhiteSpace(rawResult) || rawResult == "null")
+            {
+                return default;
+            }
+
+            using var document = System.Text.Json.JsonDocument.Parse(rawResult);
+            var root = document.RootElement;
+            if (root.ValueKind != System.Text.Json.JsonValueKind.Object)
+            {
+                return default;
+            }
+
+            return new EditorSelectionState(
+                root.TryGetProperty("hasSelection", out var hasSelection) && hasSelection.GetBoolean(),
+                root.TryGetProperty("hasText", out var hasText) && hasText.GetBoolean(),
+                root.TryGetProperty("start", out var start) ? start.GetInt32() : 0,
+                root.TryGetProperty("end", out var end) ? end.GetInt32() : 0);
         }
 
         private static EditorFindResult ParseEditorFindResult(string rawResult)
@@ -2990,9 +3973,82 @@ namespace BlogTools
             return ParseEditorStringResult(result);
         }
 
+        private async System.Threading.Tasks.Task<EditorSelectionState> GetEditorSelectionStateAsync()
+        {
+            var result = await ExecuteEditorScriptWithResultAsync("window.editorTools.getSelectionState()");
+            return ParseEditorSelectionState(result);
+        }
+
         private async System.Threading.Tasks.Task FocusEditorAsync()
         {
             await ExecuteEditorToolAsync("window.editorTools.focus();");
+        }
+
+        private async System.Threading.Tasks.Task MoveEditorCaretHorizontalAsync(int delta, bool extendSelection)
+        {
+            await ExecuteEditorToolAsync(
+                $"window.editorTools.moveCaretHorizontal({delta}, {(extendSelection ? "true" : "false")});");
+        }
+
+        private async System.Threading.Tasks.Task MoveEditorCaretVerticalAsync(int delta, bool extendSelection)
+        {
+            await ExecuteEditorToolAsync(
+                $"window.editorTools.moveCaretVertical({delta}, {(extendSelection ? "true" : "false")});");
+        }
+
+        private async System.Threading.Tasks.Task UndoEditorAsync()
+        {
+            await ExecuteEditorToolAsync("window.editorTools.undo();");
+        }
+
+        private async System.Threading.Tasks.Task RedoEditorAsync()
+        {
+            await ExecuteEditorToolAsync("window.editorTools.redo();");
+        }
+
+        private async System.Threading.Tasks.Task DeleteEditorSelectionAsync()
+        {
+            await ExecuteEditorToolAsync("window.editorTools.deleteSelection();");
+        }
+
+        private async System.Threading.Tasks.Task SelectAllEditorAsync()
+        {
+            await ExecuteEditorToolAsync("window.editorTools.selectAll();");
+        }
+
+        private async System.Threading.Tasks.Task CopySelectedEditorTextAsync()
+        {
+            var text = await GetEditorSelectedTextAsync();
+            if (!string.IsNullOrEmpty(text))
+            {
+                System.Windows.Clipboard.SetText(text);
+            }
+        }
+
+        private async System.Threading.Tasks.Task CutSelectedEditorTextAsync()
+        {
+            var selectionState = await GetEditorSelectionStateAsync();
+            if (!selectionState.HasSelection)
+            {
+                return;
+            }
+
+            await CopySelectedEditorTextAsync();
+            await DeleteEditorSelectionAsync();
+        }
+
+        private async System.Threading.Tasks.Task PasteIntoEditorAsync()
+        {
+            if (System.Windows.Clipboard.ContainsFileDropList() || System.Windows.Clipboard.ContainsImage())
+            {
+                await HandlePastedImageAsync();
+                return;
+            }
+
+            if (System.Windows.Clipboard.ContainsText())
+            {
+                await InsertTextIntoEditorAsync(System.Windows.Clipboard.GetText());
+            }
         }
 
         private async System.Threading.Tasks.Task<EditorFindResult> CountEditorMatchesAsync(string query, bool matchCase)
@@ -3495,7 +4551,7 @@ namespace BlogTools
                     return el.scrollTop / maxScroll;
                 })();
             ";
-            var result = await EditorWebView.ExecuteScriptAsync(getRatioScript);
+            var result = await TryExecuteEditorScriptWithResultAsync(getRatioScript, "read editor scroll ratio");
             
             if (double.TryParse(result, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double ratio))
             {
@@ -3510,7 +4566,7 @@ namespace BlogTools
                         }}
                     }})();
                 ";
-                await PreviewWebView.ExecuteScriptAsync(script);
+                await TryExecutePreviewScriptAsync(script, "sync editor scroll to preview");
             }
         }
 
@@ -3523,7 +4579,7 @@ namespace BlogTools
         {
             if (!_isWebViewReady || PreviewWebView.CoreWebView2 == null || EditorWebView.CoreWebView2 == null) return;
 
-            var result = await PreviewWebView.ExecuteScriptAsync(@"
+            var result = await TryExecutePreviewScriptWithResultAsync(@"
                 (function() {
                     var el = document.getElementById('content');
                     if (!el) return 0;
@@ -3531,7 +4587,7 @@ namespace BlogTools
                     if (maxScroll <= 0) return 0;
                     return el.scrollTop / maxScroll;
                 })();
-            ");
+            ", "read preview scroll ratio");
 
             if (double.TryParse(result, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double ratio))
             {
@@ -3546,7 +4602,7 @@ namespace BlogTools
                         }}
                     }})();
                 ";
-                await EditorWebView.ExecuteScriptAsync(script);
+                await TryExecuteEditorScriptAsync(script, "sync preview scroll to editor");
             }
         }
 

@@ -109,6 +109,9 @@
     <system:String x:Key="EditorTipFindReplace">Find and replace (Ctrl+F)</system:String>
     <system:String x:Key="EditorTipSyncToPreview">Sync the preview to the current editor position</system:String>
     <system:String x:Key="EditorTipSyncToEditor">Sync the editor to the current preview position</system:String>
+    <system:String x:Key="EditorPreviewBackTip">Go back</system:String>
+    <system:String x:Key="EditorPreviewForwardTip">Go forward</system:String>
+    <system:String x:Key="EditorPreviewResetTip">Return to Markdown preview</system:String>
     <system:String x:Key="EditorToolboxLabel">Markdown Toolbox</system:String>
     <system:String x:Key="EditorToolboxCollapse">Collapse</system:String>
     <system:String x:Key="EditorToolboxExpand">Expand</system:String>
@@ -275,6 +278,19 @@
     <system:String x:Key="EditorMsgPublishError">Push failed: {0}</system:String>
     <system:String x:Key="EditorMsgInsertImage">Insert Local Image</system:String>
     <system:String x:Key="EditorMsgInsertImageError">Error processing image:&#10;{0}</system:String>
+    <system:String x:Key="EditorMsgWebViewRecovering">The editor engine hit an unexpected error. The app prevented a hard crash and is trying to recover. Your current content can still be saved; if preview does not come back, reopen the editor page.</system:String>
+    <system:String x:Key="EditorContextUndo">Undo</system:String>
+    <system:String x:Key="EditorContextRedo">Redo</system:String>
+    <system:String x:Key="EditorContextCut">Cut</system:String>
+    <system:String x:Key="EditorContextCopy">Copy</system:String>
+    <system:String x:Key="EditorContextPaste">Paste</system:String>
+    <system:String x:Key="EditorContextDelete">Delete</system:String>
+    <system:String x:Key="EditorContextSelectAll">Select All</system:String>
+    <system:String x:Key="EditorContextBold">Bold</system:String>
+    <system:String x:Key="EditorContextItalic">Italic</system:String>
+    <system:String x:Key="EditorContextInsertLink">Insert Link</system:String>
+    <system:String x:Key="EditorContextInsertImage">Insert Image</system:String>
+    <system:String x:Key="EditorContextFindReplace">Find and Replace</system:String>
 
     <system:String x:Key="CommonPrompt">Prompt</system:String>
     <system:String x:Key="CommonConfirmLeave">Leave Anyway</system:String>
