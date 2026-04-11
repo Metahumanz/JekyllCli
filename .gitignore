@@ -50,3 +50,6 @@ dist/
 ## [Backup files]
 *.bak
 *.tmp
+
+## [Local video/demo captures]
+/local-video-demo/
