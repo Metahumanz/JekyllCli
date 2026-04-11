@@ -10,7 +10,6 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 using BlogTools.Models;
-using Wpf.Ui.Appearance;
 
 namespace BlogTools.Services
 {
@@ -32,7 +31,6 @@ namespace BlogTools.Services
                 mainWindow.Left = 80;
                 mainWindow.Top = 80;
 
-                ApplicationThemeManager.Apply(ApplicationTheme.Light);
                 mainWindow.Activate();
                 mainWindow.Topmost = true;
                 await Task.Delay(250);
@@ -42,47 +40,8 @@ namespace BlogTools.Services
                 await WaitForUiIdleAsync();
                 await Task.Delay(2200);
 
-                await CaptureCurrentWindowAsync(mainWindow, Path.Combine(outputDir, "dashboard-real.png"));
-
-                await NavigateAndCaptureAsync<ManagePostsPage>(
-                    mainWindow,
-                    typeof(ManagePostsPage),
-                    Path.Combine(outputDir, "manage-posts-real.png"),
-                    waitAfterNavigateMs: 2200);
-
-                var samplePost = App.JekyllContext.GetAllPosts().FirstOrDefault() ?? new BlogPost
-                {
-                    Title = "Hello JekyllCli",
-                    Date = DateTime.Now,
-                    Categories = { "Docs" },
-                    Tags = { "guide", "sample" },
-                    Description = "This is a sample post for documentation screenshots.",
-                    Content = "# Hello JekyllCli\n\nThis screenshot demonstrates the actual editor page."
-                };
-
-                App.CurrentEditPost = samplePost;
-                await NavigateAndCaptureAsync<EditorPage>(
-                    mainWindow,
-                    typeof(EditorPage),
-                    Path.Combine(outputDir, "editor-real.png"),
-                    onPageReady: page =>
-                    {
-                        page.MetadataExpander.IsExpanded = true;
-                        page.UpdateLayout();
-                    },
-                    waitAfterNavigateMs: 5200);
-
-                await NavigateAndCaptureAsync<SettingsPage>(
-                    mainWindow,
-                    typeof(SettingsPage),
-                    Path.Combine(outputDir, "settings-real.png"),
-                    waitAfterNavigateMs: 2200);
-
-                await NavigateAndCaptureAsync<AppSettingsPage>(
-                    mainWindow,
-                    typeof(AppSettingsPage),
-                    Path.Combine(outputDir, "app-settings-real.png"),
-                    waitAfterNavigateMs: 2200);
+                await CaptureThemeVariantAsync(mainWindow, outputDir, App.ThemeModeLight, "light", writeLegacyFiles: true);
+                await CaptureThemeVariantAsync(mainWindow, outputDir, App.ThemeModeDark, "dark", writeLegacyFiles: false);
             }
             finally
             {
@@ -90,10 +49,73 @@ namespace BlogTools.Services
             }
         }
 
+        private static async Task CaptureThemeVariantAsync(
+            MainWindow mainWindow,
+            string outputDir,
+            string themeMode,
+            string suffix,
+            bool writeLegacyFiles)
+        {
+            App.ApplyThemeMode(themeMode);
+            mainWindow.RootNavigation.Navigate(typeof(DashboardPage));
+            mainWindow.UpdateLayout();
+            mainWindow.Activate();
+            await WaitForUiIdleAsync();
+            await Task.Delay(1800);
+
+            var dashboardTarget = CreateCaptureTarget(outputDir, "dashboard-real", suffix, writeLegacyFiles);
+            await CaptureCurrentWindowAsync(mainWindow, dashboardTarget.OutputPath);
+            CopyLegacyVariant(dashboardTarget);
+
+            var manageTarget = CreateCaptureTarget(outputDir, "manage-posts-real", suffix, writeLegacyFiles);
+            await NavigateAndCaptureAsync<ManagePostsPage>(
+                mainWindow,
+                typeof(ManagePostsPage),
+                manageTarget,
+                waitAfterNavigateMs: 2200);
+
+            var samplePost = App.JekyllContext.GetAllPosts().FirstOrDefault() ?? new BlogPost
+            {
+                Title = "Hello JekyllCli",
+                Date = DateTime.Now,
+                Categories = { "Docs" },
+                Tags = { "guide", "sample" },
+                Description = "This is a sample post for documentation screenshots.",
+                Content = "# Hello JekyllCli\n\nThis screenshot demonstrates the actual editor page."
+            };
+
+            App.CurrentEditPost = samplePost;
+            var editorTarget = CreateCaptureTarget(outputDir, "editor-real", suffix, writeLegacyFiles);
+            await NavigateAndCaptureAsync<EditorPage>(
+                mainWindow,
+                typeof(EditorPage),
+                editorTarget,
+                onPageReady: page =>
+                {
+                    page.MetadataExpander.IsExpanded = true;
+                    page.UpdateLayout();
+                },
+                waitAfterNavigateMs: 5200);
+
+            var settingsTarget = CreateCaptureTarget(outputDir, "settings-real", suffix, writeLegacyFiles);
+            await NavigateAndCaptureAsync<SettingsPage>(
+                mainWindow,
+                typeof(SettingsPage),
+                settingsTarget,
+                waitAfterNavigateMs: 2200);
+
+            var appSettingsTarget = CreateCaptureTarget(outputDir, "app-settings-real", suffix, writeLegacyFiles);
+            await NavigateAndCaptureAsync<AppSettingsPage>(
+                mainWindow,
+                typeof(AppSettingsPage),
+                appSettingsTarget,
+                waitAfterNavigateMs: 2200);
+        }
+
         private static async Task NavigateAndCaptureAsync<TPage>(
             MainWindow mainWindow,
             Type targetPageType,
-            string outputPath,
+            CaptureTarget target,
             Action<TPage>? onPageReady = null,
             int waitAfterNavigateMs = 2000)
             where TPage : FrameworkElement
@@ -111,7 +133,23 @@ namespace BlogTools.Services
             }
 
             await Task.Delay(waitAfterNavigateMs);
-            await CaptureCurrentWindowAsync(mainWindow, outputPath);
+            await CaptureCurrentWindowAsync(mainWindow, target.OutputPath);
+            CopyLegacyVariant(target);
+        }
+
+        private static CaptureTarget CreateCaptureTarget(string outputDir, string baseName, string suffix, bool writeLegacyFiles)
+        {
+            return new CaptureTarget(
+                Path.Combine(outputDir, $"{baseName}-{suffix}.png"),
+                writeLegacyFiles ? Path.Combine(outputDir, $"{baseName}.png") : null);
+        }
+
+        private static void CopyLegacyVariant(CaptureTarget target)
+        {
+            if (!string.IsNullOrWhiteSpace(target.LegacyPath))
+            {
+                File.Copy(target.OutputPath, target.LegacyPath, overwrite: true);
+            }
         }
 
         private static async Task WaitForEditorReadyAsync(EditorPage page)
@@ -183,23 +221,32 @@ namespace BlogTools.Services
                 throw new InvalidOperationException("Main window handle is unavailable.");
             }
 
-            NativeMethods.ShowWindow(handle, SwRestore);
-            NativeMethods.SetForegroundWindow(handle);
-
-            await Task.Delay(350);
-
-            if (!NativeMethods.GetWindowRect(handle, out var rect))
+            window.Topmost = true;
+            try
             {
-                throw new InvalidOperationException("Failed to retrieve window bounds for screenshot capture.");
+                window.Activate();
+                NativeMethods.ShowWindow(handle, SwRestore);
+                NativeMethods.SetForegroundWindow(handle);
+
+                await Task.Delay(650);
+
+                if (!NativeMethods.GetWindowRect(handle, out var rect))
+                {
+                    throw new InvalidOperationException("Failed to retrieve window bounds for screenshot capture.");
+                }
+
+                var width = rect.Right - rect.Left;
+                var height = rect.Bottom - rect.Top;
+
+                using var bitmap = new Bitmap(width, height);
+                using var graphics = Graphics.FromImage(bitmap);
+                graphics.CopyFromScreen(rect.Left, rect.Top, 0, 0, bitmap.Size);
+                bitmap.Save(outputPath, ImageFormat.Png);
             }
-
-            var width = rect.Right - rect.Left;
-            var height = rect.Bottom - rect.Top;
-
-            using var bitmap = new Bitmap(width, height);
-            using var graphics = Graphics.FromImage(bitmap);
-            graphics.CopyFromScreen(rect.Left, rect.Top, 0, 0, bitmap.Size);
-            bitmap.Save(outputPath, ImageFormat.Png);
+            finally
+            {
+                window.Topmost = false;
+            }
         }
 
         private static string[] EnsureSamplePosts()
@@ -265,6 +312,8 @@ namespace BlogTools.Services
                 }
             }
         }
+
+        private readonly record struct CaptureTarget(string OutputPath, string? LegacyPath);
 
         private static class NativeMethods
         {
