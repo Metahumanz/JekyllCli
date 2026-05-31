@@ -4,6 +4,7 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
       xmlns:helpers="clr-namespace:BlogTools.Helpers"
+      xmlns:icons="clr-namespace:BlogTools.Icons"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       UseLayoutRounding="True"
       SnapsToDevicePixels="True"
@@ -171,6 +172,12 @@
             </Style>
             <DataTemplate x:Key="EditorToolGlyphTemplate">
                 <Grid Width="24" Height="24">
+                    <icons:AssetIcon x:Name="ToolAssetIcon"
+                                     Kind="{Binding AssetIcon}"
+                                     Width="18"
+                                     Height="18"
+                                     Visibility="Collapsed"
+                                     Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                     <ui:SymbolIcon x:Name="ToolSymbol"
                                    Symbol="{Binding Symbol}"
                                    FontSize="{Binding SymbolFontSize}"
@@ -201,6 +208,10 @@
                     </Grid>
                 </Grid>
                 <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding HasAssetIcon}" Value="True">
+                        <Setter TargetName="ToolAssetIcon" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="ToolSymbol" Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
                     <DataTrigger Binding="{Binding Id}" Value="h1">
                         <Setter TargetName="ToolSymbol" Property="Visibility" Value="Collapsed" />
                         <Setter TargetName="ToolLabel" Property="Visibility" Value="Visible" />
@@ -300,17 +311,19 @@
                         Click="OpenFindReplaceButton_Click"
                         Margin="0,0,8,0"
                         ToolTip="{DynamicResource EditorTipFindReplace}">
-                    <ui:SymbolIcon Symbol="Search24"
-                                   FontSize="16"
-                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                    <icons:AssetIcon Kind="Search"
+                                     Width="16"
+                                     Height="16"
+                                     Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                 </Button>
                 <Button Style="{StaticResource HeaderActionButtonStyle}"
                         Click="SaveButton_Click">
                     <StackPanel Orientation="Horizontal">
-                        <ui:SymbolIcon Symbol="Save24"
-                                       FontSize="16"
-                                       Margin="0,0,6,0"
-                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                        <icons:AssetIcon Kind="Save"
+                                         Width="16"
+                                         Height="16"
+                                         Margin="0,0,6,0"
+                                         Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                         <TextBlock Text="{DynamicResource EditorBtnSaveDraft}"
                                    VerticalAlignment="Center"
                                    FontWeight="SemiBold"
@@ -320,10 +333,11 @@
                 <Button Style="{StaticResource HeaderPrimaryActionButtonStyle}"
                         Click="PublishButton_Click">
                     <StackPanel Orientation="Horizontal">
-                        <ui:SymbolIcon Symbol="Send24"
-                                       FontSize="16"
-                                       Margin="0,0,6,0"
-                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                        <icons:AssetIcon Kind="CloudUpload"
+                                         Width="16"
+                                         Height="16"
+                                         Margin="0,0,6,0"
+                                         Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                         <TextBlock Text="{DynamicResource EditorBtnPublish}"
                                    VerticalAlignment="Center"
                                    FontWeight="SemiBold"
@@ -333,9 +347,10 @@
                 <Button Style="{StaticResource HeaderIconButtonStyle}"
                         Click="NewPost_Click"
                         ToolTip="{DynamicResource EditorBtnClear}">
-                    <ui:SymbolIcon Symbol="Delete24"
-                                   FontSize="16"
-                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                    <icons:AssetIcon Kind="Trash"
+                                     Width="16"
+                                     Height="16"
+                                     Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                 </Button>
             </StackPanel>
         </Grid>
@@ -368,7 +383,7 @@
                         <ComboBox x:Name="PublishHourBox" Width="75" Margin="0,0,4,0"/>
                         <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <ComboBox x:Name="PublishMinuteBox" Width="75" Margin="0,0,4,0"/>
-                        <ui:Button Icon="{ui:SymbolIcon Symbol=Clock24}" Style="{StaticResource RoundedUiButtonBaseStyle}" Click="SetPublishNow_Click" ToolTip="{DynamicResource EditorBtnSetNow}"/>
+                        <ui:Button Icon="{icons:AssetIcon Clock}" Style="{StaticResource RoundedUiButtonBaseStyle}" Click="SetPublishNow_Click" ToolTip="{DynamicResource EditorBtnSetNow}"/>
                     </StackPanel>
                 </Grid>
 
@@ -390,7 +405,7 @@
                         <ComboBox x:Name="ModifyHourBox" Width="75" Margin="0,0,4,0"/>
                         <TextBlock Text=":" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <ComboBox x:Name="ModifyMinuteBox" Width="75" Margin="0,0,4,0"/>
-                        <ui:Button Icon="{ui:SymbolIcon Symbol=Clock24}" Style="{StaticResource RoundedUiButtonBaseStyle}" Click="SetModifyNow_Click" ToolTip="{DynamicResource EditorBtnSetNow}"/>
+                        <ui:Button Icon="{icons:AssetIcon Clock}" Style="{StaticResource RoundedUiButtonBaseStyle}" Click="SetModifyNow_Click" ToolTip="{DynamicResource EditorBtnSetNow}"/>
                     </StackPanel>
                 </Grid>
 
@@ -405,7 +420,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <ui:Button Content="{Binding}" Icon="{ui:SymbolIcon Symbol=Dismiss12}" Style="{StaticResource RoundedUiButtonBaseStyle}" Margin="0,0,4,4" Appearance="Secondary" FontSize="12" Padding="8,2" MinHeight="24" Click="RemoveTag_Click" Tag="{Binding}"/>
+                                    <ui:Button Content="{Binding}" Icon="{icons:AssetIcon Close}" Style="{StaticResource RoundedUiButtonBaseStyle}" Margin="0,0,4,4" Appearance="Secondary" FontSize="12" Padding="8,2" MinHeight="24" Click="RemoveTag_Click" Tag="{Binding}"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -721,9 +736,10 @@
                                         Margin="0,0,8,0"
                                         Click="PreviewBackButton_Click"
                                         ToolTip="{DynamicResource EditorPreviewBackTip}">
-                                    <ui:SymbolIcon Symbol="ArrowLeft24"
-                                                   FontSize="16"
-                                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                                    <icons:AssetIcon Kind="ArrowLeft"
+                                                     Width="16"
+                                                     Height="16"
+                                                     Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                                 </Button>
                                 <Button x:Name="PreviewForwardButton"
                                         Style="{StaticResource PreviewChromeIconButtonStyle}"
@@ -731,9 +747,10 @@
                                         Margin="0,0,8,0"
                                         Click="PreviewForwardButton_Click"
                                         ToolTip="{DynamicResource EditorPreviewForwardTip}">
-                                    <ui:SymbolIcon Symbol="ArrowRight24"
-                                                   FontSize="16"
-                                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                                    <icons:AssetIcon Kind="ArrowRight"
+                                                     Width="16"
+                                                     Height="16"
+                                                     Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                                 </Button>
                                 <Button x:Name="PreviewHomeButton"
                                         Style="{StaticResource PreviewChromeIconButtonStyle}"
@@ -741,9 +758,10 @@
                                         Margin="0"
                                         Click="PreviewHomeButton_Click"
                                         ToolTip="{DynamicResource EditorPreviewResetTip}">
-                                    <ui:SymbolIcon Symbol="Home24"
-                                                   FontSize="16"
-                                                   Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                                    <icons:AssetIcon Kind="Home"
+                                                     Width="16"
+                                                     Height="16"
+                                                     Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                                 </Button>
                             </StackPanel>
                     </Border>
@@ -794,10 +812,11 @@
                         <StackPanel Grid.Column="0"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
-                            <ui:SymbolIcon Symbol="Search24"
-                                           FontSize="16"
-                                           Margin="0,0,8,0"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <icons:AssetIcon Kind="Search"
+                                             Width="16"
+                                             Height="16"
+                                             Margin="0,0,8,0"
+                                             Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                             <TextBlock Text="{DynamicResource EditorFindTitle}"
                                        VerticalAlignment="Center"
                                        FontSize="15"
@@ -819,9 +838,10 @@
                         <Button Grid.Column="2"
                                 Style="{StaticResource FindPopupIconButtonStyle}"
                                 Click="CloseFindReplaceButton_Click">
-                            <ui:SymbolIcon Symbol="Dismiss24"
-                                           FontSize="14"
-                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
+                            <icons:AssetIcon Kind="Close"
+                                             Width="14"
+                                             Height="14"
+                                             Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}" />
                         </Button>
                     </Grid>
 

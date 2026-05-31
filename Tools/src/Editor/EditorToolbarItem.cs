@@ -1,3 +1,4 @@
+using BlogTools.Icons;
 using Wpf.Ui.Controls;
 
 namespace BlogTools
@@ -13,6 +14,7 @@ namespace BlogTools
         public required string Id { get; init; }
         public required string Command { get; init; }
         public required SymbolRegular Symbol { get; init; }
+        public AssetIconKind AssetIcon { get; init; } = AssetIconKind.None;
         public required string ToolTipResourceKey { get; init; }
         public double SymbolFontSize { get; init; } = 18;
         public bool IsSideOnly { get; init; }
@@ -33,6 +35,8 @@ namespace BlogTools
         public string Id => Definition.Id;
         public string Command => Definition.Command;
         public SymbolRegular Symbol => Definition.Symbol;
+        public AssetIconKind AssetIcon => Definition.AssetIcon;
+        public bool HasAssetIcon => AssetIcon != AssetIconKind.None;
         public double SymbolFontSize => Definition.SymbolFontSize;
         public bool IsSideOnly => Definition.IsSideOnly;
     }

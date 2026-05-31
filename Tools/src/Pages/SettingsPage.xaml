@@ -3,6 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:helpers="clr-namespace:BlogTools.Helpers"
+      xmlns:icons="clr-namespace:BlogTools.Icons"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Title="{DynamicResource NavSettings}">
     <Page.Triggers>
@@ -29,7 +30,7 @@
 
         <!-- 页面标题 -->
         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-            <ui:SymbolIcon Symbol="Globe24" FontSize="32" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+            <icons:AssetIcon Kind="Globe" Width="32" Height="32" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
             <StackPanel>
                 <TextBlock Text="{DynamicResource SettingsTitle}" FontSize="24" FontWeight="SemiBold"/>
                 <TextBlock Text="{DynamicResource SettingsSub}" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
@@ -204,14 +205,14 @@
                                 Title="{DynamicResource SettingsFaviconWarningTitle}"
                                 Message="{DynamicResource SettingsFaviconWarningMsg}"/>
 
-                    <ui:CardAction Margin="0,0,0,4" Icon="{ui:SymbolIcon Symbol=Globe24}" Click="OpenFaviconGenerator_Click">
+                    <ui:CardAction Margin="0,0,0,4" Icon="{icons:AssetIcon Globe}" Click="OpenFaviconGenerator_Click">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource SettingsLabelFaviconGen}" FontWeight="SemiBold" FontSize="14" />
                             <TextBlock Text="{DynamicResource SettingsDescFaviconGen}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" />
                         </StackPanel>
                     </ui:CardAction>
 
-                    <ui:CardControl Margin="0,0,0,0" Icon="{ui:SymbolIcon Symbol=Image24}" Style="{StaticResource RoundedCardControlStyle}">
+                    <ui:CardControl Margin="0,0,0,0" Icon="{icons:AssetIcon Image}" Style="{StaticResource RoundedCardControlStyle}">
                         <ui:CardControl.Header>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource SettingsLabelFaviconUpload}" FontWeight="SemiBold" FontSize="14" />
@@ -229,8 +230,8 @@
         <Border Grid.Row="3" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Padding="0,12,0,0" Margin="0,8,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                    <ui:Button Content="{DynamicResource SettingsBtnSave}" Style="{StaticResource LiftedUiButtonStyle}" Click="SaveSettings_Click" Icon="{ui:SymbolIcon Symbol=Save24}" Margin="0,0,12,0" Padding="16,8"/>
-                    <ui:Button Content="{DynamicResource SettingsBtnPublish}" Style="{StaticResource LiftedUiButtonStyle}" Appearance="Primary" Click="PublishButton_Click" Icon="{ui:SymbolIcon Symbol=Send24}" Padding="16,8"/>
+                    <ui:Button Content="{DynamicResource SettingsBtnSave}" Style="{StaticResource LiftedUiButtonStyle}" Click="SaveSettings_Click" Icon="{icons:AssetIcon Save}" Margin="0,0,12,0" Padding="16,8"/>
+                    <ui:Button Content="{DynamicResource SettingsBtnPublish}" Style="{StaticResource LiftedUiButtonStyle}" Appearance="Primary" Click="PublishButton_Click" Icon="{icons:AssetIcon CloudUpload}" Padding="16,8"/>
                 </StackPanel>
                 <TextBlock VerticalAlignment="Center" Margin="16,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"
                            Text="{DynamicResource SettingsRecommendActions}"/>

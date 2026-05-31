@@ -2,6 +2,7 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:icons="clr-namespace:BlogTools.Icons"
       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
       Title="仪表盘">
     <Page.Triggers>
@@ -28,7 +29,7 @@
                 
                 <!-- 欢迎头部 -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,24">
-                    <ui:SymbolIcon Symbol="Home24" FontSize="36" VerticalAlignment="Center" Margin="0,0,16,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                    <icons:AssetIcon Kind="Home" Width="36" Height="36" VerticalAlignment="Center" Margin="0,0,16,0" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                     <StackPanel>
                         <TextBlock x:Name="WelcomeTitleText" Text="{DynamicResource DashboardWelcomeTitle}" FontSize="28" FontWeight="SemiBold"/>
                         <TextBlock x:Name="WelcomeSubText" Text="{DynamicResource DashboardWelcomeSub}" FontSize="16" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"/>
@@ -41,8 +42,8 @@
                                  ContentPadding="20">
                     <ui:CardExpander.Header>
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Megaphone24" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0"
-                                          Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
+                            <icons:AssetIcon Kind="Megaphone" Width="22" Height="22" VerticalAlignment="Center" Margin="0,0,12,0"
+                                             Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource DashboardChirpyUpgradeTitle}" FontWeight="SemiBold" FontSize="15"/>
                                 <TextBlock Text="{DynamicResource DashboardChirpyUpgradeSub}" FontSize="12"
@@ -63,10 +64,10 @@
                                 </TextBlock>
                                 <WrapPanel>
                                     <ui:Button Content="{DynamicResource DashboardBtnFaviconSettings}" Appearance="Primary" Style="{StaticResource LiftedUiButtonStyle}"
-                                               Icon="{ui:SymbolIcon Symbol=Settings24}"
+                                               Icon="{icons:AssetIcon Settings}"
                                                Click="GoToSettingsForFavicon_Click" Margin="0,0,8,0" Padding="12,6"/>
                                     <ui:Button Content="{DynamicResource DashboardBtnOpenFaviconGenerator}" Style="{StaticResource LiftedUiButtonStyle}"
-                                               Icon="{ui:SymbolIcon Symbol=Globe24}"
+                                               Icon="{icons:AssetIcon Globe}"
                                                Click="OpenFaviconGenerator_Click" Padding="12,6"/>
                                 </WrapPanel>
                             </StackPanel>
@@ -107,7 +108,7 @@
                 <UniformGrid Columns="3" Margin="0,0,0,24">
                     <ui:CardAction Padding="20" Margin="0,0,16,0" IsChevronVisible="True" Cursor="Hand" Click="PostCountCard_Click" ToolTip="点击查看全部文章">
                         <StackPanel>
-                            <ui:SymbolIcon Symbol="Document24" FontSize="28" Margin="0,0,0,12" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                            <icons:AssetIcon Kind="Document" Width="28" Height="28" Margin="0,0,0,12" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                             <TextBlock Text="{DynamicResource DashboardTotalPosts}" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <TextBlock x:Name="PostCountText" Text="--" FontSize="32" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
@@ -115,7 +116,7 @@
 
                     <ui:CardAction Padding="20" Margin="0,0,16,0" IsChevronVisible="True" Cursor="Hand" Click="CategoryCountCard_Click" ToolTip="点击浏览分类">
                         <StackPanel>
-                            <ui:SymbolIcon Symbol="Folder24" FontSize="28" Margin="0,0,0,12" Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
+                            <icons:AssetIcon Kind="Folder" Width="28" Height="28" Margin="0,0,0,12" Foreground="{DynamicResource SystemFillColorCautionBrush}"/>
                             <TextBlock Text="{DynamicResource DashboardTotalCategories}" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <TextBlock x:Name="CategoryCountText" Text="--" FontSize="32" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
@@ -123,7 +124,7 @@
 
                     <ui:CardAction Padding="20" Margin="0,0,0,0" IsChevronVisible="True" Cursor="Hand" Click="TagCountCard_Click" ToolTip="点击浏览标签">
                         <StackPanel>
-                            <ui:SymbolIcon Symbol="Tag24" FontSize="28" Margin="0,0,0,12" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
+                            <icons:AssetIcon Kind="Tag" Width="28" Height="28" Margin="0,0,0,12" Foreground="{DynamicResource SystemFillColorSuccessBrush}"/>
                             <TextBlock Text="{DynamicResource DashboardTotalTags}" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <TextBlock x:Name="TagCountText" Text="--" FontSize="32" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
@@ -141,7 +142,7 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                 <ui:Button Content="{DynamicResource DashboardBtnExpandAll}" Style="{StaticResource LiftedUiButtonStyle}" Margin="0,0,8,0" Click="ExpandAllDetail_Click"/>
                                 <ui:Button Content="{DynamicResource DashboardBtnCollapseAll}" Style="{StaticResource LiftedUiButtonStyle}" Margin="0,0,8,0" Click="CollapseAllDetail_Click"/>
-                                <ui:Button Icon="{ui:SymbolIcon Symbol=Dismiss24}" Style="{StaticResource LiftedUiButtonStyle}" Background="Transparent" BorderThickness="0"
+                                <ui:Button Icon="{icons:AssetIcon Close}" Style="{StaticResource LiftedUiButtonStyle}" Background="Transparent" BorderThickness="0"
                                            Click="CloseDetailPanel_Click" ToolTip="关闭" Padding="4"/>
                             </StackPanel>
                         </DockPanel>
@@ -185,9 +186,9 @@
                 <!-- 快捷操作区 -->
                 <TextBlock Text="{DynamicResource DashboardQuickActions}" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,12"/>
                 <WrapPanel Orientation="Horizontal" Margin="0,0,0,12" Background="Transparent">
-                    <ui:Button Content="{DynamicResource DashboardBtnWriteNew}" Style="{StaticResource LiftedUiButtonStyle}" Appearance="Primary" Click="WriteNewPost_Click" Icon="{ui:SymbolIcon Symbol=Edit24}" Margin="0,0,16,0" Padding="16,8"/>
-                    <ui:Button Content="{DynamicResource DashboardBtnViewSite}" Style="{StaticResource LiftedUiButtonStyle}" Click="ViewLiveSite_Click" Icon="{ui:SymbolIcon Symbol=Globe24}" Margin="0,0,16,0" Padding="16,8"/>
-                    <ui:Button x:Name="SyncButton" Style="{StaticResource LiftedUiButtonStyle}" Content="{DynamicResource DashboardBtnSyncCloud}" Click="SyncButton_Click" Icon="{ui:SymbolIcon Symbol=ArrowSync24}" Padding="16,8"/>
+                    <ui:Button Content="{DynamicResource DashboardBtnWriteNew}" Style="{StaticResource LiftedUiButtonStyle}" Appearance="Primary" Click="WriteNewPost_Click" Icon="{icons:AssetIcon Edit}" Margin="0,0,16,0" Padding="16,8"/>
+                    <ui:Button Content="{DynamicResource DashboardBtnViewSite}" Style="{StaticResource LiftedUiButtonStyle}" Click="ViewLiveSite_Click" Icon="{icons:AssetIcon Globe}" Margin="0,0,16,0" Padding="16,8"/>
+                    <ui:Button x:Name="SyncButton" Style="{StaticResource LiftedUiButtonStyle}" Content="{DynamicResource DashboardBtnSyncCloud}" Click="SyncButton_Click" Icon="{icons:AssetIcon CloudDownload}" Padding="16,8"/>
                 </WrapPanel>
                 <ui:InfoBar x:Name="SyncInfoBar" IsOpen="False" Message="" Severity="Informational" Margin="0,0,0,16" />
 

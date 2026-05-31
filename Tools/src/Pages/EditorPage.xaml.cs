@@ -11,6 +11,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using BlogTools.Icons;
 using BlogTools.Models;
 using BlogTools.Services;
 using Markdig;
@@ -1631,6 +1632,7 @@ namespace BlogTools
                 Id = "insert-image",
                 Command = "insert-image",
                 Symbol = SymbolRegular.ImageAdd24,
+                AssetIcon = AssetIconKind.Image,
                 ToolTipResourceKey = "EditorTipInsertImage"
             });
             AddToolDefinition(new EditorToolDefinition
@@ -1638,6 +1640,7 @@ namespace BlogTools
                 Id = "insert-link",
                 Command = "insert-link",
                 Symbol = SymbolRegular.Link24,
+                AssetIcon = AssetIconKind.Link,
                 ToolTipResourceKey = "EditorTipInsertLink"
             });
             AddToolDefinition(new EditorToolDefinition { Id = "h1", Command = "h1", Symbol = SymbolRegular.TextHeader124, ToolTipResourceKey = "EditorToolHeading1Tip" });
@@ -1649,6 +1652,7 @@ namespace BlogTools
                 Id = "bold",
                 Command = "bold",
                 Symbol = SymbolRegular.TextBold24,
+                AssetIcon = AssetIconKind.Bold,
                 ToolTipResourceKey = "EditorToolBoldTip"
             });
             AddToolDefinition(new EditorToolDefinition
@@ -1656,6 +1660,7 @@ namespace BlogTools
                 Id = "italic",
                 Command = "italic",
                 Symbol = SymbolRegular.TextItalic24,
+                AssetIcon = AssetIconKind.Italic,
                 ToolTipResourceKey = "EditorToolItalicTip"
             });
             AddToolDefinition(new EditorToolDefinition
@@ -1663,6 +1668,7 @@ namespace BlogTools
                 Id = "strike",
                 Command = "strike",
                 Symbol = SymbolRegular.TextStrikethrough24,
+                AssetIcon = AssetIconKind.Strikethrough,
                 ToolTipResourceKey = "EditorToolStrikeTip"
             });
             AddToolDefinition(new EditorToolDefinition
@@ -1670,6 +1676,7 @@ namespace BlogTools
                 Id = "code-inline",
                 Command = "code-inline",
                 Symbol = SymbolRegular.CodeText20,
+                AssetIcon = AssetIconKind.Code,
                 ToolTipResourceKey = "EditorToolInlineCodeTip",
                 SymbolFontSize = 18
             });
@@ -1690,7 +1697,7 @@ namespace BlogTools
                 Symbol = SymbolRegular.TaskListLtr24,
                 ToolTipResourceKey = "EditorToolTaskListTip"
             });
-            AddToolDefinition(new EditorToolDefinition { Id = "table", Command = "table", Symbol = SymbolRegular.TableAdd20, ToolTipResourceKey = "EditorToolTableTip", SymbolFontSize = 18 });
+            AddToolDefinition(new EditorToolDefinition { Id = "table", Command = "table", Symbol = SymbolRegular.TableAdd20, AssetIcon = AssetIconKind.Grid, ToolTipResourceKey = "EditorToolTableTip", SymbolFontSize = 18 });
             AddToolDefinition(new EditorToolDefinition
             {
                 Id = "divider",
@@ -1703,6 +1710,7 @@ namespace BlogTools
                 Id = "sync-to-preview",
                 Command = "sync-to-preview",
                 Symbol = SymbolRegular.ArrowCircleRight24,
+                AssetIcon = AssetIconKind.ArrowRight,
                 ToolTipResourceKey = "EditorTipSyncToPreview",
                 IsSideOnly = true
             });
@@ -1711,6 +1719,7 @@ namespace BlogTools
                 Id = "sync-to-editor",
                 Command = "sync-to-editor",
                 Symbol = SymbolRegular.ArrowCircleLeft24,
+                AssetIcon = AssetIconKind.ArrowLeft,
                 ToolTipResourceKey = "EditorTipSyncToEditor",
                 IsSideOnly = true
             });

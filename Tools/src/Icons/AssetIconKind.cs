@@ -1,0 +1,35 @@
+namespace BlogTools.Icons
+{
+    public enum AssetIconKind
+    {
+        None,
+        Home,
+        Grid,
+        Edit,
+        Globe,
+        Settings,
+        Megaphone,
+        Document,
+        Folder,
+        Tag,
+        Close,
+        CloudDownload,
+        CloudUpload,
+        Save,
+        Image,
+        Refresh,
+        Toolbox,
+        Clock,
+        Theme,
+        Font,
+        Trash,
+        Search,
+        Link,
+        Bold,
+        Italic,
+        Strikethrough,
+        Code,
+        ArrowLeft,
+        ArrowRight
+    }
+}
