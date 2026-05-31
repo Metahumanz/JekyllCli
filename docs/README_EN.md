@@ -126,6 +126,7 @@ This project already includes a **GitHub Actions release workflow** in `.github/
 
 ## V. Version Changelog
 
+- **v1.7.0**: Selected rounded SVG icons suited to desktop management workflows from [Nieobie/Game-Icon-Pack](https://github.com/Nieobie/Game-Icon-Pack), replacing common actions across navigation, dashboard, post management, blog settings, app settings, and the writing page; added a theme-aware vector renderer so the same paths inherit the correct foreground color in light, dark, and high-contrast themes, while keeping only the paths actually used instead of committing the full asset pack.
 - **v1.6.9**: Replaced the old dark-mode toggle in App Settings with a full `Follow System / Dark / Light` theme mode selector, and made that choice apply consistently to the main window, setup wizard, link dialog, and update progress window with matching theme-aware icons; also unified the corner radii of cards and buttons across the dashboard, editor, post management, and settings views for a more cohesive overall look.
 - **v1.6.8**: Continued polishing the writing page: improved the readability of the find-and-replace popup; added a richer editor context menu plus working arrow-key navigation and `Shift + Arrow` selection inside the editor; preview links now stay inside the app with icon-only back, forward, and return-to-preview controls; also hardened WebView2 recovery to reduce crashes after the writing page sits idle.
 - **v1.6.7**: Added a find-and-replace popup to the writing page that matches the existing visual language, with `Ctrl+F` to open, previous/next navigation, replace, replace all, match-case support, and `Esc` to close; when a post title changes, the app now moves the related `assets/img/inposts` image folder and updates image references in both the body and front matter; also added `Esc` blur behavior for metadata inputs so editor focus handling feels smoother.
@@ -153,3 +154,4 @@ This project already includes a **GitHub Actions release workflow** in `.github/
 
 1. The overall architecture and the WPF `Tools` companion application are developed by the author and released under the **GPLv3 License**.
 2. The [Chirpy code](https://github.com/cotes2020/jekyll-theme-chirpy) in the `Blog` folder follows the original **MIT License**.
+3. Some rounded UI icons used by the desktop app come from [Nieobie/Game-Icon-Pack](https://github.com/Nieobie/Game-Icon-Pack). This repository includes only the vector paths actually used and the original license notice, not the complete icon pack.
