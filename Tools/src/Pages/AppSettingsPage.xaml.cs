@@ -836,60 +836,76 @@ namespace BlogTools
 
         private async void AiRenameProfile_Click(object sender, RoutedEventArgs e)
         {
-            if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
-                return;
-
-            var profile = _aiProfiles[_aiActiveIndex];
-            var newName = await ShowTextInputDialogAsync(
-                Application.Current.FindResource("AiCommitDialogRenameTitle").ToString()!,
-                Application.Current.FindResource("AiCommitDialogRenameMsg").ToString()!,
-                profile.Name);
-
-            if (!string.IsNullOrWhiteSpace(newName) && newName != profile.Name)
+            try
             {
-                profile.Name = newName;
-                AiProfileComboBox.Items[_aiActiveIndex] = newName;
-                SaveAiSettingsToDisk();
+                if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
+                    return;
+
+                var profile = _aiProfiles[_aiActiveIndex];
+                var newName = await ShowTextInputDialogAsync(
+                    Application.Current.TryFindResource("AiCommitDialogRenameTitle") as string ?? "Rename Profile",
+                    Application.Current.TryFindResource("AiCommitDialogRenameMsg") as string ?? "Enter a new profile name:",
+                    profile.Name);
+
+                if (!string.IsNullOrWhiteSpace(newName) && newName != profile.Name)
+                {
+                    profile.Name = newName;
+                    AiProfileComboBox.Items[_aiActiveIndex] = newName;
+                    SaveAiSettingsToDisk();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"AiRenameProfile_Click failed: {ex}");
             }
         }
 
         private async void AiDeleteProfile_Click(object sender, RoutedEventArgs e)
         {
-            if (_aiProfiles.Count <= 1)
+            try
             {
-                AiStatusText.Text = Application.Current.FindResource("AiCommitMsgCantDeleteLast").ToString()!;
-                return;
+                if (_aiProfiles.Count <= 1)
+                {
+                    AiStatusText.Text = Application.Current.TryFindResource("AiCommitMsgCantDeleteLast") as string ?? "Cannot delete the last profile.";
+                    return;
+                }
+
+                if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
+                    return;
+
+                var profile = _aiProfiles[_aiActiveIndex];
+                var msg = new WpfUiControls.MessageBox
+                {
+                    Title = Application.Current.TryFindResource("AiCommitDialogDeleteTitle") as string ?? "Delete Profile",
+                    Content = string.Format(
+                        Application.Current.TryFindResource("AiCommitDialogDeleteMsg") as string ?? "Delete profile \"{0}\"?",
+                        profile.Name),
+                    PrimaryButtonText = Application.Current.TryFindResource("CommonConfirm") as string ?? "Confirm",
+                    CloseButtonText = Application.Current.TryFindResource("CommonCancel") as string ?? "Cancel"
+                };
+
+                if (await msg.ShowDialogAsync() != WpfUiControls.MessageBoxResult.Primary)
+                    return;
+
+                _aiProfiles.RemoveAt(_aiActiveIndex);
+                AiProfileComboBox.Items.RemoveAt(_aiActiveIndex);
+
+                if (_aiActiveIndex >= _aiProfiles.Count)
+                    _aiActiveIndex = _aiProfiles.Count - 1;
+                if (_aiActiveIndex < 0) _aiActiveIndex = 0;
+
+                _isLoadingAi = true;
+                AiProfileComboBox.SelectedIndex = _aiActiveIndex;
+                _isLoadingAi = false;
+
+                _aiFetchedModels.Clear();
+                LoadActiveProfileIntoUi();
+                SaveAiSettingsToDisk();
             }
-
-            if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
-                return;
-
-            var profile = _aiProfiles[_aiActiveIndex];
-            var msg = new WpfUiControls.MessageBox
+            catch (Exception ex)
             {
-                Title = Application.Current.FindResource("AiCommitDialogDeleteTitle").ToString()!,
-                Content = string.Format(Application.Current.FindResource("AiCommitDialogDeleteMsg").ToString()!, profile.Name),
-                PrimaryButtonText = Application.Current.FindResource("CommonConfirm").ToString()!,
-                CloseButtonText = Application.Current.FindResource("CommonCancel").ToString()!
-            };
-
-            if (await msg.ShowDialogAsync() != WpfUiControls.MessageBoxResult.Primary)
-                return;
-
-            _aiProfiles.RemoveAt(_aiActiveIndex);
-            AiProfileComboBox.Items.RemoveAt(_aiActiveIndex);
-
-            if (_aiActiveIndex >= _aiProfiles.Count)
-                _aiActiveIndex = _aiProfiles.Count - 1;
-            if (_aiActiveIndex < 0) _aiActiveIndex = 0;
-
-            _isLoadingAi = true;
-            AiProfileComboBox.SelectedIndex = _aiActiveIndex;
-            _isLoadingAi = false;
-
-            _aiFetchedModels.Clear();
-            LoadActiveProfileIntoUi();
-            SaveAiSettingsToDisk();
+                System.Diagnostics.Debug.WriteLine($"AiDeleteProfile_Click failed: {ex}");
+            }
         }
 
         private void AiProvider_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1052,28 +1068,36 @@ namespace BlogTools
 
         private async Task<string> ShowTextInputDialogAsync(string title, string message, string defaultText)
         {
-            var textBox = new System.Windows.Controls.TextBox
+            try
             {
-                Text = defaultText,
-                Margin = new Sw.Thickness(0, 8, 0, 0),
-                MinWidth = 300
-            };
+                var textBox = new System.Windows.Controls.TextBox
+                {
+                    Text = defaultText,
+                    Margin = new Sw.Thickness(0, 8, 0, 0),
+                    MinWidth = 300
+                };
 
-            var stackPanel = new StackPanel();
-            stackPanel.Children.Add(new Swc.TextBlock { Text = message, TextWrapping = Sw.TextWrapping.Wrap });
-            stackPanel.Children.Add(textBox);
+                var stackPanel = new Swc.StackPanel();
+                stackPanel.Children.Add(new Swc.TextBlock { Text = message, TextWrapping = Sw.TextWrapping.Wrap });
+                stackPanel.Children.Add(textBox);
 
-            var dialog = new Wpf.Ui.Controls.ContentDialog
+                var dialog = new Wpf.Ui.Controls.ContentDialog
+                {
+                    Title = title,
+                    Content = stackPanel,
+                    PrimaryButtonText = Application.Current.TryFindResource("CommonConfirm") as string ?? "Confirm",
+                    CloseButtonText = Application.Current.TryFindResource("CommonCancel") as string ?? "Cancel",
+                    DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary
+                };
+
+                var result = await dialog.ShowAsync();
+                return result == Wpf.Ui.Controls.ContentDialogResult.Primary ? textBox.Text.Trim() : string.Empty;
+            }
+            catch (Exception ex)
             {
-                Title = title,
-                Content = stackPanel,
-                PrimaryButtonText = Application.Current.FindResource("CommonConfirm").ToString()!,
-                CloseButtonText = Application.Current.FindResource("CommonCancel").ToString()!,
-                DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary
-            };
-
-            var result = await dialog.ShowAsync();
-            return result == Wpf.Ui.Controls.ContentDialogResult.Primary ? textBox.Text.Trim() : string.Empty;
+                System.Diagnostics.Debug.WriteLine($"ShowTextInputDialogAsync failed: {ex}");
+                return string.Empty;
+            }
         }
     }
 }
