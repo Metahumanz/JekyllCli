@@ -28,5 +28,12 @@
                 <ui:NavigationViewItem Content="{DynamicResource NavAppSettings}" Icon="{icons:AssetIcon Settings}" TargetPageType="{x:Type local:AppSettingsPage}" />
             </ui:NavigationView.FooterMenuItems>
         </ui:NavigationView>
+
+        <ui:ContentDialogHost x:Name="RootContentDialogHost"
+                              Grid.RowSpan="2"
+                              Panel.ZIndex="100"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              IsDisableSiblingsEnabled="True" />
     </Grid>
 </ui:FluentWindow>

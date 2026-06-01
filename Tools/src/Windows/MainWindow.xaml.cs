@@ -63,15 +63,12 @@ namespace BlogTools
             AppTitleBar.FontFamily = FontFamily;
         }
 
-        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             RootNavigation.Navigate(typeof(DashboardPage));
-
-            // Show AI commit onboarding once (skip in doc screenshot mode)
-            await ShowAiCommitOnboardingIfNeededAsync();
         }
 
-        private async Task ShowAiCommitOnboardingIfNeededAsync()
+        public async Task ShowAiCommitOnboardingIfNeededAsync()
         {
             try
             {
@@ -89,9 +86,6 @@ namespace BlogTools
                 if (settings.AiCommitOnboardingShown)
                     return;
 
-                settings.AiCommitOnboardingShown = true;
-                StorageService.Save(settings);
-
                 // Slight delay so the main window renders first
                 await Task.Delay(800);
 
@@ -104,12 +98,16 @@ namespace BlogTools
                 };
 
                 var result = await msg.ShowDialogAsync();
+                settings.AiCommitOnboardingShown = true;
 
                 if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
                 {
                     // Navigate to App Settings
+                    settings.AiCommitEnablePostsAfterProfileSave = true;
                     RootNavigation.Navigate(typeof(AppSettingsPage));
                 }
+
+                StorageService.Save(settings);
             }
             catch
             {

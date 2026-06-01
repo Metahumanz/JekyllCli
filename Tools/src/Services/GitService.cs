@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -78,22 +79,22 @@ namespace BlogTools.Services
         public async Task<List<string>> GetChangedFilesAsync()
         {
             var (success, output) = await RunGitCommandAsync("diff", "--name-status", "HEAD");
-            if (!success || string.IsNullOrWhiteSpace(output))
+            if (!success)
             {
                 // Fall back to comparing with the index
                 (success, output) = await RunGitCommandAsync("diff", "--name-status", "--cached");
-                if (!success)
-                {
-                    // Check for untracked files
-                    (_, output) = await RunGitCommandAsync("ls-files", "--others", "--exclude-standard");
-                }
             }
 
-            return output
+            var changedFiles = output
                 .Split('\n', StringSplitOptions.RemoveEmptyEntries)
                 .Select(line => line.Trim())
                 .Where(line => line.Length > 0)
                 .ToList();
+
+            var untrackedFiles = await GetUntrackedFilesAsync();
+            changedFiles.AddRange(untrackedFiles.Select(file => $"??\t{file}"));
+
+            return changedFiles.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
 
         /// <summary>
@@ -109,6 +110,9 @@ namespace BlogTools.Services
 
             // 1. List changed files
             var changedFiles = await GetChangedFilesAsync();
+            if (changedFiles.Count == 0)
+                return string.Empty;
+
             sb.AppendLine("Changed files:");
             foreach (var file in changedFiles)
                 sb.AppendLine($"  {file}");
@@ -149,7 +153,7 @@ namespace BlogTools.Services
                         if (sb.Length + line.Length + 1 > maxChars)
                         {
                             sb.AppendLine("... (truncated)");
-                            return sb.ToString();
+                            return TruncateSummary(sb.ToString(), maxChars);
                         }
 
                         sb.AppendLine(line);
@@ -158,16 +162,32 @@ namespace BlogTools.Services
             }
 
             // 4. If there are new/untracked files not yet staged, note them
-            var (_, untracked) = await RunGitCommandAsync("ls-files", "--others", "--exclude-standard");
-            if (!string.IsNullOrWhiteSpace(untracked))
+            var untrackedFiles = await GetUntrackedFilesAsync();
+            if (untrackedFiles.Count > 0)
             {
                 sb.AppendLine();
                 sb.AppendLine("New/untracked files:");
-                foreach (var file in untracked.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                foreach (var file in untrackedFiles)
+                {
                     sb.AppendLine($"  {file}");
+
+                    var remaining = maxChars - sb.Length;
+                    if (remaining <= 0)
+                        return TruncateSummary(sb.ToString(), maxChars);
+
+                    if (TryReadUntrackedTextSnippet(file, Math.Min(remaining, 2_000), out var snippet))
+                    {
+                        sb.AppendLine("  Text preview:");
+                        sb.AppendLine(snippet);
+                    }
+                    else
+                    {
+                        sb.AppendLine("  (binary or unreadable; filename only)");
+                    }
+                }
             }
 
-            return sb.ToString();
+            return TruncateSummary(sb.ToString(), maxChars);
         }
 
         /// <summary>
@@ -222,8 +242,16 @@ namespace BlogTools.Services
         /// </summary>
         public async Task<string> PullAsync()
         {
-            var (_, output) = await RunGitCommandAsync("pull");
+            var (_, output) = await TryPullAsync();
             return output;
+        }
+
+        /// <summary>
+        /// Pull (fetch + merge) and preserve the command exit status.
+        /// </summary>
+        public async Task<(bool Success, string Output)> TryPullAsync()
+        {
+            return await RunGitCommandAsync("pull");
         }
 
         /// <summary>
@@ -340,6 +368,62 @@ namespace BlogTools.Services
                 blocks.Add(current.ToString().TrimEnd());
 
             return blocks;
+        }
+
+        private async Task<List<string>> GetUntrackedFilesAsync()
+        {
+            var (success, output) = await RunGitCommandAsync("ls-files", "--others", "--exclude-standard");
+            if (!success || string.IsNullOrWhiteSpace(output))
+                return new List<string>();
+
+            return output
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Trim())
+                .Where(line => line.Length > 0)
+                .ToList();
+        }
+
+        private bool TryReadUntrackedTextSnippet(string relativePath, int maxChars, out string snippet)
+        {
+            snippet = string.Empty;
+            if (maxChars <= 0)
+                return false;
+
+            try
+            {
+                var root = Path.GetFullPath(_blogPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                    + Path.DirectorySeparatorChar;
+                var fullPath = Path.GetFullPath(Path.Combine(_blogPath, relativePath));
+                if (!fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !File.Exists(fullPath))
+                    return false;
+
+                var bytes = new byte[Math.Max(maxChars * 3, 512)];
+                using var stream = File.OpenRead(fullPath);
+                var byteCount = stream.Read(bytes, 0, bytes.Length);
+                if (bytes.Take(byteCount).Any(value => value == 0))
+                    return false;
+
+                snippet = Encoding.UTF8.GetString(bytes, 0, byteCount);
+                if (snippet.Length > maxChars)
+                    snippet = snippet[..maxChars];
+                if (stream.Position < stream.Length)
+                    snippet += "\n... (truncated)";
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string TruncateSummary(string summary, int maxChars)
+        {
+            if (summary.Length <= maxChars)
+                return summary;
+
+            const string suffix = "\n... (truncated)";
+            return summary[..Math.Max(0, maxChars - suffix.Length)] + suffix;
         }
     }
 }

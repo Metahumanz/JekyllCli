@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.IO;
@@ -106,8 +107,14 @@ namespace BlogTools
                 return;
             }
 
-            // 启动后延迟自动检查更新（不阻塞主窗口显示）
-            _ = AutoCheckUpdateAsync(mainWindow);
+            // 顺序显示首次引导和更新提示，避免两个弹窗互相抢焦点。
+            _ = RunStartupDialogsAsync(mainWindow);
+        }
+
+        private async Task RunStartupDialogsAsync(MainWindow mainWindow)
+        {
+            await mainWindow.ShowAiCommitOnboardingIfNeededAsync();
+            await AutoCheckUpdateAsync(mainWindow);
         }
 
         private static bool TryGetDocScreenshotOptions(string[] args, out string outputDir, out string? blogPath)
@@ -458,15 +465,24 @@ namespace BlogTools
             {
                 // No valid profile — ask whether to use fallback
                 return await AskFallbackAndCommit(owner, fallbackMessage,
-                    R("AiCommitMsgNeedBaseUrl").ToString()!);
+                    R("AiCommitMsgNeedProfile").ToString()!);
             }
 
             var profile = settings.AiCommitProfiles![activeIndex];
-            if (string.IsNullOrWhiteSpace(profile.BaseUrl) || string.IsNullOrWhiteSpace(profile.Model))
+            if (!IsHttpUrl(profile.BaseUrl))
             {
                 return await AskFallbackAndCommit(owner, fallbackMessage,
-                    R("AiCommitMsgNeedBaseUrl").ToString()!);
+                    R("AiCommitMsgInvalidBaseUrl").ToString()!);
             }
+
+            if (string.IsNullOrWhiteSpace(profile.Model))
+            {
+                return await AskFallbackAndCommit(owner, fallbackMessage,
+                    R("AiCommitMsgNeedModel").ToString()!);
+            }
+
+            if (!await PullBeforePublishAsync())
+                return false;
 
             // Generate commit message
             var decryptedKey = Services.DpapiEncryption.Decrypt(profile.EncryptedKey);
@@ -479,7 +495,7 @@ namespace BlogTools
                 if (string.IsNullOrWhiteSpace(diffSummary))
                 {
                     // No changes to describe
-                    return await ExecuteGitCommitAndPush(owner, fallbackMessage);
+                    return await ExecuteGitCommitAndPush(owner, fallbackMessage, pullFirst: false);
                 }
 
                 var uiLanguage = settings.AppLanguage == "Auto"
@@ -492,20 +508,25 @@ namespace BlogTools
 
                 if (!success)
                 {
-                    return await AskFallbackAndCommit(owner, fallbackMessage, error);
+                    return await AskFallbackAndCommit(owner, fallbackMessage, error, pullFirst: false);
                 }
 
                 commitMessage = message;
             }
             catch (Exception ex)
             {
-                return await AskFallbackAndCommit(owner, fallbackMessage, ex.Message);
+                return await AskFallbackAndCommit(owner, fallbackMessage, ex.Message, pullFirst: false);
+            }
+
+            if (!settings.AiCommitBehaviorConfigured)
+            {
+                return await ShowCommitBehaviorDialogAsync(owner, commitMessage);
             }
 
             // Show confirmation or commit directly based on behavior
             if (settings.AiCommitBehavior == Models.AiCommitBehavior.DirectCommit)
             {
-                return await ExecuteGitCommitAndPush(owner, commitMessage);
+                return await ExecuteGitCommitAndPush(owner, commitMessage, pullFirst: false);
             }
 
             // Confirm and edit dialog
@@ -514,11 +535,15 @@ namespace BlogTools
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"TryPublishWithAiCommitAsync failed: {ex}");
-                return await ExecuteGitCommitAndPush(owner, fallbackMessage);
+                return await AskFallbackAndCommit(owner, fallbackMessage, ex.Message);
             }
         }
 
-        private static async Task<bool> AskFallbackAndCommit(Window owner, string fallbackMessage, string errorDetail)
+        private static async Task<bool> AskFallbackAndCommit(
+            Window owner,
+            string fallbackMessage,
+            string errorDetail,
+            bool pullFirst = true)
         {
             var msg = new Wpf.Ui.Controls.MessageBox
             {
@@ -533,32 +558,27 @@ namespace BlogTools
             if (await msg.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
                 return false;
 
-            return await ExecuteGitCommitAndPush(owner, fallbackMessage);
+            return await ExecuteGitCommitAndPush(owner, fallbackMessage, pullFirst);
         }
 
-        private static async Task<bool> ExecuteGitCommitAndPush(Window owner, string commitMessage)
+        private static async Task<bool> ExecuteGitCommitAndPush(Window owner, string commitMessage, bool pullFirst = true)
         {
             try
             {
-                // Pull first
-                var pullResult = await GitContext.PullAsync();
-                if (pullResult.Contains("CONFLICT") || pullResult.Contains("Automatic merge failed"))
-                {
-                    var conflictMsg = new Wpf.Ui.Controls.MessageBox
-                    {
-                        Title = R("CommonError").ToString()!,
-                        Content = R("EditorMsgConflict").ToString()!,
-                        CloseButtonText = R("CommonConfirm").ToString()!
-                    };
-                    await conflictMsg.ShowDialogAsync();
+                if (pullFirst && !await PullBeforePublishAsync())
                     return false;
-                }
 
                 // Check if there are changes
                 if (!await GitContext.HasChangesAsync())
                 {
                     // No changes — skip commit, just push if needed
-                    await GitContext.PushAsync();
+                    var (okPushWithoutChanges, pushWithoutChangesOutput) = await GitContext.PushAsync();
+                    if (!okPushWithoutChanges)
+                    {
+                        await ShowGitErrorAsync("push", pushWithoutChangesOutput);
+                        return false;
+                    }
+
                     return true;
                 }
 
@@ -566,39 +586,21 @@ namespace BlogTools
                 var (okAdd, addOutput) = await GitContext.StageAllAsync();
                 if (!okAdd)
                 {
-                    var errMsg = new Wpf.Ui.Controls.MessageBox
-                    {
-                        Title = R("CommonError").ToString()!,
-                        Content = $"git add failed: {addOutput}",
-                        CloseButtonText = R("CommonConfirm").ToString()!
-                    };
-                    await errMsg.ShowDialogAsync();
+                    await ShowGitErrorAsync("add", addOutput);
                     return false;
                 }
 
                 var (okCommit, commitOutput) = await GitContext.CommitAsync(commitMessage);
                 if (!okCommit)
                 {
-                    var errMsg = new Wpf.Ui.Controls.MessageBox
-                    {
-                        Title = R("CommonError").ToString()!,
-                        Content = $"git commit failed: {commitOutput}",
-                        CloseButtonText = R("CommonConfirm").ToString()!
-                    };
-                    await errMsg.ShowDialogAsync();
+                    await ShowGitErrorAsync("commit", commitOutput);
                     return false;
                 }
 
                 var (okPush, pushOutput) = await GitContext.PushAsync();
                 if (!okPush)
                 {
-                    var errMsg = new Wpf.Ui.Controls.MessageBox
-                    {
-                        Title = R("CommonError").ToString()!,
-                        Content = $"git push failed: {pushOutput}",
-                        CloseButtonText = R("CommonConfirm").ToString()!
-                    };
-                    await errMsg.ShowDialogAsync();
+                    await ShowGitErrorAsync("push", pushOutput);
                     return false;
                 }
 
@@ -618,6 +620,74 @@ namespace BlogTools
             }
         }
 
+        private static async Task<bool> PullBeforePublishAsync()
+        {
+            var (okPull, pullResult) = await GitContext.TryPullAsync();
+            if (pullResult.Contains("CONFLICT") || pullResult.Contains("Automatic merge failed"))
+            {
+                var conflictMsg = new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = R("CommonError").ToString()!,
+                    Content = R("EditorMsgConflict").ToString()!,
+                    CloseButtonText = R("CommonConfirm").ToString()!
+                };
+                await conflictMsg.ShowDialogAsync();
+                return false;
+            }
+
+            if (!okPull)
+            {
+                await ShowGitErrorAsync("pull", pullResult);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static async Task ShowGitErrorAsync(string operation, string output)
+        {
+            var errMsg = new Wpf.Ui.Controls.MessageBox
+            {
+                Title = R("CommonError").ToString()!,
+                Content = string.Format(R("AiCommitGitOperationFailed").ToString()!, operation, output),
+                CloseButtonText = R("CommonConfirm").ToString()!
+            };
+            await errMsg.ShowDialogAsync();
+        }
+
+        private static async Task<bool> ShowCommitBehaviorDialogAsync(Window owner, string commitMessage)
+        {
+            var dialog = CreateContentDialog(owner);
+            dialog.Title = R("AiCommitBehaviorDialogTitle").ToString()!;
+            dialog.Content = new TextBlock
+            {
+                Text = R("AiCommitBehaviorDialogMsg").ToString()!,
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 560
+            };
+            dialog.PrimaryButtonText = R("AiCommitBehaviorConfirm").ToString()!;
+            dialog.SecondaryButtonText = R("AiCommitBehaviorDirect").ToString()!;
+            dialog.CloseButtonText = R("AiCommitPublishCancelCommit").ToString()!;
+            dialog.DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary;
+            dialog.DialogWidth = 640;
+            dialog.DialogMaxWidth = 700;
+
+            var result = await ShowContentDialogAboveWebViewsAsync(owner, dialog);
+            if (result == Wpf.Ui.Controls.ContentDialogResult.None)
+                return false;
+
+            var settings = StorageService.Load();
+            settings.AiCommitBehaviorConfigured = true;
+            settings.AiCommitBehavior = result == Wpf.Ui.Controls.ContentDialogResult.Secondary
+                ? Models.AiCommitBehavior.DirectCommit
+                : Models.AiCommitBehavior.ConfirmAndEdit;
+            StorageService.Save(settings);
+
+            return settings.AiCommitBehavior == Models.AiCommitBehavior.DirectCommit
+                ? await ExecuteGitCommitAndPush(owner, commitMessage, pullFirst: false)
+                : await ShowCommitConfirmDialogAsync(owner, commitMessage);
+        }
+
         private static async Task<bool> ShowCommitConfirmDialogAsync(Window owner, string commitMessage)
         {
             var textBox = new System.Windows.Controls.TextBox
@@ -630,11 +700,10 @@ namespace BlogTools
                 MinHeight = 28
             };
 
-            // Behavior hint — first successful generation asks about direct commit
-            var settings = StorageService.Load();
-            var showBehaviorHint = settings.AiCommitBehavior == Models.AiCommitBehavior.ConfirmAndEdit;
-
-            var stackPanel = new StackPanel();
+            var stackPanel = new StackPanel
+            {
+                Width = 560
+            };
             stackPanel.Children.Add(new TextBlock
             {
                 Text = R("AiCommitPublishConfirmMsg").ToString()!,
@@ -642,51 +711,16 @@ namespace BlogTools
             });
             stackPanel.Children.Add(textBox);
 
-            if (showBehaviorHint)
-            {
-                stackPanel.Children.Add(new TextBlock
-                {
-                    Text = R("AiCommitPublishDirectHint").ToString()!,
-                    Margin = new Thickness(0, 12, 0, 4),
-                    FontSize = 12,
-                    Foreground = System.Windows.Media.Brushes.Gray
-                });
+            var dialog = CreateContentDialog(owner);
+            dialog.Title = R("AiCommitPublishConfirmTitle").ToString()!;
+            dialog.Content = stackPanel;
+            dialog.PrimaryButtonText = R("AiCommitPublishConfirmCommit").ToString()!;
+            dialog.CloseButtonText = R("AiCommitPublishCancelCommit").ToString()!;
+            dialog.DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary;
+            dialog.DialogWidth = 640;
+            dialog.DialogMaxWidth = 700;
 
-                var buttonsPanel = new StackPanel { Orientation = Orientation.Horizontal };
-                var directBtn = new Button
-                {
-                    Content = R("AiCommitPublishBtnDirect").ToString()!,
-                    Margin = new Thickness(0, 0, 8, 0),
-                    Padding = new Thickness(8, 4, 8, 4)
-                };
-                directBtn.Click += (_, _) =>
-                {
-                    settings.AiCommitBehavior = Models.AiCommitBehavior.DirectCommit;
-                    StorageService.Save(settings);
-                    // Close dialog and commit — we handle this via dialog result
-                };
-
-                var confirmBtn = new Button
-                {
-                    Content = R("AiCommitPublishBtnConfirm").ToString()!,
-                    Padding = new Thickness(8, 4, 8, 4)
-                };
-
-                buttonsPanel.Children.Add(directBtn);
-                buttonsPanel.Children.Add(confirmBtn);
-                stackPanel.Children.Add(buttonsPanel);
-            }
-
-            var dialog = new Wpf.Ui.Controls.ContentDialog
-            {
-                Title = R("AiCommitPublishConfirmTitle").ToString()!,
-                Content = stackPanel,
-                PrimaryButtonText = R("AiCommitPublishConfirmCommit").ToString()!,
-                CloseButtonText = R("AiCommitPublishCancelCommit").ToString()!,
-                DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary
-            };
-
-            var result = await dialog.ShowAsync();
+            var result = await ShowContentDialogAboveWebViewsAsync(owner, dialog);
             if (result != Wpf.Ui.Controls.ContentDialogResult.Primary)
                 return false;
 
@@ -695,7 +729,65 @@ namespace BlogTools
             if (string.IsNullOrWhiteSpace(finalMessage))
                 finalMessage = commitMessage;
 
-            return await ExecuteGitCommitAndPush(owner, finalMessage);
+            return await ExecuteGitCommitAndPush(owner, finalMessage, pullFirst: false);
+        }
+
+        private static bool IsHttpUrl(string? value) =>
+            Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+
+        private static Wpf.Ui.Controls.ContentDialog CreateContentDialog(Window owner)
+        {
+            var dialogHost = Wpf.Ui.Controls.ContentDialogHost.GetForWindow(owner);
+            if (dialogHost == null)
+                throw new InvalidOperationException(R("AiCommitDialogHostUnavailable").ToString()!);
+
+            return new Wpf.Ui.Controls.ContentDialog(dialogHost);
+        }
+
+        private static async Task<Wpf.Ui.Controls.ContentDialogResult> ShowContentDialogAboveWebViewsAsync(
+            Window owner,
+            Wpf.Ui.Controls.ContentDialog dialog)
+        {
+            var webViews = FindVisualChildren<Microsoft.Web.WebView2.Wpf.WebView2>(owner)
+                .Select(webView => (WebView: webView, Visibility: webView.Visibility))
+                .ToList();
+
+            foreach (var item in webViews)
+            {
+                item.WebView.Visibility = Visibility.Hidden;
+            }
+
+            try
+            {
+                return await dialog.ShowAsync();
+            }
+            finally
+            {
+                foreach (var item in webViews)
+                {
+                    item.WebView.Visibility = item.Visibility;
+                }
+            }
+        }
+
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent)
+            where T : DependencyObject
+        {
+            int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
+            for (int index = 0; index < childCount; index++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, index);
+                if (child is T match)
+                {
+                    yield return match;
+                }
+
+                foreach (var descendant in FindVisualChildren<T>(child))
+                {
+                    yield return descendant;
+                }
+            }
         }
 
         protected override void OnExit(ExitEventArgs e)
