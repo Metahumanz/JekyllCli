@@ -180,6 +180,167 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
+
+                <!-- ═══ AI 提交信息 ═══ -->
+                <TextBlock Text="{DynamicResource SettingsSecAiCommit}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="{StaticResource AppCardCornerRadius}" Padding="20" Margin="0,0,0,24">
+                    <StackPanel>
+                        <!-- Profile selector row -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource AiCommitLabelProfile}" VerticalAlignment="Center" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ComboBox x:Name="AiProfileComboBox" Grid.Column="2" SelectionChanged="AiProfile_SelectionChanged"/>
+                            <ui:Button x:Name="AiAddProfileBtn" Grid.Column="4" Content="+" Width="32" Height="28" Padding="0"
+                                       Style="{StaticResource LiftedUiButtonStyle}" Click="AiAddProfile_Click" ToolTip="{DynamicResource AiCommitTooltipAddProfile}"/>
+                            <ui:Button x:Name="AiRenameProfileBtn" Grid.Column="6" Content="{DynamicResource AiCommitBtnRename}" Height="28" Padding="8,2"
+                                       Style="{StaticResource LiftedUiButtonStyle}" Click="AiRenameProfile_Click" ToolTip="{DynamicResource AiCommitTooltipRenameProfile}"/>
+                            <ui:Button x:Name="AiDeleteProfileBtn" Grid.Column="8" Content="{DynamicResource AiCommitBtnDelete}" Height="28" Padding="8,2"
+                                       Style="{StaticResource LiftedUiButtonStyle}" Click="AiDeleteProfile_Click" ToolTip="{DynamicResource AiCommitTooltipDeleteProfile}"/>
+                        </Grid>
+
+                        <!-- Provider -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource AiCommitLabelProvider}" VerticalAlignment="Center" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ComboBox x:Name="AiProviderComboBox" Grid.Column="2" SelectionChanged="AiProvider_SelectionChanged"/>
+                        </Grid>
+
+                        <!-- Base URL -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource AiCommitLabelBaseUrl}" VerticalAlignment="Center" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ui:TextBox x:Name="AiBaseUrlBox" Grid.Column="2" PlaceholderText="https://api.openai.com/v1"/>
+                        </Grid>
+
+                        <!-- Model + Refresh -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource AiCommitLabelModel}" VerticalAlignment="Center" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ui:TextBox x:Name="AiModelBox" Grid.Column="2" PlaceholderText="gpt-5.4-mini"/>
+                            <ui:Button x:Name="AiRefreshModelsBtn" Grid.Column="4" Content="{DynamicResource AiCommitBtnRefreshModels}" Height="28" Padding="8,2"
+                                       Style="{StaticResource LiftedUiButtonStyle}" Click="AiRefreshModels_Click" ToolTip="{DynamicResource AiCommitTooltipRefreshModels}"/>
+                        </Grid>
+
+                        <!-- API Key -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource AiCommitLabelApiKey}" VerticalAlignment="Center" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ui:TextBox x:Name="AiApiKeyBox" Grid.Column="2" PlaceholderText="sk-..."/>
+                        </Grid>
+
+                        <!-- Deprecation warning -->
+                        <ui:InfoBar x:Name="AiDeprecationInfo" IsOpen="False" Severity="Warning" Margin="0,0,0,10"
+                                    Title="{DynamicResource AiCommitMsgDeprecatedTitle}"
+                                    Message="{DynamicResource AiCommitMsgDeprecatedMsg}"/>
+
+                        <!-- Suggested models -->
+                        <WrapPanel x:Name="AiSuggestedModelsPanel" Margin="0,0,0,10" Visibility="Collapsed"/>
+
+                        <!-- Action buttons row -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <ui:Button x:Name="AiSaveProfileBtn" Content="{DynamicResource AiCommitBtnSaveProfile}"
+                                       Style="{StaticResource LiftedUiButtonStyle}" Appearance="Primary" Click="AiSaveProfile_Click"
+                                       Icon="{icons:AssetIcon Save}" Margin="0,0,8,0" Padding="12,6"/>
+                            <ui:Button x:Name="AiTestGenerateBtn" Content="{DynamicResource AiCommitBtnTestGenerate}"
+                                       Style="{StaticResource LiftedUiButtonStyle}" Click="AiTestGenerate_Click"
+                                       Icon="{icons:AssetIcon Megaphone}" Margin="0,0,8,0" Padding="12,6"/>
+                        </StackPanel>
+
+                        <!-- Separator -->
+                        <Border Height="1" Background="{DynamicResource ControlStrokeColorDefaultBrush}" Margin="0,4,0,12"/>
+
+                        <!-- Commit style -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource AiCommitLabelStyle}" VerticalAlignment="Center" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ComboBox x:Name="AiCommitStyleComboBox" Grid.Column="2" SelectionChanged="AiCommitStyle_SelectionChanged">
+                                <ComboBoxItem Content="{DynamicResource AiCommitStyleSingleLine}" Tag="SingleLine"/>
+                                <ComboBoxItem Content="{DynamicResource AiCommitStyleConventional}" Tag="ConventionalCommit"/>
+                            </ComboBox>
+                        </Grid>
+
+                        <!-- Output language -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource AiCommitLabelLanguage}" VerticalAlignment="Center" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ComboBox x:Name="AiLanguageComboBox" Grid.Column="2" SelectionChanged="AiLanguage_SelectionChanged">
+                                <ComboBoxItem Content="{DynamicResource AiCommitLangFollowUI}" Tag="FollowUI"/>
+                                <ComboBoxItem Content="{DynamicResource AiCommitLangChinese}" Tag="Chinese"/>
+                                <ComboBoxItem Content="{DynamicResource AiCommitLangEnglish}" Tag="English"/>
+                            </ComboBox>
+                        </Grid>
+
+                        <!-- Per-context toggles -->
+                        <ui:CardControl Margin="0,0,0,4" Icon="{icons:AssetIcon Edit}" Style="{StaticResource RoundedCardControlStyle}">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource AiCommitLabelPostsToggle}" FontWeight="SemiBold" FontSize="14"/>
+                                    <TextBlock Text="{DynamicResource AiCommitDescPostsToggle}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ui:ToggleSwitch x:Name="AiCommitPostsToggle" Checked="AiCommitPosts_Checked" Unchecked="AiCommitPosts_Unchecked"/>
+                        </ui:CardControl>
+                        <ui:CardControl Margin="0,0,0,4" Icon="{icons:AssetIcon Globe}" Style="{StaticResource RoundedCardControlStyle}">
+                            <ui:CardControl.Header>
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource AiCommitLabelSettingsToggle}" FontWeight="SemiBold" FontSize="14"/>
+                                    <TextBlock Text="{DynamicResource AiCommitDescSettingsToggle}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <ui:ToggleSwitch x:Name="AiCommitSettingsToggle" Checked="AiCommitSettings_Checked" Unchecked="AiCommitSettings_Unchecked"/>
+                        </ui:CardControl>
+
+                        <!-- Refresh status -->
+                        <TextBlock x:Name="AiStatusText" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,8,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
     </Grid>
