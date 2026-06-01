@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <SelfContained>false</SelfContained>
-    <Version>1.8.0</Version>
+    <Version>1.8.1</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**;obj_codex\**;**\*_wpftmp*;**\*.wpftmp*</DefaultItemExcludes>
 
@@ -30,6 +30,15 @@
       <DocFilesToRemove Include="$(PublishDir)*.pdb" />
     </ItemGroup>
     <Delete Files="@(DocFilesToRemove)" />
+  </Target>
+
+  <!-- 清理时顺手移除 WPF 临时项目；构建期间文件可能仍被编译器或 IDE 占用 -->
+  <Target Name="CleanWpfTmpFiles" AfterTargets="Clean">
+    <ItemGroup>
+      <WpfTmpFiles Include="$(MSBuildProjectDirectory)\*_wpftmp*" />
+      <WpfTmpFiles Include="$(MSBuildProjectDirectory)\*.wpftmp*" />
+    </ItemGroup>
+    <Delete Files="@(WpfTmpFiles)" ContinueOnError="WarnAndContinue" />
   </Target>
 
   <ItemGroup>

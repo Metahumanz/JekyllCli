@@ -21,6 +21,9 @@
     <system:String x:Key="DashboardBtnOpenFaviconGenerator">Open Real Favicon Generator ↗</system:String>
     <system:String x:Key="DashboardFeatureTitle">✨ New Feature Highlights</system:String>
     <system:String x:Key="DashboardBugFixTitle">🐛 Core Fixes</system:String>
+    <system:String x:Key="DashboardTotalPosts">Total Posts</system:String>
+    <system:String x:Key="DashboardTotalCategories">Total Categories</system:String>
+    <system:String x:Key="DashboardTotalTags">Total Tags</system:String>
     <system:String x:Key="StatsPosts">Articles</system:String>
     <system:String x:Key="StatsCategories">Categories</system:String>
     <system:String x:Key="StatsTags">Tags</system:String>
@@ -341,20 +344,38 @@
     <system:String x:Key="AiCommitLabelProvider">Provider</system:String>
     <system:String x:Key="AiCommitLabelBaseUrl">Base URL</system:String>
     <system:String x:Key="AiCommitLabelModel">Model</system:String>
+    <system:String x:Key="AiCommitLabelModelsUrl">Models URL</system:String>
+    <system:String x:Key="AiCommitPlaceholderModelsUrl">Optional; defaults to Base URL/models</system:String>
     <system:String x:Key="AiCommitLabelApiKey">API Key</system:String>
+    <system:String x:Key="AiCommitLabelShowApiKey">Show</system:String>
     <system:String x:Key="AiCommitLabelSuggestions">Suggestions:</system:String>
+    <system:String x:Key="AiCommitDefaultProfileName">Profile {0}</system:String>
+    <system:String x:Key="AiCommitDefaultUnnamedProfile">Unnamed Profile</system:String>
+    <system:String x:Key="AiCommitProviderOpenAI">OpenAI</system:String>
+    <system:String x:Key="AiCommitProviderDeepSeek">DeepSeek</system:String>
+    <system:String x:Key="AiCommitProviderAliyun">Alibaba Bailian</system:String>
+    <system:String x:Key="AiCommitProviderMoonshot">Moonshot / Kimi</system:String>
+    <system:String x:Key="AiCommitProviderZhipu">Zhipu AI</system:String>
+    <system:String x:Key="AiCommitProviderOpenRouter">OpenRouter</system:String>
+    <system:String x:Key="AiCommitProviderSiliconFlow">SiliconFlow</system:String>
+    <system:String x:Key="AiCommitProviderOllama">Ollama</system:String>
+    <system:String x:Key="AiCommitProviderLmStudio">LM Studio</system:String>
+    <system:String x:Key="AiCommitProviderCustom">Custom</system:String>
     <system:String x:Key="AiCommitBtnRename">Rename</system:String>
     <system:String x:Key="AiCommitBtnDelete">Delete</system:String>
     <system:String x:Key="AiCommitBtnRefreshModels">Refresh Models</system:String>
     <system:String x:Key="AiCommitBtnSaveProfile">Save Profile</system:String>
     <system:String x:Key="AiCommitBtnTestGenerate">Test Generate</system:String>
     <system:String x:Key="AiCommitLabelStyle">Commit Style</system:String>
-    <system:String x:Key="AiCommitStyleSingleLine">Single Line</system:String>
-    <system:String x:Key="AiCommitStyleConventional">Conventional Commit</system:String>
+    <system:String x:Key="AiCommitStyleSingleLine">Concise summary (single line)</system:String>
+    <system:String x:Key="AiCommitStyleConventional">Conventional commit (feat:/fix:)</system:String>
     <system:String x:Key="AiCommitLabelLanguage">Output Language</system:String>
     <system:String x:Key="AiCommitLangFollowUI">Follow UI</system:String>
     <system:String x:Key="AiCommitLangChinese">中文</system:String>
     <system:String x:Key="AiCommitLangEnglish">English</system:String>
+    <system:String x:Key="AiCommitLabelBehavior">Publish Behavior</system:String>
+    <system:String x:Key="AiCommitBehaviorConfirm">Confirm and edit each time</system:String>
+    <system:String x:Key="AiCommitBehaviorDirect">Commit directly</system:String>
     <system:String x:Key="AiCommitLabelPostsToggle">Enable AI Commit for Post Publishing</system:String>
     <system:String x:Key="AiCommitDescPostsToggle">When enabled, AI generates commit messages when publishing articles.</system:String>
     <system:String x:Key="AiCommitLabelSettingsToggle">Enable AI Commit for Blog Settings Publishing</system:String>
@@ -372,12 +393,20 @@
     <system:String x:Key="AiCommitMsgTestSuccess">Test succeeded! Response: {0}</system:String>
     <system:String x:Key="AiCommitMsgTestFailed">Test failed: {0}</system:String>
     <system:String x:Key="AiCommitMsgProfileSaved">Profile saved.</system:String>
-    <system:String x:Key="AiCommitMsgNeedBaseUrl">Please fill in the Base URL first.</system:String>
+    <system:String x:Key="AiCommitMsgProfileRenamed">Profile renamed.</system:String>
+    <system:String x:Key="AiCommitMsgNeedProfileName">Please enter a profile name.</system:String>
+    <system:String x:Key="AiCommitMsgProfileDraftSaved">Draft profile saved. Fill in a valid Base URL and model before enabling AI commit.</system:String>
+    <system:String x:Key="AiCommitMsgProfileSavedPostsEnabled">Profile saved. AI commit for post publishing is now enabled.</system:String>
+    <system:String x:Key="AiCommitMsgInvalidBaseUrl">Please enter a valid HTTP or HTTPS Base URL.</system:String>
+    <system:String x:Key="AiCommitMsgInvalidModelsUrl">Please enter a valid HTTP or HTTPS Models URL.</system:String>
     <system:String x:Key="AiCommitMsgNeedModel">Please fill in or select a model.</system:String>
+    <system:String x:Key="AiCommitMsgNeedProfile">Please configure an AI profile first.</system:String>
+    <system:String x:Key="AiCommitMsgKeyEncryptFailed">The API Key could not be protected. Please try again.</system:String>
     <system:String x:Key="AiCommitMsgCantDeleteLast">Cannot delete the last profile.</system:String>
     <system:String x:Key="AiCommitMsgError">Error: {0}</system:String>
     <system:String x:Key="AiCommitDialogRenameTitle">Rename Profile</system:String>
     <system:String x:Key="AiCommitDialogRenameMsg">Enter a new profile name:</system:String>
+    <system:String x:Key="AiCommitDialogHostUnavailable">The dialog host is not ready. Please reopen App Settings and try again.</system:String>
     <system:String x:Key="AiCommitDialogDeleteTitle">Delete Profile</system:String>
     <system:String x:Key="AiCommitDialogDeleteMsg">Are you sure you want to delete profile "{0}"? This cannot be undone.</system:String>
 
@@ -388,16 +417,15 @@
     <system:String x:Key="AiCommitOnboardingBtnSkip">Not Now</system:String>
 
     <!-- AI Commit Publishing -->
-    <system:String x:Key="AiCommitPublishGenerating">Generating AI commit message...</system:String>
     <system:String x:Key="AiCommitPublishGenFailed">AI commit message generation failed: {0}</system:String>
     <system:String x:Key="AiCommitPublishFallback">Use default message and continue publishing?</system:String>
     <system:String x:Key="AiCommitPublishFallbackTitle">AI Generation Failed</system:String>
     <system:String x:Key="AiCommitPublishConfirmTitle">Confirm Commit Message</system:String>
     <system:String x:Key="AiCommitPublishConfirmMsg">Please confirm or edit the commit message:</system:String>
-    <system:String x:Key="AiCommitPublishDirectHint">From now on:</system:String>
-    <system:String x:Key="AiCommitPublishBtnDirect">Commit directly</system:String>
-    <system:String x:Key="AiCommitPublishBtnConfirm">Confirm each time</system:String>
     <system:String x:Key="AiCommitPublishConfirmCommit">Confirm &amp; Commit</system:String>
     <system:String x:Key="AiCommitPublishCancelCommit">Cancel</system:String>
+    <system:String x:Key="AiCommitBehaviorDialogTitle">Choose AI Commit Behavior</system:String>
+    <system:String x:Key="AiCommitBehaviorDialogMsg">AI generated a commit message. For future publishing, confirm and edit each message first, or commit directly after generation? You can change this later in App Settings.</system:String>
+    <system:String x:Key="AiCommitGitOperationFailed">git {0} failed: {1}</system:String>
 
 </ResourceDictionary>

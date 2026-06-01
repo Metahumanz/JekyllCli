@@ -32,7 +32,9 @@ namespace BlogTools.Services
         public AiCommitStyle AiCommitStyle { get; set; } = AiCommitStyle.SingleLine;
         public AiCommitLanguage AiCommitLanguage { get; set; } = AiCommitLanguage.FollowUI;
         public AiCommitBehavior AiCommitBehavior { get; set; } = AiCommitBehavior.ConfirmAndEdit;
+        public bool AiCommitBehaviorConfigured { get; set; } = false;
         public bool AiCommitOnboardingShown { get; set; } = false;
+        public bool AiCommitEnablePostsAfterProfileSave { get; set; } = false;
     }
 
     public static class StorageService

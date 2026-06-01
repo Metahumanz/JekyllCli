@@ -71,7 +71,7 @@ namespace BlogTools.Models
                 "https://api.moonshot.cn/v1",
                 "kimi-k2.6",
                 "",
-                new List<string> { "kimi-k2.5" }
+                new List<string>()
             ),
             [PresetZhipu] = (
                 "智谱",

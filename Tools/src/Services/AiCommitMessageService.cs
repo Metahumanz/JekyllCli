@@ -23,7 +23,7 @@ namespace BlogTools.Services
             Timeout = TimeSpan.FromSeconds(30)
         };
 
-        private const int MaxDiffChars = 12_000;
+        private const int MaxCommitMessageChars = 200;
 
         // ── JSON models for /models endpoint ────────────────────
 
@@ -49,11 +49,6 @@ namespace BlogTools.Services
         [JsonPropertyName("messages")]
         public List<ChatMessage> Messages { get; set; } = new();
 
-        [JsonPropertyName("temperature")]
-        public double Temperature { get; set; } = 0.7;
-
-        [JsonPropertyName("max_tokens")]
-        public int MaxTokens { get; set; } = 200;
     }
 
     private class ChatMessage
@@ -129,9 +124,7 @@ namespace BlogTools.Services
                     Messages = new List<ChatMessage>
                     {
                         new() { Role = "user", Content = "Say exactly: Hello from JekyllCli!" }
-                    },
-                    Temperature = 0.3,
-                    MaxTokens = 50
+                    }
                 };
 
                 var (success, text, error) = await SendChatRequestAsync(profile.BaseUrl, decryptedKey, request);
@@ -187,28 +180,16 @@ namespace BlogTools.Services
                     {
                         new() { Role = "system", Content = systemPrompt.ToString() },
                         new() { Role = "user", Content = userPrompt }
-                    },
-                    Temperature = 0.7,
-                    MaxTokens = 150
+                    }
                 };
 
                 var (success, text, error) = await SendChatRequestAsync(profile.BaseUrl, decryptedKey, request);
                 if (!success)
                     return (false, string.Empty, error);
 
-                // Clean up the response
-                var message = text.Trim()
-                    .Trim('"')
-                    .Trim('`')
-                    .Trim();
-
-                // Remove leading markdown code fence remnants
-                if (message.StartsWith("commit", StringComparison.OrdinalIgnoreCase))
-                {
-                    var idx = message.IndexOf('\n');
-                    if (idx > 0)
-                        message = message[(idx + 1)..].Trim();
-                }
+                var message = SanitizeCommitMessage(text);
+                if (string.IsNullOrWhiteSpace(message))
+                    return (false, string.Empty, "The provider returned an empty commit message.");
 
                 return (true, message, string.Empty);
             }
@@ -283,6 +264,40 @@ namespace BlogTools.Services
             return target == "zh"
                 ? "Write the commit message in Chinese (Simplified Chinese / 简体中文)."
                 : "Write the commit message in English.";
+        }
+
+        private static string SanitizeCommitMessage(string text)
+        {
+            var lines = text
+                .Replace("```", string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Trim())
+                .Where(line => line.Length > 0 &&
+                               !line.Equals("commit", StringComparison.OrdinalIgnoreCase) &&
+                               !line.Equals("text", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (lines.Count == 0)
+                return string.Empty;
+
+            var message = lines[0];
+            foreach (var prefix in new[] { "commit message:", "commit:", "提交信息：", "提交信息:" })
+            {
+                if (message.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    message = message[prefix.Length..].Trim();
+                    break;
+                }
+            }
+
+            message = message
+                .TrimStart('-', '*', ' ')
+                .Trim('"', '\'', '`', ' ');
+            message = System.Text.RegularExpressions.Regex.Replace(message, @"\s+", " ");
+
+            return message.Length <= MaxCommitMessageChars
+                ? message
+                : message[..MaxCommitMessageChars].TrimEnd();
         }
     }
 }
