@@ -32,6 +32,15 @@
     <Delete Files="@(DocFilesToRemove)" />
   </Target>
 
+  <!-- 每次构建后自动清理 WPF 生成的临时 _wpftmp 文件 -->
+  <Target Name="CleanWpfTmpFiles" AfterTargets="Build;Clean">
+    <ItemGroup>
+      <WpfTmpFiles Include="$(MSBuildProjectDirectory)\*_wpftmp*" />
+      <WpfTmpFiles Include="$(MSBuildProjectDirectory)\*.wpftmp*" />
+    </ItemGroup>
+    <Delete Files="@(WpfTmpFiles)" />
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="Markdig" Version="1.1.2" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3856.49" />
