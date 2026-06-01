@@ -203,7 +203,11 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{DynamicResource AiCommitLabelProfile}" VerticalAlignment="Center" FontSize="13"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                            <ComboBox x:Name="AiProfileComboBox" Grid.Column="2" SelectionChanged="AiProfile_SelectionChanged"/>
+                            <ComboBox x:Name="AiProfileComboBox" Grid.Column="2"
+                                      IsEditable="True" IsTextSearchEnabled="False"
+                                      SelectionChanged="AiProfile_SelectionChanged"
+                                      PreviewKeyDown="AiProfileComboBox_PreviewKeyDown"
+                                      LostKeyboardFocus="AiProfileComboBox_LostKeyboardFocus"/>
                             <ui:Button x:Name="AiAddProfileBtn" Grid.Column="4" Content="+" Width="32" Height="28" Padding="0"
                                        Style="{StaticResource LiftedUiButtonStyle}" Click="AiAddProfile_Click" ToolTip="{DynamicResource AiCommitTooltipAddProfile}"/>
                             <ui:Button x:Name="AiRenameProfileBtn" Grid.Column="6" Content="{DynamicResource AiCommitBtnRename}" Height="28" Padding="8,2"
@@ -247,9 +251,23 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{DynamicResource AiCommitLabelModel}" VerticalAlignment="Center" FontSize="13"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                            <ui:TextBox x:Name="AiModelBox" Grid.Column="2" PlaceholderText="gpt-5.4-mini"/>
+                            <ComboBox x:Name="AiModelBox" Grid.Column="2" IsEditable="True" IsTextSearchEnabled="True"
+                                      StaysOpenOnEdit="True"/>
                             <ui:Button x:Name="AiRefreshModelsBtn" Grid.Column="4" Content="{DynamicResource AiCommitBtnRefreshModels}" Height="28" Padding="8,2"
                                        Style="{StaticResource LiftedUiButtonStyle}" Click="AiRefreshModels_Click" ToolTip="{DynamicResource AiCommitTooltipRefreshModels}"/>
+                        </Grid>
+
+                        <!-- Optional model list URL -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource AiCommitLabelModelsUrl}" VerticalAlignment="Center" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ui:TextBox x:Name="AiModelsUrlBox" Grid.Column="2"
+                                        PlaceholderText="{DynamicResource AiCommitPlaceholderModelsUrl}"/>
                         </Grid>
 
                         <!-- API Key -->
@@ -258,10 +276,18 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{DynamicResource AiCommitLabelApiKey}" VerticalAlignment="Center" FontSize="13"
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                            <ui:TextBox x:Name="AiApiKeyBox" Grid.Column="2" PlaceholderText="sk-..."/>
+                            <PasswordBox x:Name="AiApiKeyPasswordBox" Grid.Column="2" Padding="8,4"
+                                         PasswordChanged="AiApiKeyPasswordBox_PasswordChanged"/>
+                            <ui:TextBox x:Name="AiApiKeyVisibleBox" Grid.Column="2" Visibility="Collapsed"
+                                        PlaceholderText="sk-..." TextChanged="AiApiKeyVisibleBox_TextChanged"/>
+                            <CheckBox x:Name="AiShowApiKeyCheckBox" Grid.Column="4" VerticalAlignment="Center"
+                                      Content="{DynamicResource AiCommitLabelShowApiKey}"
+                                      Checked="AiShowApiKey_Changed" Unchecked="AiShowApiKey_Changed"/>
                         </Grid>
 
                         <!-- Deprecation warning -->
@@ -313,6 +339,21 @@
                                 <ComboBoxItem Content="{DynamicResource AiCommitLangFollowUI}" Tag="FollowUI"/>
                                 <ComboBoxItem Content="{DynamicResource AiCommitLangChinese}" Tag="Chinese"/>
                                 <ComboBoxItem Content="{DynamicResource AiCommitLangEnglish}" Tag="English"/>
+                            </ComboBox>
+                        </Grid>
+
+                        <!-- Publish behavior -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource AiCommitLabelBehavior}" VerticalAlignment="Center" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <ComboBox x:Name="AiBehaviorComboBox" Grid.Column="2" SelectionChanged="AiBehavior_SelectionChanged">
+                                <ComboBoxItem Content="{DynamicResource AiCommitBehaviorConfirm}" Tag="ConfirmAndEdit"/>
+                                <ComboBoxItem Content="{DynamicResource AiCommitBehaviorDirect}" Tag="DirectCommit"/>
                             </ComboBox>
                         </Grid>
 

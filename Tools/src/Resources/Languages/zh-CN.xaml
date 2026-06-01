@@ -344,20 +344,38 @@
     <system:String x:Key="AiCommitLabelProvider">提供商</system:String>
     <system:String x:Key="AiCommitLabelBaseUrl">Base URL</system:String>
     <system:String x:Key="AiCommitLabelModel">模型</system:String>
+    <system:String x:Key="AiCommitLabelModelsUrl">Models URL</system:String>
+    <system:String x:Key="AiCommitPlaceholderModelsUrl">可选，默认使用 Base URL/models</system:String>
     <system:String x:Key="AiCommitLabelApiKey">API Key</system:String>
+    <system:String x:Key="AiCommitLabelShowApiKey">显示</system:String>
     <system:String x:Key="AiCommitLabelSuggestions">建议：</system:String>
+    <system:String x:Key="AiCommitDefaultProfileName">档案 {0}</system:String>
+    <system:String x:Key="AiCommitDefaultUnnamedProfile">未命名档案</system:String>
+    <system:String x:Key="AiCommitProviderOpenAI">OpenAI</system:String>
+    <system:String x:Key="AiCommitProviderDeepSeek">DeepSeek</system:String>
+    <system:String x:Key="AiCommitProviderAliyun">阿里百炼</system:String>
+    <system:String x:Key="AiCommitProviderMoonshot">Moonshot / Kimi</system:String>
+    <system:String x:Key="AiCommitProviderZhipu">智谱</system:String>
+    <system:String x:Key="AiCommitProviderOpenRouter">OpenRouter</system:String>
+    <system:String x:Key="AiCommitProviderSiliconFlow">硅基流动</system:String>
+    <system:String x:Key="AiCommitProviderOllama">Ollama</system:String>
+    <system:String x:Key="AiCommitProviderLmStudio">LM Studio</system:String>
+    <system:String x:Key="AiCommitProviderCustom">自定义</system:String>
     <system:String x:Key="AiCommitBtnRename">重命名</system:String>
     <system:String x:Key="AiCommitBtnDelete">删除</system:String>
     <system:String x:Key="AiCommitBtnRefreshModels">刷新模型</system:String>
     <system:String x:Key="AiCommitBtnSaveProfile">保存档案</system:String>
     <system:String x:Key="AiCommitBtnTestGenerate">测试生成</system:String>
     <system:String x:Key="AiCommitLabelStyle">提交风格</system:String>
-    <system:String x:Key="AiCommitStyleSingleLine">普通单行</system:String>
-    <system:String x:Key="AiCommitStyleConventional">Conventional Commit</system:String>
+    <system:String x:Key="AiCommitStyleSingleLine">简洁摘要（单行）</system:String>
+    <system:String x:Key="AiCommitStyleConventional">规范化提交（feat:/fix:）</system:String>
     <system:String x:Key="AiCommitLabelLanguage">输出语言</system:String>
     <system:String x:Key="AiCommitLangFollowUI">跟随界面</system:String>
     <system:String x:Key="AiCommitLangChinese">中文</system:String>
     <system:String x:Key="AiCommitLangEnglish">English</system:String>
+    <system:String x:Key="AiCommitLabelBehavior">发布方式</system:String>
+    <system:String x:Key="AiCommitBehaviorConfirm">每次确认并可编辑</system:String>
+    <system:String x:Key="AiCommitBehaviorDirect">直接提交</system:String>
     <system:String x:Key="AiCommitLabelPostsToggle">文章发布启用 AI 提交</system:String>
     <system:String x:Key="AiCommitDescPostsToggle">开启后，发布文章时使用 AI 生成提交信息</system:String>
     <system:String x:Key="AiCommitLabelSettingsToggle">博客设置发布启用 AI 提交</system:String>
@@ -375,12 +393,20 @@
     <system:String x:Key="AiCommitMsgTestSuccess">测试成功！响应：{0}</system:String>
     <system:String x:Key="AiCommitMsgTestFailed">测试失败：{0}</system:String>
     <system:String x:Key="AiCommitMsgProfileSaved">档案已保存。</system:String>
-    <system:String x:Key="AiCommitMsgNeedBaseUrl">请先填写 Base URL。</system:String>
+    <system:String x:Key="AiCommitMsgProfileRenamed">档案已重命名。</system:String>
+    <system:String x:Key="AiCommitMsgNeedProfileName">请输入档案名称。</system:String>
+    <system:String x:Key="AiCommitMsgProfileDraftSaved">档案草稿已保存。启用 AI 提交前，请填写有效的 Base URL 和模型。</system:String>
+    <system:String x:Key="AiCommitMsgProfileSavedPostsEnabled">档案已保存，文章发布 AI 提交已自动启用。</system:String>
+    <system:String x:Key="AiCommitMsgInvalidBaseUrl">请填写有效的 HTTP 或 HTTPS Base URL。</system:String>
+    <system:String x:Key="AiCommitMsgInvalidModelsUrl">请填写有效的 HTTP 或 HTTPS Models URL。</system:String>
     <system:String x:Key="AiCommitMsgNeedModel">请先填写或选择模型。</system:String>
+    <system:String x:Key="AiCommitMsgNeedProfile">请先配置 AI 档案。</system:String>
+    <system:String x:Key="AiCommitMsgKeyEncryptFailed">无法安全保存 API Key，请重试。</system:String>
     <system:String x:Key="AiCommitMsgCantDeleteLast">不能删除最后一个档案。</system:String>
     <system:String x:Key="AiCommitMsgError">错误：{0}</system:String>
     <system:String x:Key="AiCommitDialogRenameTitle">重命名档案</system:String>
     <system:String x:Key="AiCommitDialogRenameMsg">请输入新的档案名称：</system:String>
+    <system:String x:Key="AiCommitDialogHostUnavailable">对话框尚未准备好，请重新进入软件设置后再试。</system:String>
     <system:String x:Key="AiCommitDialogDeleteTitle">删除档案</system:String>
     <system:String x:Key="AiCommitDialogDeleteMsg">确定要删除档案 "{0}" 吗？此操作不可撤销。</system:String>
 
@@ -391,16 +417,15 @@
     <system:String x:Key="AiCommitOnboardingBtnSkip">暂不启用</system:String>
 
     <!-- AI 提交发布 -->
-    <system:String x:Key="AiCommitPublishGenerating">正在生成 AI 提交信息...</system:String>
     <system:String x:Key="AiCommitPublishGenFailed">AI 提交信息生成失败：{0}</system:String>
     <system:String x:Key="AiCommitPublishFallback">是否使用默认固定文案继续发布？</system:String>
     <system:String x:Key="AiCommitPublishFallbackTitle">AI 生成失败</system:String>
     <system:String x:Key="AiCommitPublishConfirmTitle">确认提交信息</system:String>
     <system:String x:Key="AiCommitPublishConfirmMsg">请确认或编辑提交信息：</system:String>
-    <system:String x:Key="AiCommitPublishDirectHint">以后采用：</system:String>
-    <system:String x:Key="AiCommitPublishBtnDirect">直接提交</system:String>
-    <system:String x:Key="AiCommitPublishBtnConfirm">每次确认</system:String>
     <system:String x:Key="AiCommitPublishConfirmCommit">确认提交</system:String>
     <system:String x:Key="AiCommitPublishCancelCommit">取消发布</system:String>
+    <system:String x:Key="AiCommitBehaviorDialogTitle">选择 AI 提交方式</system:String>
+    <system:String x:Key="AiCommitBehaviorDialogMsg">AI 已生成提交信息。以后发布时，是每次先确认并可编辑，还是生成后直接提交？您也可以稍后在软件设置中修改。</system:String>
+    <system:String x:Key="AiCommitGitOperationFailed">git {0} 执行失败：{1}</system:String>
 
 </ResourceDictionary>

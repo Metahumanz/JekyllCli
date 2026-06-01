@@ -31,6 +31,7 @@ namespace BlogTools
         private List<AiCommitProfile> _aiProfiles = new();
         private int _aiActiveIndex = -1;
         private List<string> _aiFetchedModels = new();
+        private bool _isSyncingAiKey;
 
         public AppSettingsPage()
         {
@@ -230,6 +231,7 @@ namespace BlogTools
             settings.AppLanguage = selectedTag;
             StorageService.Save(settings);
             App.ApplyLanguage(selectedTag);
+            PopulateAiProviderCombo();
         }
 
         private void FontComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -568,14 +570,11 @@ namespace BlogTools
                 // Populate profile combo
                 AiProfileComboBox.Items.Clear();
                 foreach (var p in _aiProfiles)
-                    AiProfileComboBox.Items.Add(p.Name ?? "Unnamed");
+                    AiProfileComboBox.Items.Add(p.Name ?? GetResourceString("AiCommitDefaultUnnamedProfile", "Unnamed"));
                 AiProfileComboBox.SelectedIndex = _aiActiveIndex;
 
                 // Populate provider combo
-                AiProviderComboBox.Items.Clear();
-                foreach (var kv in AiProviderPresets.Presets)
-                    AiProviderComboBox.Items.Add(new ComboBoxItem { Content = kv.Value.Name, Tag = kv.Key });
-                AiProviderComboBox.SelectedIndex = 0;
+                PopulateAiProviderCombo();
 
                 // Populate style combo
                 foreach (ComboBoxItem item in AiCommitStyleComboBox.Items)
@@ -600,6 +599,18 @@ namespace BlogTools
                 }
                 if (AiLanguageComboBox.SelectedItem == null)
                     AiLanguageComboBox.SelectedIndex = 0;
+
+                // Populate behavior combo
+                foreach (ComboBoxItem item in AiBehaviorComboBox.Items)
+                {
+                    if (item.Tag?.ToString() == settings.AiCommitBehavior.ToString())
+                    {
+                        AiBehaviorComboBox.SelectedItem = item;
+                        break;
+                    }
+                }
+                if (AiBehaviorComboBox.SelectedItem == null)
+                    AiBehaviorComboBox.SelectedIndex = 0;
 
                 AiCommitPostsToggle.IsChecked = settings.AiCommitEnabledPosts;
                 AiCommitSettingsToggle.IsChecked = settings.AiCommitEnabledSettings;
@@ -628,38 +639,111 @@ namespace BlogTools
             };
         }
 
+        private void PopulateAiProviderCombo()
+        {
+            var selectedProvider = (AiProviderComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            if (string.IsNullOrWhiteSpace(selectedProvider) &&
+                _aiActiveIndex >= 0 && _aiActiveIndex < _aiProfiles.Count)
+            {
+                selectedProvider = _aiProfiles[_aiActiveIndex].Provider;
+            }
+
+            var wasLoading = _isLoadingAi;
+            _isLoadingAi = true;
+            try
+            {
+                AiProviderComboBox.Items.Clear();
+                foreach (var kv in AiProviderPresets.Presets)
+                {
+                    AiProviderComboBox.Items.Add(new ComboBoxItem
+                    {
+                        Content = GetProviderDisplayName(kv.Key, kv.Value.Name),
+                        Tag = kv.Key
+                    });
+                }
+
+                foreach (ComboBoxItem item in AiProviderComboBox.Items)
+                {
+                    if (item.Tag?.ToString() == selectedProvider)
+                    {
+                        AiProviderComboBox.SelectedItem = item;
+                        return;
+                    }
+                }
+
+                AiProviderComboBox.SelectedIndex = 0;
+            }
+            finally
+            {
+                _isLoadingAi = wasLoading;
+            }
+        }
+
+        private static string GetProviderDisplayName(string provider, string fallback) =>
+            provider switch
+            {
+                AiProviderPresets.PresetOpenAI => GetResourceString("AiCommitProviderOpenAI", fallback),
+                AiProviderPresets.PresetDeepSeek => GetResourceString("AiCommitProviderDeepSeek", fallback),
+                AiProviderPresets.PresetAliyun => GetResourceString("AiCommitProviderAliyun", fallback),
+                AiProviderPresets.PresetMoonshot => GetResourceString("AiCommitProviderMoonshot", fallback),
+                AiProviderPresets.PresetZhipu => GetResourceString("AiCommitProviderZhipu", fallback),
+                AiProviderPresets.PresetOpenRouter => GetResourceString("AiCommitProviderOpenRouter", fallback),
+                AiProviderPresets.PresetSiliconFlow => GetResourceString("AiCommitProviderSiliconFlow", fallback),
+                AiProviderPresets.PresetOllama => GetResourceString("AiCommitProviderOllama", fallback),
+                AiProviderPresets.PresetLmStudio => GetResourceString("AiCommitProviderLmStudio", fallback),
+                AiProviderPresets.PresetCustom => GetResourceString("AiCommitProviderCustom", fallback),
+                _ => fallback
+            };
+
+        private static string GetResourceString(string key, string fallback) =>
+            Application.Current.TryFindResource(key) as string ?? fallback;
+
+        private static string FormatResourceString(string key, string fallback, params object[] args) =>
+            string.Format(GetResourceString(key, fallback), args);
+
         private void LoadActiveProfileIntoUi()
         {
             if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
                 return;
 
-            var profile = _aiProfiles[_aiActiveIndex];
-
-            // Select provider
-            foreach (ComboBoxItem item in AiProviderComboBox.Items)
+            var wasLoading = _isLoadingAi;
+            _isLoadingAi = true;
+            try
             {
-                if (item.Tag?.ToString() == profile.Provider)
+                var profile = _aiProfiles[_aiActiveIndex];
+
+                // Select provider
+                foreach (ComboBoxItem item in AiProviderComboBox.Items)
                 {
-                    AiProviderComboBox.SelectedItem = item;
-                    break;
+                    if (item.Tag?.ToString() == profile.Provider)
+                    {
+                        AiProviderComboBox.SelectedItem = item;
+                        break;
+                    }
                 }
+
+                AiBaseUrlBox.Text = profile.BaseUrl;
+                AiModelBox.Text = profile.Model;
+                AiModelsUrlBox.Text = profile.ModelsUrl;
+                SetApiKeyInUi(DpapiEncryption.Decrypt(profile.EncryptedKey));
+
+                // Show suggested models for this provider
+                UpdateSuggestedModels(profile.Provider);
+
+                // Check deprecation
+                CheckDeprecationWarning(profile.Provider, profile.Model);
             }
-
-            AiBaseUrlBox.Text = profile.BaseUrl;
-            AiModelBox.Text = profile.Model;
-            AiApiKeyBox.Text = DpapiEncryption.Decrypt(profile.EncryptedKey);
-
-            // Show suggested models for this provider
-            UpdateSuggestedModels(profile.Provider);
-
-            // Check deprecation
-            CheckDeprecationWarning(profile.Provider, profile.Model);
+            finally
+            {
+                _isLoadingAi = wasLoading;
+            }
         }
 
         private void UpdateSuggestedModels(string provider)
         {
             try
             {
+                UpdateModelChoices(provider);
                 AiSuggestedModelsPanel.Children.Clear();
                 AiSuggestedModelsPanel.Visibility = Visibility.Collapsed;
 
@@ -732,6 +816,25 @@ namespace BlogTools
             }
         }
 
+        private void UpdateModelChoices(string provider)
+        {
+            var currentModel = AiModelBox.Text;
+            IEnumerable<string> models = _aiFetchedModels;
+
+            if (_aiFetchedModels.Count == 0 &&
+                AiProviderPresets.Presets.TryGetValue(provider, out var preset))
+            {
+                models = new[] { preset.DefaultModel }
+                    .Concat(preset.SuggestedModels);
+            }
+
+            AiModelBox.ItemsSource = models
+                .Where(model => !string.IsNullOrWhiteSpace(model))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            AiModelBox.Text = currentModel;
+        }
+
         private void CheckDeprecationWarning(string provider, string model)
         {
             AiDeprecationInfo.IsOpen = false;
@@ -743,10 +846,11 @@ namespace BlogTools
             }
         }
 
-        private void SaveCurrentProfileFromUi()
+        private bool TrySaveCurrentProfileFromUi(out string error)
         {
+            error = string.Empty;
             if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
-                return;
+                return false;
 
             try
             {
@@ -756,22 +860,29 @@ namespace BlogTools
                 profile.Provider = providerTag;
                 profile.BaseUrl = AiBaseUrlBox.Text?.Trim() ?? string.Empty;
                 profile.Model = AiModelBox.Text?.Trim() ?? string.Empty;
+                profile.ModelsUrl = AiModelsUrlBox.Text?.Trim() ?? string.Empty;
 
-                var keyText = AiApiKeyBox.Text ?? string.Empty;
-                profile.EncryptedKey = string.IsNullOrWhiteSpace(keyText)
+                var keyText = GetApiKeyFromUi();
+                var encryptedKey = string.IsNullOrWhiteSpace(keyText)
                     ? string.Empty
                     : DpapiEncryption.Encrypt(keyText);
+                if (!string.IsNullOrWhiteSpace(keyText) && string.IsNullOrWhiteSpace(encryptedKey))
+                {
+                    error = GetResourceString("AiCommitMsgKeyEncryptFailed", "Failed to protect the API Key.");
+                    return false;
+                }
 
-                // Also update the profile name in the combo box
-                if (AiProfileComboBox.SelectedIndex >= 0 && AiProfileComboBox.SelectedIndex < AiProfileComboBox.Items.Count)
-                    AiProfileComboBox.Items[AiProfileComboBox.SelectedIndex] = profile.Name ?? "Unnamed";
+                profile.EncryptedKey = encryptedKey;
 
                 // Check deprecation after model update
                 CheckDeprecationWarning(profile.Provider, profile.Model);
+                return true;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"SaveCurrentProfileFromUi failed: {ex}");
+                error = ex.Message;
+                return false;
             }
         }
 
@@ -790,31 +901,157 @@ namespace BlogTools
             }
         }
 
+        private void SetApiKeyInUi(string apiKey)
+        {
+            _isSyncingAiKey = true;
+            try
+            {
+                AiApiKeyPasswordBox.Password = apiKey;
+                AiApiKeyVisibleBox.Text = apiKey;
+            }
+            finally
+            {
+                _isSyncingAiKey = false;
+            }
+        }
+
+        private string GetApiKeyFromUi() =>
+            AiShowApiKeyCheckBox.IsChecked == true
+                ? AiApiKeyVisibleBox.Text ?? string.Empty
+                : AiApiKeyPasswordBox.Password ?? string.Empty;
+
+        private static bool TryValidateProfile(AiCommitProfile profile, bool requireModel, out string error)
+        {
+            if (!TryValidateHttpUrl(profile.BaseUrl))
+            {
+                error = GetResourceString("AiCommitMsgInvalidBaseUrl", "Please enter a valid HTTP or HTTPS Base URL.");
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(profile.ModelsUrl) && !TryValidateHttpUrl(profile.ModelsUrl))
+            {
+                error = GetResourceString("AiCommitMsgInvalidModelsUrl", "Please enter a valid HTTP or HTTPS Models URL.");
+                return false;
+            }
+
+            if (requireModel && string.IsNullOrWhiteSpace(profile.Model))
+            {
+                error = GetResourceString("AiCommitMsgNeedModel", "Please fill in or select a model.");
+                return false;
+            }
+
+            error = string.Empty;
+            return true;
+        }
+
+        private static bool TryValidateHttpUrl(string? value) =>
+            Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+
+        private bool TryGetValidActiveProfile(out string error)
+        {
+            if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
+            {
+                error = GetResourceString("AiCommitMsgNeedProfile", "Please configure an AI profile first.");
+                return false;
+            }
+
+            return TryValidateProfile(_aiProfiles[_aiActiveIndex], requireModel: true, out error);
+        }
+
+        private void ShowAiError(string error)
+        {
+            AiStatusText.Text = FormatResourceString("AiCommitMsgError", "Error: {0}", error);
+        }
+
         // ── Event handlers ──────────────────────────────────────
 
         private void AiProfile_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isLoadingAi) return;
 
-            SaveCurrentProfileFromUi();
-            SaveAiSettingsToDisk();
+            var newIndex = AiProfileComboBox.SelectedIndex;
+            if (newIndex < 0 || newIndex >= _aiProfiles.Count)
+            {
+                // Editable ComboBox temporarily clears selection while the user types a new name.
+                if (AiProfileComboBox.IsKeyboardFocusWithin)
+                    return;
 
-            _aiActiveIndex = AiProfileComboBox.SelectedIndex;
+                _isLoadingAi = true;
+                AiProfileComboBox.SelectedIndex = _aiActiveIndex;
+                _isLoadingAi = false;
+                return;
+            }
+
+            if (!TrySaveCurrentProfileFromUi(out var error))
+            {
+                ShowAiError(error);
+                _isLoadingAi = true;
+                AiProfileComboBox.SelectedIndex = _aiActiveIndex;
+                _isLoadingAi = false;
+                return;
+            }
+
+            _aiActiveIndex = newIndex;
             if (_aiActiveIndex >= 0 && _aiActiveIndex < _aiProfiles.Count)
             {
                 _aiFetchedModels.Clear();
                 LoadActiveProfileIntoUi();
             }
+
+            SaveAiSettingsToDisk();
+        }
+
+        private void AiProfileComboBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter && CommitInlineProfileName())
+                e.Handled = true;
+        }
+
+        private void AiProfileComboBox_LostKeyboardFocus(object sender, System.Windows.Input.KeyboardFocusChangedEventArgs e)
+        {
+            if (_isLoadingAi || AiProfileComboBox.IsKeyboardFocusWithin)
+                return;
+
+            CommitInlineProfileName();
+        }
+
+        private bool CommitInlineProfileName()
+        {
+            if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
+                return false;
+
+            var profile = _aiProfiles[_aiActiveIndex];
+            var newName = AiProfileComboBox.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(newName))
+            {
+                UpdateProfileComboItemName(profile);
+                AiStatusText.Text = GetResourceString("AiCommitMsgNeedProfileName", "Please enter a profile name.");
+                return true;
+            }
+
+            if (newName == profile.Name)
+                return false;
+
+            profile.Name = newName;
+            UpdateProfileComboItemName(profile);
+            SaveAiSettingsToDisk();
+            AiStatusText.Text = GetResourceString("AiCommitMsgProfileRenamed", "Profile renamed.");
+            return true;
         }
 
         private void AiAddProfile_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                SaveCurrentProfileFromUi();
+                if (!TrySaveCurrentProfileFromUi(out var error))
+                {
+                    ShowAiError(error);
+                    return;
+                }
 
                 var newProfile = CreateDefaultProfile();
-                newProfile.Name = $"Profile {_aiProfiles.Count + 1}";
+                newProfile.Name = FormatResourceString("AiCommitDefaultProfileName", "Profile {0}", _aiProfiles.Count + 1);
                 _aiProfiles.Add(newProfile);
                 _aiActiveIndex = _aiProfiles.Count - 1;
 
@@ -830,7 +1067,7 @@ namespace BlogTools
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"AiAddProfile_Click failed: {ex}");
-                AiStatusText.Text = $"Error: {ex.Message}";
+                ShowAiError(ex.Message);
             }
         }
 
@@ -841,6 +1078,12 @@ namespace BlogTools
                 if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
                     return;
 
+                if (!TrySaveCurrentProfileFromUi(out var error))
+                {
+                    ShowAiError(error);
+                    return;
+                }
+
                 var profile = _aiProfiles[_aiActiveIndex];
                 var newName = await ShowTextInputDialogAsync(
                     Application.Current.TryFindResource("AiCommitDialogRenameTitle") as string ?? "Rename Profile",
@@ -850,13 +1093,15 @@ namespace BlogTools
                 if (!string.IsNullOrWhiteSpace(newName) && newName != profile.Name)
                 {
                     profile.Name = newName;
-                    AiProfileComboBox.Items[_aiActiveIndex] = newName;
+                    UpdateProfileComboItemName(profile);
                     SaveAiSettingsToDisk();
+                    AiStatusText.Text = GetResourceString("AiCommitMsgProfileRenamed", "Profile renamed.");
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"AiRenameProfile_Click failed: {ex}");
+                ShowAiError(ex.Message);
             }
         }
 
@@ -887,6 +1132,7 @@ namespace BlogTools
                 if (await msg.ShowDialogAsync() != WpfUiControls.MessageBoxResult.Primary)
                     return;
 
+                _isLoadingAi = true;
                 _aiProfiles.RemoveAt(_aiActiveIndex);
                 AiProfileComboBox.Items.RemoveAt(_aiActiveIndex);
 
@@ -894,7 +1140,6 @@ namespace BlogTools
                     _aiActiveIndex = _aiProfiles.Count - 1;
                 if (_aiActiveIndex < 0) _aiActiveIndex = 0;
 
-                _isLoadingAi = true;
                 AiProfileComboBox.SelectedIndex = _aiActiveIndex;
                 _isLoadingAi = false;
 
@@ -919,6 +1164,7 @@ namespace BlogTools
             if (AiProviderPresets.Presets.TryGetValue(tag, out var preset))
             {
                 AiBaseUrlBox.Text = preset.BaseUrl;
+                AiModelsUrlBox.Text = preset.ModelsUrl;
                 if (!string.IsNullOrWhiteSpace(preset.DefaultModel))
                     AiModelBox.Text = preset.DefaultModel;
                 else if (AiProviderPresets.NoDefaultModelProviders.Contains(tag))
@@ -927,17 +1173,28 @@ namespace BlogTools
 
             _aiFetchedModels.Clear();
             UpdateSuggestedModels(tag);
-            SaveCurrentProfileFromUi();
+            if (!TrySaveCurrentProfileFromUi(out var error))
+                ShowAiError(error);
         }
 
         private async void AiRefreshModels_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                SaveCurrentProfileFromUi();
+                if (!TrySaveCurrentProfileFromUi(out var error))
+                {
+                    ShowAiError(error);
+                    return;
+                }
 
                 if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count) return;
                 var profile = _aiProfiles[_aiActiveIndex];
+                if (!TryValidateProfile(profile, requireModel: false, out error))
+                {
+                    ShowAiError(error);
+                    return;
+                }
+
                 AiRefreshModelsBtn.IsEnabled = false;
                 AiStatusText.Text = Application.Current.TryFindResource("AiCommitMsgRefreshingModels") as string ?? "Refreshing...";
 
@@ -958,7 +1215,7 @@ namespace BlogTools
             }
             catch (Exception ex)
             {
-                AiStatusText.Text = $"Error: {ex.Message}";
+                ShowAiError(ex.Message);
             }
             finally
             {
@@ -970,20 +1227,19 @@ namespace BlogTools
         {
             try
             {
-                SaveCurrentProfileFromUi();
+                if (!TrySaveCurrentProfileFromUi(out var error))
+                {
+                    ShowAiError(error);
+                    return;
+                }
+
                 SaveAiSettingsToDisk();
 
                 if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count) return;
                 var profile = _aiProfiles[_aiActiveIndex];
-                if (string.IsNullOrWhiteSpace(profile.BaseUrl))
+                if (!TryValidateProfile(profile, requireModel: true, out error))
                 {
-                    AiStatusText.Text = Application.Current.TryFindResource("AiCommitMsgNeedBaseUrl") as string ?? "Please fill in Base URL.";
-                    return;
-                }
-
-                if (string.IsNullOrWhiteSpace(profile.Model))
-                {
-                    AiStatusText.Text = Application.Current.TryFindResource("AiCommitMsgNeedModel") as string ?? "Please select a model.";
+                    ShowAiError(error);
                     return;
                 }
 
@@ -991,7 +1247,7 @@ namespace BlogTools
                 AiStatusText.Text = Application.Current.TryFindResource("AiCommitMsgTesting") as string ?? "Testing...";
 
                 var decryptedKey = DpapiEncryption.Decrypt(profile.EncryptedKey);
-                var (success, text, error) = await AiCommitMessageService.TestGenerateAsync(profile, decryptedKey);
+                var (success, text, generationError) = await AiCommitMessageService.TestGenerateAsync(profile, decryptedKey);
 
                 if (success)
                 {
@@ -1001,12 +1257,12 @@ namespace BlogTools
                 else
                 {
                     AiStatusText.Text = string.Format(
-                        (Application.Current.TryFindResource("AiCommitMsgTestFailed") as string) ?? "Failed: {0}", error);
+                        (Application.Current.TryFindResource("AiCommitMsgTestFailed") as string) ?? "Failed: {0}", generationError);
                 }
             }
             catch (Exception ex)
             {
-                AiStatusText.Text = $"Error: {ex.Message}";
+                ShowAiError(ex.Message);
             }
             finally
             {
@@ -1018,22 +1274,37 @@ namespace BlogTools
         {
             try
             {
-                SaveCurrentProfileFromUi();
-                SaveAiSettingsToDisk();
-                AiStatusText.Text = Application.Current.TryFindResource("AiCommitMsgProfileSaved") as string ?? "Profile saved.";
+                if (!TrySaveCurrentProfileFromUi(out var error))
+                {
+                    ShowAiError(error);
+                    return;
+                }
 
-                // Auto-enable article AI commit on first valid profile save
+                SaveAiSettingsToDisk();
                 var settings = StorageService.Load();
-                if (!settings.AiCommitEnabledPosts && !settings.AiCommitEnabledSettings)
+                var profile = _aiProfiles[_aiActiveIndex];
+                var isValid = TryValidateProfile(profile, requireModel: true, out _);
+
+                // Only auto-enable after the user chose "Configure" in the onboarding dialog.
+                if (isValid && settings.AiCommitEnablePostsAfterProfileSave)
                 {
                     settings.AiCommitEnabledPosts = true;
+                    settings.AiCommitEnablePostsAfterProfileSave = false;
                     StorageService.Save(settings);
+                    _isLoadingAi = true;
                     AiCommitPostsToggle.IsChecked = true;
+                    _isLoadingAi = false;
+                    AiStatusText.Text = GetResourceString("AiCommitMsgProfileSavedPostsEnabled", "Profile saved. AI commit for post publishing is now enabled.");
+                    return;
                 }
+
+                AiStatusText.Text = isValid
+                    ? GetResourceString("AiCommitMsgProfileSaved", "Profile saved.")
+                    : GetResourceString("AiCommitMsgProfileDraftSaved", "Draft profile saved. Fill in a valid Base URL and model before enabling AI commit.");
             }
             catch (Exception ex)
             {
-                AiStatusText.Text = $"Error: {ex.Message}";
+                ShowAiError(ex.Message);
             }
         }
 
@@ -1053,10 +1324,112 @@ namespace BlogTools
                 SaveAiSetting(s => s.AiCommitLanguage = lang);
         }
 
-        private void AiCommitPosts_Checked(object sender, RoutedEventArgs e) => SaveAiSetting(s => s.AiCommitEnabledPosts = true);
+        private void AiBehavior_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isLoadingAi) return;
+            var tag = (AiBehaviorComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            if (Enum.TryParse<AiCommitBehavior>(tag, out var behavior))
+            {
+                SaveAiSetting(s =>
+                {
+                    s.AiCommitBehavior = behavior;
+                    s.AiCommitBehaviorConfigured = true;
+                });
+            }
+        }
+
+        private void AiCommitPosts_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!TryEnableAiCommit())
+                return;
+            SaveAiSetting(s => s.AiCommitEnabledPosts = true);
+        }
+
         private void AiCommitPosts_Unchecked(object sender, RoutedEventArgs e) => SaveAiSetting(s => s.AiCommitEnabledPosts = false);
-        private void AiCommitSettings_Checked(object sender, RoutedEventArgs e) => SaveAiSetting(s => s.AiCommitEnabledSettings = true);
+        private void AiCommitSettings_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!TryEnableAiCommit())
+                return;
+            SaveAiSetting(s => s.AiCommitEnabledSettings = true);
+        }
+
         private void AiCommitSettings_Unchecked(object sender, RoutedEventArgs e) => SaveAiSetting(s => s.AiCommitEnabledSettings = false);
+
+        private bool TryEnableAiCommit()
+        {
+            if (_isLoadingAi)
+                return false;
+
+            if (TrySaveCurrentProfileFromUi(out var error) && TryGetValidActiveProfile(out error))
+            {
+                SaveAiSettingsToDisk();
+                return true;
+            }
+
+            ShowAiError(error);
+            _isLoadingAi = true;
+            AiCommitPostsToggle.IsChecked = StorageService.Load().AiCommitEnabledPosts;
+            AiCommitSettingsToggle.IsChecked = StorageService.Load().AiCommitEnabledSettings;
+            _isLoadingAi = false;
+            return false;
+        }
+
+        private void AiShowApiKey_Changed(object sender, RoutedEventArgs e)
+        {
+            var showApiKey = AiShowApiKeyCheckBox.IsChecked == true;
+            AiApiKeyPasswordBox.Visibility = showApiKey ? Visibility.Collapsed : Visibility.Visible;
+            AiApiKeyVisibleBox.Visibility = showApiKey ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void AiApiKeyPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (_isSyncingAiKey) return;
+            _isSyncingAiKey = true;
+            AiApiKeyVisibleBox.Text = AiApiKeyPasswordBox.Password;
+            _isSyncingAiKey = false;
+        }
+
+        private void UpdateProfileComboItemName(AiCommitProfile profile)
+        {
+            var profileIndex = _aiProfiles.IndexOf(profile);
+            if (profileIndex < 0)
+                return;
+
+            var wasLoading = _isLoadingAi;
+            _isLoadingAi = true;
+            try
+            {
+                if (AiProfileComboBox.Items.Count != _aiProfiles.Count)
+                {
+                    AiProfileComboBox.Items.Clear();
+                    foreach (var item in _aiProfiles)
+                    {
+                        AiProfileComboBox.Items.Add(
+                            item.Name ?? GetResourceString("AiCommitDefaultUnnamedProfile", "Unnamed"));
+                    }
+                }
+                else
+                {
+                    AiProfileComboBox.Items[profileIndex] =
+                        profile.Name ?? GetResourceString("AiCommitDefaultUnnamedProfile", "Unnamed");
+                }
+
+                _aiActiveIndex = profileIndex;
+                AiProfileComboBox.SelectedIndex = profileIndex;
+            }
+            finally
+            {
+                _isLoadingAi = wasLoading;
+            }
+        }
+
+        private void AiApiKeyVisibleBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isSyncingAiKey) return;
+            _isSyncingAiKey = true;
+            AiApiKeyPasswordBox.Password = AiApiKeyVisibleBox.Text;
+            _isSyncingAiKey = false;
+        }
 
         private void SaveAiSetting(Action<AppSettings> update)
         {
@@ -1081,17 +1454,32 @@ namespace BlogTools
                 stackPanel.Children.Add(new Swc.TextBlock { Text = message, TextWrapping = Sw.TextWrapping.Wrap });
                 stackPanel.Children.Add(textBox);
 
-                var dialog = new Wpf.Ui.Controls.ContentDialog
+                var owner = Window.GetWindow(this) ?? Application.Current.MainWindow;
+                var dialogHost = owner == null
+                    ? null
+                    : WpfUiControls.ContentDialogHost.GetForWindow(owner);
+                if (dialogHost == null)
+                {
+                    ShowAiError(GetResourceString("AiCommitDialogHostUnavailable", "The dialog host is not ready. Please reopen App Settings and try again."));
+                    return string.Empty;
+                }
+
+                var dialog = new WpfUiControls.ContentDialog(dialogHost)
                 {
                     Title = title,
                     Content = stackPanel,
                     PrimaryButtonText = Application.Current.TryFindResource("CommonConfirm") as string ?? "Confirm",
                     CloseButtonText = Application.Current.TryFindResource("CommonCancel") as string ?? "Cancel",
-                    DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary
+                    DefaultButton = WpfUiControls.ContentDialogButton.Primary
+                };
+                dialog.Opened += (_, _) =>
+                {
+                    textBox.Focus();
+                    textBox.SelectAll();
                 };
 
                 var result = await dialog.ShowAsync();
-                return result == Wpf.Ui.Controls.ContentDialogResult.Primary ? textBox.Text.Trim() : string.Empty;
+                return result == WpfUiControls.ContentDialogResult.Primary ? textBox.Text.Trim() : string.Empty;
             }
             catch (Exception ex)
             {
