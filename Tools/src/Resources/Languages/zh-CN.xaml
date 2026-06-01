@@ -338,4 +338,69 @@
     <system:String x:Key="SetupMsgCloneSelect">选择克隆博客的存放目录</system:String>
     <system:String x:Key="SettingsMsgProgressPreparing">准备下载...</system:String>
 
+    <!-- AI 提交信息 -->
+    <system:String x:Key="SettingsSecAiCommit">AI 提交信息</system:String>
+    <system:String x:Key="AiCommitLabelProfile">档案</system:String>
+    <system:String x:Key="AiCommitLabelProvider">提供商</system:String>
+    <system:String x:Key="AiCommitLabelBaseUrl">Base URL</system:String>
+    <system:String x:Key="AiCommitLabelModel">模型</system:String>
+    <system:String x:Key="AiCommitLabelApiKey">API Key</system:String>
+    <system:String x:Key="AiCommitLabelSuggestions">建议：</system:String>
+    <system:String x:Key="AiCommitBtnRename">重命名</system:String>
+    <system:String x:Key="AiCommitBtnDelete">删除</system:String>
+    <system:String x:Key="AiCommitBtnRefreshModels">刷新模型</system:String>
+    <system:String x:Key="AiCommitBtnSaveProfile">保存档案</system:String>
+    <system:String x:Key="AiCommitBtnTestGenerate">测试生成</system:String>
+    <system:String x:Key="AiCommitLabelStyle">提交风格</system:String>
+    <system:String x:Key="AiCommitStyleSingleLine">普通单行</system:String>
+    <system:String x:Key="AiCommitStyleConventional">Conventional Commit</system:String>
+    <system:String x:Key="AiCommitLabelLanguage">输出语言</system:String>
+    <system:String x:Key="AiCommitLangFollowUI">跟随界面</system:String>
+    <system:String x:Key="AiCommitLangChinese">中文</system:String>
+    <system:String x:Key="AiCommitLangEnglish">English</system:String>
+    <system:String x:Key="AiCommitLabelPostsToggle">文章发布启用 AI 提交</system:String>
+    <system:String x:Key="AiCommitDescPostsToggle">开启后，发布文章时使用 AI 生成提交信息</system:String>
+    <system:String x:Key="AiCommitLabelSettingsToggle">博客设置发布启用 AI 提交</system:String>
+    <system:String x:Key="AiCommitDescSettingsToggle">开启后，发布博客设置时使用 AI 生成提交信息</system:String>
+    <system:String x:Key="AiCommitTooltipAddProfile">新增档案</system:String>
+    <system:String x:Key="AiCommitTooltipRenameProfile">重命名当前档案</system:String>
+    <system:String x:Key="AiCommitTooltipDeleteProfile">删除当前档案</system:String>
+    <system:String x:Key="AiCommitTooltipRefreshModels">从服务器获取可用模型列表</system:String>
+    <system:String x:Key="AiCommitMsgDeprecatedTitle">弃用警告</system:String>
+    <system:String x:Key="AiCommitMsgDeprecatedMsg">此模型别名即将在 2026 年 7 月 24 日停止使用，请切换到 deepseek-v4-flash 或 deepseek-v4-pro。</system:String>
+    <system:String x:Key="AiCommitMsgRefreshingModels">正在刷新模型列表...</system:String>
+    <system:String x:Key="AiCommitMsgModelsFetched">成功获取 {0} 个模型。</system:String>
+    <system:String x:Key="AiCommitMsgModelsFetchFailed">未能获取模型列表，请检查 Base URL 和 API Key。</system:String>
+    <system:String x:Key="AiCommitMsgTesting">正在测试连接...</system:String>
+    <system:String x:Key="AiCommitMsgTestSuccess">测试成功！响应：{0}</system:String>
+    <system:String x:Key="AiCommitMsgTestFailed">测试失败：{0}</system:String>
+    <system:String x:Key="AiCommitMsgProfileSaved">档案已保存。</system:String>
+    <system:String x:Key="AiCommitMsgNeedBaseUrl">请先填写 Base URL。</system:String>
+    <system:String x:Key="AiCommitMsgNeedModel">请先填写或选择模型。</system:String>
+    <system:String x:Key="AiCommitMsgCantDeleteLast">不能删除最后一个档案。</system:String>
+    <system:String x:Key="AiCommitMsgError">错误：{0}</system:String>
+    <system:String x:Key="AiCommitDialogRenameTitle">重命名档案</system:String>
+    <system:String x:Key="AiCommitDialogRenameMsg">请输入新的档案名称：</system:String>
+    <system:String x:Key="AiCommitDialogDeleteTitle">删除档案</system:String>
+    <system:String x:Key="AiCommitDialogDeleteMsg">确定要删除档案 "{0}" 吗？此操作不可撤销。</system:String>
+
+    <!-- AI 提交引导 -->
+    <system:String x:Key="AiCommitOnboardingTitle">AI 智能提交信息</system:String>
+    <system:String x:Key="AiCommitOnboardingMsg">是否启用 AI 自动生成提交信息？您可以先在软件设置中配置 AI 提供商和模型，后续发布文章时将使用 AI 生成更有意义的 Git 提交信息。</system:String>
+    <system:String x:Key="AiCommitOnboardingBtnSetup">去配置</system:String>
+    <system:String x:Key="AiCommitOnboardingBtnSkip">暂不启用</system:String>
+
+    <!-- AI 提交发布 -->
+    <system:String x:Key="AiCommitPublishGenerating">正在生成 AI 提交信息...</system:String>
+    <system:String x:Key="AiCommitPublishGenFailed">AI 提交信息生成失败：{0}</system:String>
+    <system:String x:Key="AiCommitPublishFallback">是否使用默认固定文案继续发布？</system:String>
+    <system:String x:Key="AiCommitPublishFallbackTitle">AI 生成失败</system:String>
+    <system:String x:Key="AiCommitPublishConfirmTitle">确认提交信息</system:String>
+    <system:String x:Key="AiCommitPublishConfirmMsg">请确认或编辑提交信息：</system:String>
+    <system:String x:Key="AiCommitPublishDirectHint">以后采用：</system:String>
+    <system:String x:Key="AiCommitPublishBtnDirect">直接提交</system:String>
+    <system:String x:Key="AiCommitPublishBtnConfirm">每次确认</system:String>
+    <system:String x:Key="AiCommitPublishConfirmCommit">确认提交</system:String>
+    <system:String x:Key="AiCommitPublishCancelCommit">取消发布</system:String>
+
 </ResourceDictionary>

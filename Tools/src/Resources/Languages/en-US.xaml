@@ -335,4 +335,69 @@
     <system:String x:Key="SetupMsgCloneSelect">Select directory for cloning blog</system:String>
     <system:String x:Key="SettingsMsgProgressPreparing">Preparing download...</system:String>
 
+    <!-- AI Commit -->
+    <system:String x:Key="SettingsSecAiCommit">AI Commit Message</system:String>
+    <system:String x:Key="AiCommitLabelProfile">Profile</system:String>
+    <system:String x:Key="AiCommitLabelProvider">Provider</system:String>
+    <system:String x:Key="AiCommitLabelBaseUrl">Base URL</system:String>
+    <system:String x:Key="AiCommitLabelModel">Model</system:String>
+    <system:String x:Key="AiCommitLabelApiKey">API Key</system:String>
+    <system:String x:Key="AiCommitLabelSuggestions">Suggestions:</system:String>
+    <system:String x:Key="AiCommitBtnRename">Rename</system:String>
+    <system:String x:Key="AiCommitBtnDelete">Delete</system:String>
+    <system:String x:Key="AiCommitBtnRefreshModels">Refresh Models</system:String>
+    <system:String x:Key="AiCommitBtnSaveProfile">Save Profile</system:String>
+    <system:String x:Key="AiCommitBtnTestGenerate">Test Generate</system:String>
+    <system:String x:Key="AiCommitLabelStyle">Commit Style</system:String>
+    <system:String x:Key="AiCommitStyleSingleLine">Single Line</system:String>
+    <system:String x:Key="AiCommitStyleConventional">Conventional Commit</system:String>
+    <system:String x:Key="AiCommitLabelLanguage">Output Language</system:String>
+    <system:String x:Key="AiCommitLangFollowUI">Follow UI</system:String>
+    <system:String x:Key="AiCommitLangChinese">中文</system:String>
+    <system:String x:Key="AiCommitLangEnglish">English</system:String>
+    <system:String x:Key="AiCommitLabelPostsToggle">Enable AI Commit for Post Publishing</system:String>
+    <system:String x:Key="AiCommitDescPostsToggle">When enabled, AI generates commit messages when publishing articles.</system:String>
+    <system:String x:Key="AiCommitLabelSettingsToggle">Enable AI Commit for Blog Settings Publishing</system:String>
+    <system:String x:Key="AiCommitDescSettingsToggle">When enabled, AI generates commit messages when publishing blog settings.</system:String>
+    <system:String x:Key="AiCommitTooltipAddProfile">Add a new profile</system:String>
+    <system:String x:Key="AiCommitTooltipRenameProfile">Rename current profile</system:String>
+    <system:String x:Key="AiCommitTooltipDeleteProfile">Delete current profile</system:String>
+    <system:String x:Key="AiCommitTooltipRefreshModels">Fetch available models from server</system:String>
+    <system:String x:Key="AiCommitMsgDeprecatedTitle">Deprecation Warning</system:String>
+    <system:String x:Key="AiCommitMsgDeprecatedMsg">This model alias will be retired on July 24, 2026. Please switch to deepseek-v4-flash or deepseek-v4-pro.</system:String>
+    <system:String x:Key="AiCommitMsgRefreshingModels">Refreshing model list...</system:String>
+    <system:String x:Key="AiCommitMsgModelsFetched">Successfully fetched {0} models.</system:String>
+    <system:String x:Key="AiCommitMsgModelsFetchFailed">Failed to fetch models. Please check Base URL and API Key.</system:String>
+    <system:String x:Key="AiCommitMsgTesting">Testing connection...</system:String>
+    <system:String x:Key="AiCommitMsgTestSuccess">Test succeeded! Response: {0}</system:String>
+    <system:String x:Key="AiCommitMsgTestFailed">Test failed: {0}</system:String>
+    <system:String x:Key="AiCommitMsgProfileSaved">Profile saved.</system:String>
+    <system:String x:Key="AiCommitMsgNeedBaseUrl">Please fill in the Base URL first.</system:String>
+    <system:String x:Key="AiCommitMsgNeedModel">Please fill in or select a model.</system:String>
+    <system:String x:Key="AiCommitMsgCantDeleteLast">Cannot delete the last profile.</system:String>
+    <system:String x:Key="AiCommitMsgError">Error: {0}</system:String>
+    <system:String x:Key="AiCommitDialogRenameTitle">Rename Profile</system:String>
+    <system:String x:Key="AiCommitDialogRenameMsg">Enter a new profile name:</system:String>
+    <system:String x:Key="AiCommitDialogDeleteTitle">Delete Profile</system:String>
+    <system:String x:Key="AiCommitDialogDeleteMsg">Are you sure you want to delete profile "{0}"? This cannot be undone.</system:String>
+
+    <!-- AI Commit Onboarding -->
+    <system:String x:Key="AiCommitOnboardingTitle">AI Commit Messages</system:String>
+    <system:String x:Key="AiCommitOnboardingMsg">Enable AI-generated commit messages? You can configure your AI provider and model in App Settings. When publishing posts, AI will generate meaningful Git commit messages.</system:String>
+    <system:String x:Key="AiCommitOnboardingBtnSetup">Configure</system:String>
+    <system:String x:Key="AiCommitOnboardingBtnSkip">Not Now</system:String>
+
+    <!-- AI Commit Publishing -->
+    <system:String x:Key="AiCommitPublishGenerating">Generating AI commit message...</system:String>
+    <system:String x:Key="AiCommitPublishGenFailed">AI commit message generation failed: {0}</system:String>
+    <system:String x:Key="AiCommitPublishFallback">Use default message and continue publishing?</system:String>
+    <system:String x:Key="AiCommitPublishFallbackTitle">AI Generation Failed</system:String>
+    <system:String x:Key="AiCommitPublishConfirmTitle">Confirm Commit Message</system:String>
+    <system:String x:Key="AiCommitPublishConfirmMsg">Please confirm or edit the commit message:</system:String>
+    <system:String x:Key="AiCommitPublishDirectHint">From now on:</system:String>
+    <system:String x:Key="AiCommitPublishBtnDirect">Commit directly</system:String>
+    <system:String x:Key="AiCommitPublishBtnConfirm">Confirm each time</system:String>
+    <system:String x:Key="AiCommitPublishConfirmCommit">Confirm &amp; Commit</system:String>
+    <system:String x:Key="AiCommitPublishCancelCommit">Cancel</system:String>
+
 </ResourceDictionary>

@@ -1,25 +1,36 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using BlogTools.Models;
 using BlogTools.Services;
 using Microsoft.Win32;
 using Wpf.Ui.Appearance;
+using WpfUiControls = Wpf.Ui.Controls;
+using Swc = System.Windows.Controls;
+using Sw = System.Windows;
 
 namespace BlogTools
 {
     public partial class AppSettingsPage : Page
     {
         private bool _isLoading;
+        private bool _isLoadingAi;
         private double _targetDropdownScrollOffset = -1;
         private double _currentDropdownScrollOffset = -1;
         private ScrollViewer? _activeDropdownScrollViewer;
         private double _targetPageScrollOffset = -1;
         private double _currentPageScrollOffset = -1;
         private ScrollViewer? _activePageScrollViewer;
+
+        // AI Commit state
+        private List<AiCommitProfile> _aiProfiles = new();
+        private int _aiActiveIndex = -1;
+        private List<string> _aiFetchedModels = new();
 
         public AppSettingsPage()
         {
@@ -124,6 +135,9 @@ namespace BlogTools
             }
 
             _isLoading = false;
+
+            // Load AI commit settings
+            LoadAiSettings();
         }
 
         private async void ChangeBlogPath_Click(object sender, RoutedEventArgs e)
@@ -294,7 +308,7 @@ namespace BlogTools
                     CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
                 };
 
-                if (await askDownload.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+                if (await askDownload.ShowDialogAsync() != WpfUiControls.MessageBoxResult.Primary)
                 {
                     return;
                 }
@@ -330,7 +344,7 @@ namespace BlogTools
                     CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
                 };
 
-                if (await askApply.ShowDialogAsync() == Wpf.Ui.Controls.MessageBoxResult.Primary)
+                if (await askApply.ShowDialogAsync() == WpfUiControls.MessageBoxResult.Primary)
                 {
                     ProgressText.Text = Application.Current.FindResource("SettingsMsgSilentUpdating").ToString()!;
                     await Task.Delay(500);
@@ -526,6 +540,495 @@ namespace BlogTools
             }
 
             return FindVisualParent<T>(parent);
+        }
+
+        // ── AI Commit handlers ──────────────────────────────────
+
+        private void LoadAiSettings()
+        {
+            _isLoadingAi = true;
+
+            var settings = StorageService.Load();
+            _aiProfiles = settings.AiCommitProfiles ?? new List<AiCommitProfile>();
+            _aiActiveIndex = settings.AiCommitActiveProfileIndex;
+
+            // Ensure at least one default profile exists
+            if (_aiProfiles.Count == 0)
+            {
+                _aiProfiles.Add(CreateDefaultProfile());
+                _aiActiveIndex = 0;
+                SaveAiSettingsToDisk();
+            }
+
+            if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
+                _aiActiveIndex = 0;
+
+            // Populate profile combo
+            AiProfileComboBox.Items.Clear();
+            foreach (var p in _aiProfiles)
+                AiProfileComboBox.Items.Add(p.Name);
+            AiProfileComboBox.SelectedIndex = _aiActiveIndex;
+
+            // Populate provider combo
+            AiProviderComboBox.Items.Clear();
+            foreach (var kv in AiProviderPresets.Presets)
+                AiProviderComboBox.Items.Add(new ComboBoxItem { Content = kv.Value.Name, Tag = kv.Key });
+            AiProviderComboBox.SelectedIndex = 0;
+
+            // Populate style combo
+            foreach (ComboBoxItem item in AiCommitStyleComboBox.Items)
+            {
+                if (item.Tag?.ToString() == settings.AiCommitStyle.ToString())
+                {
+                    AiCommitStyleComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+            if (AiCommitStyleComboBox.SelectedItem == null)
+                AiCommitStyleComboBox.SelectedIndex = 0;
+
+            // Populate language combo
+            foreach (ComboBoxItem item in AiLanguageComboBox.Items)
+            {
+                if (item.Tag?.ToString() == settings.AiCommitLanguage.ToString())
+                {
+                    AiLanguageComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+            if (AiLanguageComboBox.SelectedItem == null)
+                AiLanguageComboBox.SelectedIndex = 0;
+
+            AiCommitPostsToggle.IsChecked = settings.AiCommitEnabledPosts;
+            AiCommitSettingsToggle.IsChecked = settings.AiCommitEnabledSettings;
+
+            LoadActiveProfileIntoUi();
+
+            _isLoadingAi = false;
+        }
+
+        private static AiCommitProfile CreateDefaultProfile()
+        {
+            var (name, baseUrl, defaultModel, _, _) = AiProviderPresets.Presets[AiProviderPresets.PresetOpenAI];
+            return new AiCommitProfile
+            {
+                Name = name,
+                Provider = AiProviderPresets.PresetOpenAI,
+                BaseUrl = baseUrl,
+                Model = defaultModel
+            };
+        }
+
+        private void LoadActiveProfileIntoUi()
+        {
+            if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
+                return;
+
+            var profile = _aiProfiles[_aiActiveIndex];
+
+            // Select provider
+            foreach (ComboBoxItem item in AiProviderComboBox.Items)
+            {
+                if (item.Tag?.ToString() == profile.Provider)
+                {
+                    AiProviderComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+
+            AiBaseUrlBox.Text = profile.BaseUrl;
+            AiModelBox.Text = profile.Model;
+            AiApiKeyBox.Text = DpapiEncryption.Decrypt(profile.EncryptedKey);
+
+            // Show suggested models for this provider
+            UpdateSuggestedModels(profile.Provider);
+
+            // Check deprecation
+            CheckDeprecationWarning(profile.Provider, profile.Model);
+        }
+
+        private void UpdateSuggestedModels(string provider)
+        {
+            AiSuggestedModelsPanel.Children.Clear();
+            AiSuggestedModelsPanel.Visibility = Visibility.Collapsed;
+
+            if (_aiFetchedModels.Count > 0)
+            {
+                AiSuggestedModelsPanel.Visibility = Visibility.Visible;
+                var label = new Swc.TextBlock
+                {
+                    Text = Application.Current.FindResource("AiCommitLabelSuggestions").ToString()! + " ",
+                    FontSize = 12,
+                    Foreground = (Brush)FindResource("TextFillColorSecondaryBrush"),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Sw.Thickness(0, 0, 4, 0)
+                };
+                AiSuggestedModelsPanel.Children.Add(label);
+
+                foreach (var model in _aiFetchedModels.Take(15))
+                {
+                    var btn = new Swc.Button
+                    {
+                        Content = model,
+                        FontSize = 11,
+                        Padding = new Sw.Thickness(6, 2, 6, 2),
+                        Margin = new Sw.Thickness(0, 0, 4, 4),
+                        Style = (Style)FindResource("LiftedUiButtonStyle")
+                    };
+                    btn.Click += (_, _) => AiModelBox.Text = model;
+                    AiSuggestedModelsPanel.Children.Add(btn);
+                }
+            }
+            else if (AiProviderPresets.Presets.TryGetValue(provider, out var preset))
+            {
+                var suggestions = preset.SuggestedModels;
+                if (suggestions.Count > 0)
+                {
+                    AiSuggestedModelsPanel.Visibility = Visibility.Visible;
+                    var label = new Swc.TextBlock
+                    {
+                        Text = Application.Current.FindResource("AiCommitLabelSuggestions").ToString()! + " ",
+                        FontSize = 12,
+                        Foreground = (Brush)FindResource("TextFillColorSecondaryBrush"),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Sw.Thickness(0, 0, 4, 0)
+                    };
+                    AiSuggestedModelsPanel.Children.Add(label);
+
+                    foreach (var model in suggestions)
+                    {
+                        var btn = new Swc.Button
+                        {
+                            Content = model,
+                            FontSize = 11,
+                            Padding = new Sw.Thickness(6, 2, 6, 2),
+                            Margin = new Sw.Thickness(0, 0, 4, 4),
+                            Style = (Style)FindResource("LiftedUiButtonStyle")
+                        };
+                        btn.Click += (_, _) => AiModelBox.Text = model;
+                        AiSuggestedModelsPanel.Children.Add(btn);
+                    }
+                }
+            }
+        }
+
+        private void CheckDeprecationWarning(string provider, string model)
+        {
+            AiDeprecationInfo.IsOpen = false;
+            if (provider == AiProviderPresets.PresetDeepSeek &&
+                !string.IsNullOrWhiteSpace(model) &&
+                AiProviderPresets.DeepSeekDeprecatedModels.Contains(model.Trim().ToLowerInvariant()))
+            {
+                AiDeprecationInfo.IsOpen = true;
+            }
+        }
+
+        private void SaveCurrentProfileFromUi()
+        {
+            if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
+                return;
+
+            var profile = _aiProfiles[_aiActiveIndex];
+            var providerTag = (AiProviderComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
+
+            profile.Provider = providerTag;
+            profile.BaseUrl = AiBaseUrlBox.Text?.Trim() ?? string.Empty;
+            profile.Model = AiModelBox.Text?.Trim() ?? string.Empty;
+
+            var keyText = AiApiKeyBox.Text?.Trim() ?? string.Empty;
+            profile.EncryptedKey = string.IsNullOrWhiteSpace(keyText)
+                ? string.Empty
+                : DpapiEncryption.Encrypt(keyText);
+
+            // Also update the profile name in the combo box
+            if (AiProfileComboBox.SelectedIndex >= 0 && AiProfileComboBox.SelectedIndex < AiProfileComboBox.Items.Count)
+                AiProfileComboBox.Items[AiProfileComboBox.SelectedIndex] = profile.Name;
+
+            // Check deprecation after model update
+            CheckDeprecationWarning(profile.Provider, profile.Model);
+        }
+
+        private void SaveAiSettingsToDisk()
+        {
+            var settings = StorageService.Load();
+            settings.AiCommitProfiles = _aiProfiles;
+            settings.AiCommitActiveProfileIndex = _aiActiveIndex;
+            StorageService.Save(settings);
+
+            // Also persist the in-memory profile fields
+            SaveCurrentProfileFromUi();
+            StorageService.Save(settings);
+        }
+
+        // ── Event handlers ──────────────────────────────────────
+
+        private void AiProfile_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isLoadingAi) return;
+
+            SaveCurrentProfileFromUi();
+            SaveAiSettingsToDisk();
+
+            _aiActiveIndex = AiProfileComboBox.SelectedIndex;
+            if (_aiActiveIndex >= 0 && _aiActiveIndex < _aiProfiles.Count)
+            {
+                _aiFetchedModels.Clear();
+                LoadActiveProfileIntoUi();
+            }
+        }
+
+        private void AiAddProfile_Click(object sender, RoutedEventArgs e)
+        {
+            SaveCurrentProfileFromUi();
+
+            var newProfile = CreateDefaultProfile();
+            newProfile.Name = $"Profile {_aiProfiles.Count + 1}";
+            _aiProfiles.Add(newProfile);
+            _aiActiveIndex = _aiProfiles.Count - 1;
+
+            _isLoadingAi = true;
+            AiProfileComboBox.Items.Add(newProfile.Name);
+            AiProfileComboBox.SelectedIndex = _aiActiveIndex;
+            _isLoadingAi = false;
+
+            _aiFetchedModels.Clear();
+            LoadActiveProfileIntoUi();
+            SaveAiSettingsToDisk();
+        }
+
+        private async void AiRenameProfile_Click(object sender, RoutedEventArgs e)
+        {
+            if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
+                return;
+
+            var profile = _aiProfiles[_aiActiveIndex];
+            var newName = await ShowTextInputDialogAsync(
+                Application.Current.FindResource("AiCommitDialogRenameTitle").ToString()!,
+                Application.Current.FindResource("AiCommitDialogRenameMsg").ToString()!,
+                profile.Name);
+
+            if (!string.IsNullOrWhiteSpace(newName) && newName != profile.Name)
+            {
+                profile.Name = newName;
+                AiProfileComboBox.Items[_aiActiveIndex] = newName;
+                SaveAiSettingsToDisk();
+            }
+        }
+
+        private async void AiDeleteProfile_Click(object sender, RoutedEventArgs e)
+        {
+            if (_aiProfiles.Count <= 1)
+            {
+                AiStatusText.Text = Application.Current.FindResource("AiCommitMsgCantDeleteLast").ToString()!;
+                return;
+            }
+
+            if (_aiActiveIndex < 0 || _aiActiveIndex >= _aiProfiles.Count)
+                return;
+
+            var profile = _aiProfiles[_aiActiveIndex];
+            var msg = new WpfUiControls.MessageBox
+            {
+                Title = Application.Current.FindResource("AiCommitDialogDeleteTitle").ToString()!,
+                Content = string.Format(Application.Current.FindResource("AiCommitDialogDeleteMsg").ToString()!, profile.Name),
+                PrimaryButtonText = Application.Current.FindResource("CommonConfirm").ToString()!,
+                CloseButtonText = Application.Current.FindResource("CommonCancel").ToString()!
+            };
+
+            if (await msg.ShowDialogAsync() != WpfUiControls.MessageBoxResult.Primary)
+                return;
+
+            _aiProfiles.RemoveAt(_aiActiveIndex);
+            AiProfileComboBox.Items.RemoveAt(_aiActiveIndex);
+
+            if (_aiActiveIndex >= _aiProfiles.Count)
+                _aiActiveIndex = _aiProfiles.Count - 1;
+            if (_aiActiveIndex < 0) _aiActiveIndex = 0;
+
+            _isLoadingAi = true;
+            AiProfileComboBox.SelectedIndex = _aiActiveIndex;
+            _isLoadingAi = false;
+
+            _aiFetchedModels.Clear();
+            LoadActiveProfileIntoUi();
+            SaveAiSettingsToDisk();
+        }
+
+        private void AiProvider_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isLoadingAi) return;
+
+            var tag = (AiProviderComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            if (string.IsNullOrWhiteSpace(tag)) return;
+
+            // Auto-fill defaults from preset
+            if (AiProviderPresets.Presets.TryGetValue(tag, out var preset))
+            {
+                AiBaseUrlBox.Text = preset.BaseUrl;
+                if (!string.IsNullOrWhiteSpace(preset.DefaultModel))
+                    AiModelBox.Text = preset.DefaultModel;
+                else if (AiProviderPresets.NoDefaultModelProviders.Contains(tag))
+                    AiModelBox.Text = string.Empty;
+            }
+
+            _aiFetchedModels.Clear();
+            UpdateSuggestedModels(tag);
+            SaveCurrentProfileFromUi();
+        }
+
+        private async void AiRefreshModels_Click(object sender, RoutedEventArgs e)
+        {
+            SaveCurrentProfileFromUi();
+
+            var profile = _aiProfiles[_aiActiveIndex];
+            AiRefreshModelsBtn.IsEnabled = false;
+            AiStatusText.Text = Application.Current.FindResource("AiCommitMsgRefreshingModels").ToString()!;
+
+            try
+            {
+                var decryptedKey = DpapiEncryption.Decrypt(profile.EncryptedKey);
+                var models = await AiCommitMessageService.FetchModelsAsync(profile, decryptedKey);
+
+                if (models != null && models.Count > 0)
+                {
+                    _aiFetchedModels = models;
+                    AiStatusText.Text = string.Format(
+                        Application.Current.FindResource("AiCommitMsgModelsFetched").ToString()!, models.Count);
+                    UpdateSuggestedModels(profile.Provider);
+                }
+                else
+                {
+                    AiStatusText.Text = Application.Current.FindResource("AiCommitMsgModelsFetchFailed").ToString()!;
+                }
+            }
+            catch (Exception ex)
+            {
+                AiStatusText.Text = string.Format(
+                    Application.Current.FindResource("AiCommitMsgError").ToString()!, ex.Message);
+            }
+            finally
+            {
+                AiRefreshModelsBtn.IsEnabled = true;
+            }
+        }
+
+        private async void AiTestGenerate_Click(object sender, RoutedEventArgs e)
+        {
+            SaveCurrentProfileFromUi();
+            SaveAiSettingsToDisk();
+
+            var profile = _aiProfiles[_aiActiveIndex];
+            if (string.IsNullOrWhiteSpace(profile.BaseUrl))
+            {
+                AiStatusText.Text = Application.Current.FindResource("AiCommitMsgNeedBaseUrl").ToString()!;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(profile.Model))
+            {
+                AiStatusText.Text = Application.Current.FindResource("AiCommitMsgNeedModel").ToString()!;
+                return;
+            }
+
+            AiTestGenerateBtn.IsEnabled = false;
+            AiStatusText.Text = Application.Current.FindResource("AiCommitMsgTesting").ToString()!;
+
+            try
+            {
+                var decryptedKey = DpapiEncryption.Decrypt(profile.EncryptedKey);
+                var (success, text, error) = await AiCommitMessageService.TestGenerateAsync(profile, decryptedKey);
+
+                if (success)
+                {
+                    AiStatusText.Text = string.Format(
+                        Application.Current.FindResource("AiCommitMsgTestSuccess").ToString()!, text);
+                }
+                else
+                {
+                    AiStatusText.Text = string.Format(
+                        Application.Current.FindResource("AiCommitMsgTestFailed").ToString()!, error);
+                }
+            }
+            catch (Exception ex)
+            {
+                AiStatusText.Text = string.Format(
+                    Application.Current.FindResource("AiCommitMsgError").ToString()!, ex.Message);
+            }
+            finally
+            {
+                AiTestGenerateBtn.IsEnabled = true;
+            }
+        }
+
+        private void AiSaveProfile_Click(object sender, RoutedEventArgs e)
+        {
+            SaveCurrentProfileFromUi();
+            SaveAiSettingsToDisk();
+            AiStatusText.Text = Application.Current.FindResource("AiCommitMsgProfileSaved").ToString()!;
+
+            // Auto-enable article AI commit on first valid profile save
+            var settings = StorageService.Load();
+            if (!settings.AiCommitEnabledPosts && !settings.AiCommitEnabledSettings)
+            {
+                settings.AiCommitEnabledPosts = true;
+                StorageService.Save(settings);
+                AiCommitPostsToggle.IsChecked = true;
+            }
+        }
+
+        private void AiCommitStyle_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isLoadingAi) return;
+            var tag = (AiCommitStyleComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            if (Enum.TryParse<AiCommitStyle>(tag, out var style))
+                SaveAiSetting(s => s.AiCommitStyle = style);
+        }
+
+        private void AiLanguage_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isLoadingAi) return;
+            var tag = (AiLanguageComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+            if (Enum.TryParse<AiCommitLanguage>(tag, out var lang))
+                SaveAiSetting(s => s.AiCommitLanguage = lang);
+        }
+
+        private void AiCommitPosts_Checked(object sender, RoutedEventArgs e) => SaveAiSetting(s => s.AiCommitEnabledPosts = true);
+        private void AiCommitPosts_Unchecked(object sender, RoutedEventArgs e) => SaveAiSetting(s => s.AiCommitEnabledPosts = false);
+        private void AiCommitSettings_Checked(object sender, RoutedEventArgs e) => SaveAiSetting(s => s.AiCommitEnabledSettings = true);
+        private void AiCommitSettings_Unchecked(object sender, RoutedEventArgs e) => SaveAiSetting(s => s.AiCommitEnabledSettings = false);
+
+        private void SaveAiSetting(Action<AppSettings> update)
+        {
+            if (_isLoadingAi) return;
+            var settings = StorageService.Load();
+            update(settings);
+            StorageService.Save(settings);
+        }
+
+        private async Task<string> ShowTextInputDialogAsync(string title, string message, string defaultText)
+        {
+            var textBox = new System.Windows.Controls.TextBox
+            {
+                Text = defaultText,
+                Margin = new Sw.Thickness(0, 8, 0, 0),
+                MinWidth = 300
+            };
+
+            var stackPanel = new StackPanel();
+            stackPanel.Children.Add(new Swc.TextBlock { Text = message, TextWrapping = Sw.TextWrapping.Wrap });
+            stackPanel.Children.Add(textBox);
+
+            var dialog = new Wpf.Ui.Controls.ContentDialog
+            {
+                Title = title,
+                Content = stackPanel,
+                PrimaryButtonText = Application.Current.FindResource("CommonConfirm").ToString()!,
+                CloseButtonText = Application.Current.FindResource("CommonCancel").ToString()!,
+                DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary
+            };
+
+            var result = await dialog.ShowAsync();
+            return result == Wpf.Ui.Controls.ContentDialogResult.Primary ? textBox.Text.Trim() : string.Empty;
         }
     }
 }

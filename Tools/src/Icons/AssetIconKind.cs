@@ -30,6 +30,7 @@ namespace BlogTools.Icons
         Strikethrough,
         Code,
         ArrowLeft,
-        ArrowRight
+        ArrowRight,
+        Robot
     }
 }

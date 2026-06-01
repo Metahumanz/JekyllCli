@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
+using BlogTools.Models;
 
 namespace BlogTools.Services
 {
@@ -21,6 +23,16 @@ namespace BlogTools.Services
         public List<string> EditorSideToolOrder { get; set; } = new();
         public string EditorViewMode { get; set; } = "Split";
         public double EditorSplitRatio { get; set; } = 0.5;
+
+        // ── AI Commit ──────────────────────────────────────────
+        public List<AiCommitProfile> AiCommitProfiles { get; set; } = new();
+        public int AiCommitActiveProfileIndex { get; set; } = -1;
+        public bool AiCommitEnabledPosts { get; set; } = false;
+        public bool AiCommitEnabledSettings { get; set; } = false;
+        public AiCommitStyle AiCommitStyle { get; set; } = AiCommitStyle.SingleLine;
+        public AiCommitLanguage AiCommitLanguage { get; set; } = AiCommitLanguage.FollowUI;
+        public AiCommitBehavior AiCommitBehavior { get; set; } = AiCommitBehavior.ConfirmAndEdit;
+        public bool AiCommitOnboardingShown { get; set; } = false;
     }
 
     public static class StorageService

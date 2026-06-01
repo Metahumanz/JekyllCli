@@ -3783,22 +3783,15 @@ namespace BlogTools
                 return;
 
             ShowInfo(Application.Current.FindResource("EditorMsgPublishing").ToString()!, InfoBarSeverity.Informational);
-            try
-            {
-                var pullResult = await App.GitContext.PullAsync();
-                if (pullResult.Contains("CONFLICT") || pullResult.Contains("Automatic merge failed"))
-                {
-                    ShowInfo(Application.Current.FindResource("EditorMsgConflict").ToString()!, InfoBarSeverity.Error);
-                    return;
-                }
 
-                await App.GitContext.CommitAndPushAsync($"Update post: {TitleBox.Text}");
+            var fallbackMessage = $"Update post: {TitleBox.Text}";
+            var success = await App.TryPublishWithAiCommitAsync(
+                Window.GetWindow(this) ?? Application.Current.MainWindow,
+                "post",
+                fallbackMessage);
+
+            if (success)
                 ShowInfo(Application.Current.FindResource("EditorMsgPublishSuccess").ToString()!, InfoBarSeverity.Success);
-            }
-            catch (Exception ex)
-            {
-                ShowInfo(string.Format(Application.Current.FindResource("EditorMsgPublishError").ToString()!, ex.Message), InfoBarSeverity.Error);
-            }
         }
 
         private BlogPost GeneratePostObject()

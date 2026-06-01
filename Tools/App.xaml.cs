@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.IO;
 using BlogTools.Helpers;
 using BlogTools.Models;
@@ -417,6 +418,272 @@ namespace BlogTools
             _fileWatcher?.Dispose();
             _fileWatcher = new FileWatcherService(blogPath);
             _fileWatcher.FilesChanged += () => BlogFilesChanged?.Invoke();
+        }
+
+        // ── AI Commit Publish Flow ──────────────────────────────
+
+        /// <summary>
+        /// Orchestrate AI commit message generation and publishing.
+        /// context: "post" or "settings" — determines which toggle to check.
+        /// fallbackMessage: used if AI is disabled or fails and user chooses fallback.
+        /// Returns true if publish was attempted, false if user cancelled.
+        /// </summary>
+        public static async Task<bool> TryPublishWithAiCommitAsync(
+            Window owner,
+            string context,
+            string fallbackMessage)
+        {
+            var settings = StorageService.Load();
+
+            // Check if AI commit is enabled for this context
+            bool aiEnabled = context == "post"
+                ? settings.AiCommitEnabledPosts
+                : settings.AiCommitEnabledSettings;
+
+            if (!aiEnabled)
+            {
+                // Use fallback message directly
+                return await ExecuteGitCommitAndPush(owner, fallbackMessage);
+            }
+
+            // Validate AI profile
+            var activeIndex = settings.AiCommitActiveProfileIndex;
+            if (activeIndex < 0 || activeIndex >= (settings.AiCommitProfiles?.Count ?? 0))
+            {
+                // No valid profile — ask whether to use fallback
+                return await AskFallbackAndCommit(owner, fallbackMessage,
+                    Application.Current.FindResource("AiCommitMsgNeedBaseUrl").ToString()!);
+            }
+
+            var profile = settings.AiCommitProfiles![activeIndex];
+            if (string.IsNullOrWhiteSpace(profile.BaseUrl) || string.IsNullOrWhiteSpace(profile.Model))
+            {
+                return await AskFallbackAndCommit(owner, fallbackMessage,
+                    Application.Current.FindResource("AiCommitMsgNeedBaseUrl").ToString()!);
+            }
+
+            // Generate commit message
+            var decryptedKey = Services.DpapiEncryption.Decrypt(profile.EncryptedKey);
+
+            // Show generating status
+            string commitMessage;
+            try
+            {
+                var diffSummary = await GitContext.GetDiffSummaryAsync();
+                if (string.IsNullOrWhiteSpace(diffSummary))
+                {
+                    // No changes to describe
+                    return await ExecuteGitCommitAndPush(owner, fallbackMessage);
+                }
+
+                var uiLanguage = settings.AppLanguage == "Auto"
+                    ? (System.Globalization.CultureInfo.CurrentCulture.Name.StartsWith("zh") ? "zh-CN" : "en-US")
+                    : settings.AppLanguage;
+
+                var (success, message, error) = await Services.AiCommitMessageService.GenerateCommitMessageAsync(
+                    profile, decryptedKey, diffSummary,
+                    settings.AiCommitStyle, settings.AiCommitLanguage, uiLanguage);
+
+                if (!success)
+                {
+                    return await AskFallbackAndCommit(owner, fallbackMessage, error);
+                }
+
+                commitMessage = message;
+            }
+            catch (Exception ex)
+            {
+                return await AskFallbackAndCommit(owner, fallbackMessage, ex.Message);
+            }
+
+            // Show confirmation or commit directly based on behavior
+            if (settings.AiCommitBehavior == Models.AiCommitBehavior.DirectCommit)
+            {
+                return await ExecuteGitCommitAndPush(owner, commitMessage);
+            }
+
+            // Confirm and edit dialog
+            return await ShowCommitConfirmDialogAsync(owner, commitMessage);
+        }
+
+        private static async Task<bool> AskFallbackAndCommit(Window owner, string fallbackMessage, string errorDetail)
+        {
+            var msg = new Wpf.Ui.Controls.MessageBox
+            {
+                Title = Application.Current.FindResource("AiCommitPublishFallbackTitle").ToString()!,
+                Content = string.Format(
+                    Application.Current.FindResource("AiCommitPublishGenFailed").ToString()!, errorDetail) +
+                    "\n\n" + Application.Current.FindResource("AiCommitPublishFallback").ToString()!,
+                PrimaryButtonText = Application.Current.FindResource("CommonConfirm").ToString()!,
+                CloseButtonText = Application.Current.FindResource("CommonCancel").ToString()!
+            };
+
+            if (await msg.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+                return false;
+
+            return await ExecuteGitCommitAndPush(owner, fallbackMessage);
+        }
+
+        private static async Task<bool> ExecuteGitCommitAndPush(Window owner, string commitMessage)
+        {
+            try
+            {
+                // Pull first
+                var pullResult = await GitContext.PullAsync();
+                if (pullResult.Contains("CONFLICT") || pullResult.Contains("Automatic merge failed"))
+                {
+                    var conflictMsg = new Wpf.Ui.Controls.MessageBox
+                    {
+                        Title = Application.Current.FindResource("CommonError").ToString()!,
+                        Content = Application.Current.FindResource("EditorMsgConflict").ToString()!,
+                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                    };
+                    await conflictMsg.ShowDialogAsync();
+                    return false;
+                }
+
+                // Check if there are changes
+                if (!await GitContext.HasChangesAsync())
+                {
+                    // No changes — skip commit, just push if needed
+                    await GitContext.PushAsync();
+                    return true;
+                }
+
+                // Stage + commit + push
+                var (okAdd, addOutput) = await GitContext.StageAllAsync();
+                if (!okAdd)
+                {
+                    var errMsg = new Wpf.Ui.Controls.MessageBox
+                    {
+                        Title = Application.Current.FindResource("CommonError").ToString()!,
+                        Content = $"git add failed: {addOutput}",
+                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                    };
+                    await errMsg.ShowDialogAsync();
+                    return false;
+                }
+
+                var (okCommit, commitOutput) = await GitContext.CommitAsync(commitMessage);
+                if (!okCommit)
+                {
+                    var errMsg = new Wpf.Ui.Controls.MessageBox
+                    {
+                        Title = Application.Current.FindResource("CommonError").ToString()!,
+                        Content = $"git commit failed: {commitOutput}",
+                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                    };
+                    await errMsg.ShowDialogAsync();
+                    return false;
+                }
+
+                var (okPush, pushOutput) = await GitContext.PushAsync();
+                if (!okPush)
+                {
+                    var errMsg = new Wpf.Ui.Controls.MessageBox
+                    {
+                        Title = Application.Current.FindResource("CommonError").ToString()!,
+                        Content = $"git push failed: {pushOutput}",
+                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                    };
+                    await errMsg.ShowDialogAsync();
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                var errMsg = new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = Application.Current.FindResource("CommonError").ToString()!,
+                    Content = string.Format(
+                        Application.Current.FindResource("EditorMsgPublishError").ToString()!, ex.Message),
+                    CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                };
+                await errMsg.ShowDialogAsync();
+                return false;
+            }
+        }
+
+        private static async Task<bool> ShowCommitConfirmDialogAsync(Window owner, string commitMessage)
+        {
+            var textBox = new System.Windows.Controls.TextBox
+            {
+                Text = commitMessage,
+                AcceptsReturn = false,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 8, 0, 0),
+                MinWidth = 400,
+                MinHeight = 28
+            };
+
+            // Behavior hint — first successful generation asks about direct commit
+            var settings = StorageService.Load();
+            var showBehaviorHint = settings.AiCommitBehavior == Models.AiCommitBehavior.ConfirmAndEdit;
+
+            var stackPanel = new StackPanel();
+            stackPanel.Children.Add(new TextBlock
+            {
+                Text = Application.Current.FindResource("AiCommitPublishConfirmMsg").ToString()!,
+                TextWrapping = TextWrapping.Wrap
+            });
+            stackPanel.Children.Add(textBox);
+
+            if (showBehaviorHint)
+            {
+                stackPanel.Children.Add(new TextBlock
+                {
+                    Text = Application.Current.FindResource("AiCommitPublishDirectHint").ToString()!,
+                    Margin = new Thickness(0, 12, 0, 4),
+                    FontSize = 12,
+                    Foreground = System.Windows.Media.Brushes.Gray
+                });
+
+                var buttonsPanel = new StackPanel { Orientation = Orientation.Horizontal };
+                var directBtn = new Button
+                {
+                    Content = Application.Current.FindResource("AiCommitPublishBtnDirect").ToString()!,
+                    Margin = new Thickness(0, 0, 8, 0),
+                    Padding = new Thickness(8, 4, 8, 4)
+                };
+                directBtn.Click += (_, _) =>
+                {
+                    settings.AiCommitBehavior = Models.AiCommitBehavior.DirectCommit;
+                    StorageService.Save(settings);
+                    // Close dialog and commit — we handle this via dialog result
+                };
+
+                var confirmBtn = new Button
+                {
+                    Content = Application.Current.FindResource("AiCommitPublishBtnConfirm").ToString()!,
+                    Padding = new Thickness(8, 4, 8, 4)
+                };
+
+                buttonsPanel.Children.Add(directBtn);
+                buttonsPanel.Children.Add(confirmBtn);
+                stackPanel.Children.Add(buttonsPanel);
+            }
+
+            var dialog = new Wpf.Ui.Controls.ContentDialog
+            {
+                Title = Application.Current.FindResource("AiCommitPublishConfirmTitle").ToString()!,
+                Content = stackPanel,
+                PrimaryButtonText = Application.Current.FindResource("AiCommitPublishConfirmCommit").ToString()!,
+                CloseButtonText = Application.Current.FindResource("AiCommitPublishCancelCommit").ToString()!,
+                DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result != Wpf.Ui.Controls.ContentDialogResult.Primary)
+                return false;
+
+            // Use edited text
+            var finalMessage = textBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(finalMessage))
+                finalMessage = commitMessage;
+
+            return await ExecuteGitCommitAndPush(owner, finalMessage);
         }
 
         protected override void OnExit(ExitEventArgs e)
