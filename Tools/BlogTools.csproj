@@ -32,13 +32,13 @@
     <Delete Files="@(DocFilesToRemove)" />
   </Target>
 
-  <!-- 每次构建后自动清理 WPF 生成的临时 _wpftmp 文件 -->
-  <Target Name="CleanWpfTmpFiles" AfterTargets="Build;Clean">
+  <!-- 清理时顺手移除 WPF 临时项目；构建期间文件可能仍被编译器或 IDE 占用 -->
+  <Target Name="CleanWpfTmpFiles" AfterTargets="Clean">
     <ItemGroup>
       <WpfTmpFiles Include="$(MSBuildProjectDirectory)\*_wpftmp*" />
       <WpfTmpFiles Include="$(MSBuildProjectDirectory)\*.wpftmp*" />
     </ItemGroup>
-    <Delete Files="@(WpfTmpFiles)" />
+    <Delete Files="@(WpfTmpFiles)" ContinueOnError="WarnAndContinue" />
   </Target>
 
   <ItemGroup>
