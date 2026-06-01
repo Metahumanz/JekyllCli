@@ -344,7 +344,28 @@ There are 3 practical toggles here:
 
 If you often write long articles, enabling automatic modified time updates usually makes the workflow smoother.
 
-### 9.3 Appearance
+### 9.3 AI commit messages
+
+When publishing a post or blog settings, AI can generate a more meaningful Git commit message.
+
+Setup steps:
+
+1. Select a built-in provider or choose `Custom`
+2. Fill in `Base URL` and `API Key`
+3. Click `Refresh Models`, then choose from the complete model dropdown; you can also type a model ID manually
+4. If the service does not use the default `<Base URL>/models` endpoint, fill in the optional `Models URL`
+5. Click `Test Generate` to verify the profile, then save it
+
+Notes:
+
+- API keys are encrypted with DPAPI for the current Windows user and hidden by default in the UI
+- You can create multiple profiles and switch between providers or local services quickly
+- AI switches for post publishing and blog settings publishing are independent
+- Publish behavior can be `Confirm and edit each time` or `Commit directly`
+- AI requests only include a length-limited change summary; binary files are represented by filename only
+- If AI generation fails, the app asks whether to continue with the default fixed message
+
+### 9.4 Appearance
 
 You can adjust:
 
@@ -354,7 +375,7 @@ You can adjust:
 
 The current version includes built-in Chinese and English resources, and the font list is read directly from the system fonts.
 
-### 9.4 Update center
+### 9.5 Update center
 
 Here you can:
 
