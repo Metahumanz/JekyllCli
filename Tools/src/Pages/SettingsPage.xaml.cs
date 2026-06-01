@@ -216,17 +216,16 @@ namespace BlogTools
             StatusInfo.Message = Application.Current.FindResource("SettingsMsgPublishing").ToString()!;
             StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Informational;
             StatusInfo.IsOpen = true;
-            
-            try
+
+            var success = await App.TryPublishWithAiCommitAsync(
+                Window.GetWindow(this) ?? Application.Current.MainWindow,
+                "settings",
+                "Update blog configuration settings");
+
+            if (success)
             {
-                await App.GitContext.CommitAndPushAsync("Update blog configuration settings");
                 StatusInfo.Message = Application.Current.FindResource("SettingsMsgPublishSuccess").ToString()!;
                 StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Success;
-            }
-            catch (Exception ex)
-            {
-                StatusInfo.Message = string.Format(Application.Current.FindResource("SettingsMsgPublishError").ToString()!, ex.Message);
-                StatusInfo.Severity = Wpf.Ui.Controls.InfoBarSeverity.Error;
             }
         }
 

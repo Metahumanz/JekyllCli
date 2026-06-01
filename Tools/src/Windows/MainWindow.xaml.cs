@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
+using BlogTools.Services;
 using Wpf.Ui.Controls;
 
 namespace BlogTools
@@ -39,7 +41,7 @@ namespace BlogTools
 
         public void ApplyGlobalFont(string? fontName = null)
         {
-            var settings = Services.StorageService.Load();
+            var settings = StorageService.Load();
             var font = fontName;
 
             if (string.IsNullOrWhiteSpace(font))
@@ -61,9 +63,58 @@ namespace BlogTools
             AppTitleBar.FontFamily = FontFamily;
         }
 
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             RootNavigation.Navigate(typeof(DashboardPage));
+
+            // Show AI commit onboarding once (skip in doc screenshot mode)
+            await ShowAiCommitOnboardingIfNeededAsync();
+        }
+
+        private async Task ShowAiCommitOnboardingIfNeededAsync()
+        {
+            try
+            {
+                // Skip if we're in doc screenshot mode
+                var args = Environment.GetCommandLineArgs();
+                foreach (var arg in args)
+                {
+                    if (arg.StartsWith("--capture-doc-screenshots", StringComparison.OrdinalIgnoreCase))
+                        return;
+                }
+
+                var settings = StorageService.Load();
+
+                // Only show once
+                if (settings.AiCommitOnboardingShown)
+                    return;
+
+                settings.AiCommitOnboardingShown = true;
+                StorageService.Save(settings);
+
+                // Slight delay so the main window renders first
+                await Task.Delay(800);
+
+                var msg = new Wpf.Ui.Controls.MessageBox
+                {
+                    Title = Application.Current.FindResource("AiCommitOnboardingTitle").ToString()!,
+                    Content = Application.Current.FindResource("AiCommitOnboardingMsg").ToString()!,
+                    PrimaryButtonText = Application.Current.FindResource("AiCommitOnboardingBtnSetup").ToString()!,
+                    CloseButtonText = Application.Current.FindResource("AiCommitOnboardingBtnSkip").ToString()!
+                };
+
+                var result = await msg.ShowDialogAsync();
+
+                if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
+                {
+                    // Navigate to App Settings
+                    RootNavigation.Navigate(typeof(AppSettingsPage));
+                }
+            }
+            catch
+            {
+                // Silently ignore onboarding errors
+            }
         }
     }
 }
