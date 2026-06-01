@@ -97,10 +97,10 @@ namespace BlogTools
 
                 var msg = new Wpf.Ui.Controls.MessageBox
                 {
-                    Title = Application.Current.FindResource("AiCommitOnboardingTitle").ToString()!,
-                    Content = Application.Current.FindResource("AiCommitOnboardingMsg").ToString()!,
-                    PrimaryButtonText = Application.Current.FindResource("AiCommitOnboardingBtnSetup").ToString()!,
-                    CloseButtonText = Application.Current.FindResource("AiCommitOnboardingBtnSkip").ToString()!
+                    Title = Application.Current.TryFindResource("AiCommitOnboardingTitle")?.ToString() ?? "AI Commit Messages",
+                    Content = Application.Current.TryFindResource("AiCommitOnboardingMsg")?.ToString() ?? "Enable AI-generated commit messages?",
+                    PrimaryButtonText = Application.Current.TryFindResource("AiCommitOnboardingBtnSetup")?.ToString() ?? "Configure",
+                    CloseButtonText = Application.Current.TryFindResource("AiCommitOnboardingBtnSkip")?.ToString() ?? "Not Now"
                 };
 
                 var result = await msg.ShowDialogAsync();

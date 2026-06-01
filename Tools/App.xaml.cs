@@ -310,13 +310,13 @@ namespace BlogTools
                     var currentStr = $"v{current.Major}.{current.Minor}.{current.Build}";
                     var msg = new Wpf.Ui.Controls.MessageBox
                     {
-                        Title = Application.Current.FindResource("SettingsMsgUpdateFound").ToString()!,
+                        Title = R("SettingsMsgUpdateFound").ToString()!,
                         Content = string.Join(
                             Environment.NewLine,
-                            string.Format(Application.Current.FindResource("SettingsMsgAskDownload").ToString()!, latestVersion),
-                            string.Format(Application.Current.FindResource("CommonVersionCurrent").ToString()!, currentStr)),
-                        PrimaryButtonText = Application.Current.FindResource("SettingsBtnDownloadNow").ToString()!,
-                        CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
+                            string.Format(R("SettingsMsgAskDownload").ToString()!, latestVersion),
+                            string.Format(R("CommonVersionCurrent").ToString()!, currentStr)),
+                        PrimaryButtonText = R("SettingsBtnDownloadNow").ToString()!,
+                        CloseButtonText = R("SettingsBtnLater").ToString()!
                     };
                     var result = await msg.ShowDialogAsync();
                     if (result == Wpf.Ui.Controls.MessageBoxResult.Primary)
@@ -340,21 +340,21 @@ namespace BlogTools
             {
                 progressWindow = new UpdateProgressWindow(owner);
                 progressWindow.UpdateProgress(
-                    string.Format(Application.Current.FindResource("SettingsMsgUpdateDownloading").ToString()!, 0),
+                    string.Format(R("SettingsMsgUpdateDownloading").ToString()!, 0),
                     0);
                 progressWindow.Show();
 
                 var progress = new Progress<int>(percent =>
                 {
                     progressWindow.UpdateProgress(
-                        string.Format(Application.Current.FindResource("SettingsMsgUpdateDownloading").ToString()!, percent),
+                        string.Format(R("SettingsMsgUpdateDownloading").ToString()!, percent),
                         percent);
                 });
 
                 var zipPath = await UpdateService.DownloadUpdateAsync(downloadUrl, progress);
 
                 progressWindow.UpdateStatus(
-                    Application.Current.FindResource("SettingsMsgDownloadComplete").ToString()!,
+                    R("SettingsMsgDownloadComplete").ToString()!,
                     isIndeterminate: false,
                     value: 100);
 
@@ -362,7 +362,7 @@ namespace BlogTools
                 if (settings.SilentUpdate)
                 {
                     progressWindow.UpdateStatus(
-                        Application.Current.FindResource("SettingsMsgSilentUpdating").ToString()!,
+                        R("SettingsMsgSilentUpdating").ToString()!,
                         isIndeterminate: true);
                     await Task.Delay(500);
                     progressWindow.AllowClose = true;
@@ -376,17 +376,17 @@ namespace BlogTools
 
                 var askApply = new Wpf.Ui.Controls.MessageBox
                 {
-                    Title = Application.Current.FindResource("SettingsMsgDownloadComplete").ToString()!,
-                    Content = Application.Current.FindResource("SettingsMsgAskApply").ToString()!,
-                    PrimaryButtonText = Application.Current.FindResource("SettingsBtnApplyNow").ToString()!,
-                    CloseButtonText = Application.Current.FindResource("SettingsBtnLater").ToString()!
+                    Title = R("SettingsMsgDownloadComplete").ToString()!,
+                    Content = R("SettingsMsgAskApply").ToString()!,
+                    PrimaryButtonText = R("SettingsBtnApplyNow").ToString()!,
+                    CloseButtonText = R("SettingsBtnLater").ToString()!
                 };
                 var applyResult = await askApply.ShowDialogAsync();
                 if (applyResult == Wpf.Ui.Controls.MessageBoxResult.Primary)
                 {
                     progressWindow = new UpdateProgressWindow(owner);
                     progressWindow.UpdateStatus(
-                        Application.Current.FindResource("SettingsMsgSilentUpdating").ToString()!,
+                        R("SettingsMsgSilentUpdating").ToString()!,
                         isIndeterminate: true);
                     progressWindow.Show();
                     await Task.Delay(500);
@@ -405,9 +405,9 @@ namespace BlogTools
 
                 var msg = new Wpf.Ui.Controls.MessageBox
                 {
-                    Title = Application.Current.FindResource("CommonError").ToString()!,
-                    Content = string.Format(Application.Current.FindResource("SettingsMsgUpdateError").ToString()!, ex.Message),
-                    CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                    Title = R("CommonError").ToString()!,
+                    Content = string.Format(R("SettingsMsgUpdateError").ToString()!, ex.Message),
+                    CloseButtonText = R("CommonConfirm").ToString()!
                 };
                 await msg.ShowDialogAsync();
             }
@@ -422,6 +422,10 @@ namespace BlogTools
 
         // ── AI Commit Publish Flow ──────────────────────────────
 
+        /// <summary>Safe resource lookup — returns key name if missing, never throws.</summary>
+        private static string R(string key) =>
+            (Application.Current.TryFindResource(key) as string) ?? key;
+
         /// <summary>
         /// Orchestrate AI commit message generation and publishing.
         /// context: "post" or "settings" — determines which toggle to check.
@@ -433,18 +437,20 @@ namespace BlogTools
             string context,
             string fallbackMessage)
         {
-            var settings = StorageService.Load();
-
-            // Check if AI commit is enabled for this context
-            bool aiEnabled = context == "post"
-                ? settings.AiCommitEnabledPosts
-                : settings.AiCommitEnabledSettings;
-
-            if (!aiEnabled)
+            try
             {
-                // Use fallback message directly
-                return await ExecuteGitCommitAndPush(owner, fallbackMessage);
-            }
+                var settings = StorageService.Load();
+
+                // Check if AI commit is enabled for this context
+                bool aiEnabled = context == "post"
+                    ? settings.AiCommitEnabledPosts
+                    : settings.AiCommitEnabledSettings;
+
+                if (!aiEnabled)
+                {
+                    // Use fallback message directly
+                    return await ExecuteGitCommitAndPush(owner, fallbackMessage);
+                }
 
             // Validate AI profile
             var activeIndex = settings.AiCommitActiveProfileIndex;
@@ -452,14 +458,14 @@ namespace BlogTools
             {
                 // No valid profile — ask whether to use fallback
                 return await AskFallbackAndCommit(owner, fallbackMessage,
-                    Application.Current.FindResource("AiCommitMsgNeedBaseUrl").ToString()!);
+                    R("AiCommitMsgNeedBaseUrl").ToString()!);
             }
 
             var profile = settings.AiCommitProfiles![activeIndex];
             if (string.IsNullOrWhiteSpace(profile.BaseUrl) || string.IsNullOrWhiteSpace(profile.Model))
             {
                 return await AskFallbackAndCommit(owner, fallbackMessage,
-                    Application.Current.FindResource("AiCommitMsgNeedBaseUrl").ToString()!);
+                    R("AiCommitMsgNeedBaseUrl").ToString()!);
             }
 
             // Generate commit message
@@ -504,18 +510,24 @@ namespace BlogTools
 
             // Confirm and edit dialog
             return await ShowCommitConfirmDialogAsync(owner, commitMessage);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"TryPublishWithAiCommitAsync failed: {ex}");
+                return await ExecuteGitCommitAndPush(owner, fallbackMessage);
+            }
         }
 
         private static async Task<bool> AskFallbackAndCommit(Window owner, string fallbackMessage, string errorDetail)
         {
             var msg = new Wpf.Ui.Controls.MessageBox
             {
-                Title = Application.Current.FindResource("AiCommitPublishFallbackTitle").ToString()!,
+                Title = R("AiCommitPublishFallbackTitle").ToString()!,
                 Content = string.Format(
-                    Application.Current.FindResource("AiCommitPublishGenFailed").ToString()!, errorDetail) +
-                    "\n\n" + Application.Current.FindResource("AiCommitPublishFallback").ToString()!,
-                PrimaryButtonText = Application.Current.FindResource("CommonConfirm").ToString()!,
-                CloseButtonText = Application.Current.FindResource("CommonCancel").ToString()!
+                    R("AiCommitPublishGenFailed").ToString()!, errorDetail) +
+                    "\n\n" + R("AiCommitPublishFallback").ToString()!,
+                PrimaryButtonText = R("CommonConfirm").ToString()!,
+                CloseButtonText = R("CommonCancel").ToString()!
             };
 
             if (await msg.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
@@ -534,9 +546,9 @@ namespace BlogTools
                 {
                     var conflictMsg = new Wpf.Ui.Controls.MessageBox
                     {
-                        Title = Application.Current.FindResource("CommonError").ToString()!,
-                        Content = Application.Current.FindResource("EditorMsgConflict").ToString()!,
-                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                        Title = R("CommonError").ToString()!,
+                        Content = R("EditorMsgConflict").ToString()!,
+                        CloseButtonText = R("CommonConfirm").ToString()!
                     };
                     await conflictMsg.ShowDialogAsync();
                     return false;
@@ -556,9 +568,9 @@ namespace BlogTools
                 {
                     var errMsg = new Wpf.Ui.Controls.MessageBox
                     {
-                        Title = Application.Current.FindResource("CommonError").ToString()!,
+                        Title = R("CommonError").ToString()!,
                         Content = $"git add failed: {addOutput}",
-                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                        CloseButtonText = R("CommonConfirm").ToString()!
                     };
                     await errMsg.ShowDialogAsync();
                     return false;
@@ -569,9 +581,9 @@ namespace BlogTools
                 {
                     var errMsg = new Wpf.Ui.Controls.MessageBox
                     {
-                        Title = Application.Current.FindResource("CommonError").ToString()!,
+                        Title = R("CommonError").ToString()!,
                         Content = $"git commit failed: {commitOutput}",
-                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                        CloseButtonText = R("CommonConfirm").ToString()!
                     };
                     await errMsg.ShowDialogAsync();
                     return false;
@@ -582,9 +594,9 @@ namespace BlogTools
                 {
                     var errMsg = new Wpf.Ui.Controls.MessageBox
                     {
-                        Title = Application.Current.FindResource("CommonError").ToString()!,
+                        Title = R("CommonError").ToString()!,
                         Content = $"git push failed: {pushOutput}",
-                        CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                        CloseButtonText = R("CommonConfirm").ToString()!
                     };
                     await errMsg.ShowDialogAsync();
                     return false;
@@ -596,10 +608,10 @@ namespace BlogTools
             {
                 var errMsg = new Wpf.Ui.Controls.MessageBox
                 {
-                    Title = Application.Current.FindResource("CommonError").ToString()!,
+                    Title = R("CommonError").ToString()!,
                     Content = string.Format(
-                        Application.Current.FindResource("EditorMsgPublishError").ToString()!, ex.Message),
-                    CloseButtonText = Application.Current.FindResource("CommonConfirm").ToString()!
+                        R("EditorMsgPublishError").ToString()!, ex.Message),
+                    CloseButtonText = R("CommonConfirm").ToString()!
                 };
                 await errMsg.ShowDialogAsync();
                 return false;
@@ -625,7 +637,7 @@ namespace BlogTools
             var stackPanel = new StackPanel();
             stackPanel.Children.Add(new TextBlock
             {
-                Text = Application.Current.FindResource("AiCommitPublishConfirmMsg").ToString()!,
+                Text = R("AiCommitPublishConfirmMsg").ToString()!,
                 TextWrapping = TextWrapping.Wrap
             });
             stackPanel.Children.Add(textBox);
@@ -634,7 +646,7 @@ namespace BlogTools
             {
                 stackPanel.Children.Add(new TextBlock
                 {
-                    Text = Application.Current.FindResource("AiCommitPublishDirectHint").ToString()!,
+                    Text = R("AiCommitPublishDirectHint").ToString()!,
                     Margin = new Thickness(0, 12, 0, 4),
                     FontSize = 12,
                     Foreground = System.Windows.Media.Brushes.Gray
@@ -643,7 +655,7 @@ namespace BlogTools
                 var buttonsPanel = new StackPanel { Orientation = Orientation.Horizontal };
                 var directBtn = new Button
                 {
-                    Content = Application.Current.FindResource("AiCommitPublishBtnDirect").ToString()!,
+                    Content = R("AiCommitPublishBtnDirect").ToString()!,
                     Margin = new Thickness(0, 0, 8, 0),
                     Padding = new Thickness(8, 4, 8, 4)
                 };
@@ -656,7 +668,7 @@ namespace BlogTools
 
                 var confirmBtn = new Button
                 {
-                    Content = Application.Current.FindResource("AiCommitPublishBtnConfirm").ToString()!,
+                    Content = R("AiCommitPublishBtnConfirm").ToString()!,
                     Padding = new Thickness(8, 4, 8, 4)
                 };
 
@@ -667,10 +679,10 @@ namespace BlogTools
 
             var dialog = new Wpf.Ui.Controls.ContentDialog
             {
-                Title = Application.Current.FindResource("AiCommitPublishConfirmTitle").ToString()!,
+                Title = R("AiCommitPublishConfirmTitle").ToString()!,
                 Content = stackPanel,
-                PrimaryButtonText = Application.Current.FindResource("AiCommitPublishConfirmCommit").ToString()!,
-                CloseButtonText = Application.Current.FindResource("AiCommitPublishCancelCommit").ToString()!,
+                PrimaryButtonText = R("AiCommitPublishConfirmCommit").ToString()!,
+                CloseButtonText = R("AiCommitPublishCancelCommit").ToString()!,
                 DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary
             };
 
